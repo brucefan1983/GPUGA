@@ -1,0 +1,7 @@
+maximum_generation  10000
+number_of_variables 10
+population_size     100
+parent_number       50
+mutation_rate       0.1
+minimum_cost        1.0e-6
+
