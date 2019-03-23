@@ -14,27 +14,17 @@
 */
 
 
-/*----------------------------------------------------------------------------80
-The driver class for GPUGA
-------------------------------------------------------------------------------*/
+#pragma once
 
 
-#include "gpuga.cuh"
-#include "fitness.cuh"
-#include "ga.cuh"
-
-
-GPUGA::GPUGA(char* input_dir)
+class Fitness
 {
-    GA ga(input_dir);
-    Fitness fitness;
-    ga.compute(input_dir, &fitness);
-}
-
-
-GPUGA::~GPUGA(void)
-{
-    // nothing
-}
+public:
+    Fitness(void);
+    ~Fitness(void);
+    void compute(int, int, double*, double*);
+protected:
+    // nothing now
+};
 
 

@@ -16,6 +16,7 @@
 
 #pragma once
 #include <random>
+class Fitness;
 
 
 class GA
@@ -23,7 +24,7 @@ class GA
 public:
     GA(char*);
     ~GA(void);
-    void compute(char*);
+    void compute(char*, Fitness*);
 protected:
     // parameters
     std::mt19937 rng;
@@ -41,7 +42,6 @@ protected:
     double* population;
     double* population_copy;
     // for evolution
-    void get_fitness(void);
     void sort_population(int);
     void output(int, FILE*);
     void crossover(void);

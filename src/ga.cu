@@ -20,6 +20,7 @@ Use the genetic algorithm to fit potential parameters.
 
 
 #include "ga.cuh"
+#include "fitness.cuh"
 #include "error.cuh"
 #include "read_file.cuh"
 #include <errno.h>
@@ -47,23 +48,22 @@ GA::GA(char* input_dir)
         numerator += parent_number - n;
         cumulative_probabilities[n] = numerator / denominator;
     }
+#ifdef DEBUG
+    rng = std::mt19937(12345678);
+#else
+    rng = std::mt19937
+    (std::chrono::system_clock::now().time_since_epoch().count());
+#endif
     // initial population
     std::uniform_real_distribution<double> r1(0, 1);
     for (int n = 0; n < population_size * number_of_variables; ++n)
     {
         population[n] = r1(rng);
     }
-    // RNG
-#ifdef DEBUG
-    generator = std::mt19937(12345678);
-#else
-    rng = std::mt19937
-    (std::chrono::system_clock::now().time_since_epoch().count());
-#endif
 }
 
 
-void GA::compute(char* input_dir)
+void GA::compute(char* input_dir, Fitness* fitness_function)
 {
     char file[200];
     strcpy(file, input_dir);
@@ -71,7 +71,8 @@ void GA::compute(char* input_dir)
     FILE* fid = my_fopen(file, "w");
     for (int n = 0; n <  maximum_generation; ++n)
     {
-        get_fitness();
+        fitness_function->compute
+        (population_size, number_of_variables, population, fitness);
         sort_population(n);
         output(n, fid);
         if (fitness[0] < minimum_cost) { break; }
@@ -198,23 +199,6 @@ int GA::get_a_parent(void)
         }
     }
     return parent;
-}
-
-
-void GA::get_fitness(void)
-{
-    // a test function y = x1^2 + x2^2 + ... with solution x1 = x2 = ... = 0
-    for (int n = 0; n < population_size; ++n)
-    {
-        double* individual = population + n * number_of_variables;
-        double sum = 0.0;
-        for (int m = 0; m < number_of_variables; ++m)
-        {
-            double tmp = (individual[m] * 2.0 - 1);
-            sum += tmp * tmp;
-        }
-        fitness[n] = sum;
-    }
 }
 
 

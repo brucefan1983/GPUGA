@@ -15,26 +15,46 @@
 
 
 /*----------------------------------------------------------------------------80
-The driver class for GPUGA
+Get the fitness
 ------------------------------------------------------------------------------*/
 
 
-#include "gpuga.cuh"
 #include "fitness.cuh"
-#include "ga.cuh"
+#include "error.cuh"
+#include "read_file.cuh"
+#define BLOCK_SIZE 128
 
 
-GPUGA::GPUGA(char* input_dir)
+Fitness::Fitness(void)
 {
-    GA ga(input_dir);
-    Fitness fitness;
-    ga.compute(input_dir, &fitness);
+    // nothing now
 }
 
 
-GPUGA::~GPUGA(void)
+void Fitness::compute
+(
+    int population_size, int number_of_variables, 
+    double* population, double* fitness
+)
 {
-    // nothing
+    // a test function y = x1^2 + x2^2 + ... with solution x1 = x2 = ... = 0
+    for (int n = 0; n < population_size; ++n)
+    {
+        double* individual = population + n * number_of_variables;
+        double sum = 0.0;
+        for (int m = 0; m < number_of_variables; ++m)
+        {
+            double tmp = (individual[m] * 2.0 - 1);
+            sum += tmp * tmp;
+        }
+        fitness[n] = sum;
+    }
+}
+
+
+Fitness::~Fitness(void)
+{
+    // nothing now
 }
 
 
