@@ -44,6 +44,27 @@ Fitness::Fitness(char* input_dir)
 Fitness::~Fitness(void)
 {
     MY_FREE(Na);
+    cudaFree(type);
+    cudaFree(x);
+    cudaFree(y);
+    cudaFree(z);
+    cudaFree(fx_ref);
+    cudaFree(fy_ref);
+    cudaFree(fz_ref);
+    cudaFree(NN);
+    cudaFree(NL);
+    cudaFree(pe);
+    cudaFree(sxx);
+    cudaFree(syy);
+    cudaFree(szz);
+    cudaFree(fx);
+    cudaFree(fy);
+    cudaFree(fz);
+    cudaFree(b);
+    cudaFree(bp);
+    cudaFree(f12x);
+    cudaFree(f12y);
+    cudaFree(f12z);
 }
 
 
@@ -98,13 +119,7 @@ void Fitness::read_xyz(FILE* fid)
     num_types++;
     int m1 = sizeof(int) * N;
     int m2 = sizeof(double) * N;
-    CHECK(cudaMalloc((void**)&type, m1));
-    CHECK(cudaMalloc((void**)&x, m2));
-    CHECK(cudaMalloc((void**)&y, m2));
-    CHECK(cudaMalloc((void**)&z, m2));
-    CHECK(cudaMalloc((void**)&fx_ref, m2));
-    CHECK(cudaMalloc((void**)&fy_ref, m2));
-    CHECK(cudaMalloc((void**)&fz_ref, m2));
+    allocate_memory_gpu();
     CHECK(cudaMemcpy(type, cpu_type, m1, cudaMemcpyHostToDevice));
     CHECK(cudaMemcpy(x, cpu_x, m2, cudaMemcpyHostToDevice));
     CHECK(cudaMemcpy(y, cpu_y, m2, cudaMemcpyHostToDevice));
@@ -119,6 +134,34 @@ void Fitness::read_xyz(FILE* fid)
     MY_FREE(cpu_fx_ref);
     MY_FREE(cpu_fy_ref);
     MY_FREE(cpu_fz_ref);
+}
+
+
+void Fitness::allocate_memory_gpu(void)
+{
+    int m1 = sizeof(int) * N;
+    int m2 = sizeof(double) * N;
+    CHECK(cudaMalloc((void**)&NN, m1));
+    CHECK(cudaMalloc((void**)&NL, m1 * 20));
+    CHECK(cudaMalloc((void**)&type, m1));
+    CHECK(cudaMalloc((void**)&x, m2));
+    CHECK(cudaMalloc((void**)&y, m2));
+    CHECK(cudaMalloc((void**)&z, m2));
+    CHECK(cudaMalloc((void**)&pe, m2));
+    CHECK(cudaMalloc((void**)&sxx, m2));
+    CHECK(cudaMalloc((void**)&syy, m2));
+    CHECK(cudaMalloc((void**)&szz, m2));
+    CHECK(cudaMalloc((void**)&fx, m2));
+    CHECK(cudaMalloc((void**)&fy, m2));
+    CHECK(cudaMalloc((void**)&fz, m2));
+    CHECK(cudaMalloc((void**)&fx_ref, m2));
+    CHECK(cudaMalloc((void**)&fy_ref, m2));
+    CHECK(cudaMalloc((void**)&fz_ref, m2));
+    CHECK(cudaMalloc((void**)&b, m2 * 20));
+    CHECK(cudaMalloc((void**)&bp, m2 * 20));
+    CHECK(cudaMalloc((void**)&f12x, m2 * 20));
+    CHECK(cudaMalloc((void**)&f12y, m2 * 20));
+    CHECK(cudaMalloc((void**)&f12z, m2 * 20));
 }
 
 

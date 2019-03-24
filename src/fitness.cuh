@@ -30,6 +30,7 @@ protected:
     void read_Nc(FILE*);
     void read_Na(FILE*);
     void read_xyz(FILE*);
+    void allocate_memory_gpu(void);
     void get_fitness_population(int, int, double*, double*);
     double get_fitness_force(void);
     void find_force(void);
