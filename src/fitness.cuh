@@ -16,16 +16,20 @@
 
 #pragma once
 #include "box.cuh"
+#include <stdio.h>
 
 
 class Fitness
 {
 public:
-    Fitness(void);
+    Fitness(char*);
     ~Fitness(void);
     void compute(int, int, double*, double*);
 protected:
     // functions
+    void read_Nc(FILE*);
+    void read_Na(FILE*);
+    void read_xyz(FILE*);
     void get_fitness_population(int, int, double*, double*);
     double get_fitness_force(void);
     void find_force(void);
@@ -35,6 +39,8 @@ protected:
     double* potential_parameters;
     double* potential_parameters_min;
     double* potential_parameters_max;
+    int Nc;
+    int *Na;
     int N; // number of atoms
     int num_types;
     int *NN, *NL, *type;

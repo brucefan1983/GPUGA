@@ -27,7 +27,7 @@ The driver class for GPUGA
 GPUGA::GPUGA(char* input_dir)
 {
     GA ga(input_dir);
-    Fitness fitness;
+    Fitness fitness(input_dir);
     ga.compute(input_dir, &fitness);
 }
 

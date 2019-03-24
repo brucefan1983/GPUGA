@@ -25,15 +25,100 @@ Get the fitness
 #define BLOCK_SIZE 128
 
 
-Fitness::Fitness(void)
+Fitness::Fitness(char* input_dir)
 {
-    // nothing now
+    print_line_1();
+    printf("Started reading xyz.in.\n");
+    print_line_2();
+    char file_xyz[200];
+    strcpy(file_xyz, input_dir);
+    strcat(file_xyz, "/xyz.in");
+    FILE *fid_xyz = my_fopen(file_xyz, "r");
+    read_Nc(fid_xyz);
+    read_Na(fid_xyz);
+    read_xyz(fid_xyz);
+    fclose(fid_xyz);
 }
 
 
 Fitness::~Fitness(void)
 {
-    // nothing now
+    MY_FREE(Na);
+}
+
+
+void Fitness::read_Nc(FILE* fid)
+{
+    int count = fscanf(fid, "%d", &Nc);
+    if (count != 1) print_error("Reading error for xyz.in.\n");
+    if (Nc < 1)
+        print_error("Number of configurations should >= 1\n");
+    else
+        printf("Number of configurations = %d.\n", Nc);
+    MY_MALLOC(Na, int, Nc);
+}  
+
+
+void Fitness::read_Na(FILE* fid)
+{
+    N = 0;
+    for (int nc = 0; nc < Nc; ++nc)
+    {
+        int count = fscanf(fid, "%d", &Na[nc]);
+        if (count != 1) print_error("Reading error for xyz.in.\n");
+        N += Na[nc];
+        if (Na[nc] < 1)
+            print_error("Number of atoms %d should >= 1\n");
+        else
+            printf("Number of atoms for condiguration %d = %d.\n", nc, Na[nc]);
+    }
+} 
+
+
+void Fitness::read_xyz(FILE* fid)
+{
+    int *cpu_type;
+    double *cpu_x, *cpu_y, *cpu_z, *cpu_fx_ref, *cpu_fy_ref, *cpu_fz_ref;
+    MY_MALLOC(cpu_type, int, N);
+    MY_MALLOC(cpu_x, double, N);
+    MY_MALLOC(cpu_y, double, N);
+    MY_MALLOC(cpu_z, double, N);
+    MY_MALLOC(cpu_fx_ref, double, N);
+    MY_MALLOC(cpu_fy_ref, double, N);
+    MY_MALLOC(cpu_fz_ref, double, N);
+    num_types = 0;
+    for (int n = 0; n < N; n++)
+    {
+        int count = fscanf(fid, "%d%lf%lf%lf%lf%lf%lf", 
+            &(cpu_type[n]), &(cpu_x[n]), &(cpu_y[n]), &(cpu_z[n]),
+            &(cpu_fx_ref[n]), &(cpu_fy_ref[n]), &(cpu_fz_ref[n]));
+        if (count != 7) { print_error("reading error for xyz.in.\n"); }
+        if (cpu_type[n] > num_types) { num_types = cpu_type[n]; }
+    }
+    num_types++;
+    int m1 = sizeof(int) * N;
+    int m2 = sizeof(double) * N;
+    CHECK(cudaMalloc((void**)&type, m1));
+    CHECK(cudaMalloc((void**)&x, m2));
+    CHECK(cudaMalloc((void**)&y, m2));
+    CHECK(cudaMalloc((void**)&z, m2));
+    CHECK(cudaMalloc((void**)&fx_ref, m2));
+    CHECK(cudaMalloc((void**)&fy_ref, m2));
+    CHECK(cudaMalloc((void**)&fz_ref, m2));
+    CHECK(cudaMemcpy(type, cpu_type, m1, cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(x, cpu_x, m2, cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(y, cpu_y, m2, cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(z, cpu_z, m2, cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(fx_ref, cpu_fx_ref, m2, cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(fy_ref, cpu_fy_ref, m2, cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(fz_ref, cpu_fz_ref, m2, cudaMemcpyHostToDevice));
+    MY_FREE(cpu_type);
+    MY_FREE(cpu_x);
+    MY_FREE(cpu_y);
+    MY_FREE(cpu_z);
+    MY_FREE(cpu_fx_ref);
+    MY_FREE(cpu_fy_ref);
+    MY_FREE(cpu_fz_ref);
 }
 
 
@@ -56,7 +141,6 @@ void Fitness::compute
         fitness[n] = sum;
     }
 }
-
 
 
 void Fitness::get_fitness_population
