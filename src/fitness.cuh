@@ -15,6 +15,7 @@
 
 
 #pragma once
+#include "box.cuh"
 
 
 class Fitness
@@ -30,14 +31,22 @@ protected:
     void find_force(void);
 
     // variables
+    double *ters;
     double* potential_parameters;
     double* potential_parameters_min;
     double* potential_parameters_max;
     int N; // number of atoms
-    double *fx, *fy, *fz;
+    int num_types;
+    int *NN, *NL, *type;
+    double *x, *y, *z;
+    double *fx, *fy, *fz, *pe, *sxx, *syy, *szz;
     double *fx_ref, *fy_ref, *fz_ref; 
+    double *b, *bp, *f12x, *f12y, *f12z;
     double *force_error_gpu, *force_error_cpu;
     double force_ref_square_sum;
+
+    // other classes
+    Box box;
 };
 
 
