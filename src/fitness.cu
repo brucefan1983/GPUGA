@@ -48,8 +48,6 @@ Fitness::~Fitness(void)
 {
     cudaFree(Na);
     cudaFree(Na_sum);
-    cudaFree(box.h);
-
     cudaFree(type);
     cudaFree(x);
     cudaFree(y);
@@ -148,7 +146,6 @@ void Fitness::read_box(char* input_dir)
     fclose(fid_box);
     CHECK(cudaMalloc((void**)&box.h, box.memory * 2));
     CHECK(cudaMemcpy(box.h, box.cpu_h, box.memory*2, cudaMemcpyHostToDevice));
-    MY_FREE(box.cpu_h);
 }  
 
 
