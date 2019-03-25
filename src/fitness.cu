@@ -28,17 +28,7 @@ Get the fitness
 
 Fitness::Fitness(char* input_dir)
 {
-    print_line_1();
-    printf("Started reading xyz.in.\n");
-    print_line_2();
-    char file_xyz[200];
-    strcpy(file_xyz, input_dir);
-    strcat(file_xyz, "/xyz.in");
-    FILE *fid_xyz = my_fopen(file_xyz, "r");
-    read_Nc(fid_xyz);
-    read_Na(fid_xyz);
-    read_xyz(fid_xyz);
-    fclose(fid_xyz);
+    read_xyz_in(input_dir);
     read_box(input_dir);
     find_neighbor();
 }
@@ -70,17 +60,6 @@ Fitness::~Fitness(void)
     cudaFree(f12y);
     cudaFree(f12z);
 }
-
-
-void Fitness::read_Nc(FILE* fid)
-{
-    int count = fscanf(fid, "%d", &Nc);
-    if (count != 1) print_error("Reading error for xyz.in.\n");
-    if (Nc < 1)
-        print_error("Number of configurations should >= 1\n");
-    else
-        printf("Number of configurations = %d.\n", Nc);
-}  
 
 
 void Fitness::read_box(char* input_dir)
@@ -147,6 +126,33 @@ void Fitness::read_box(char* input_dir)
     CHECK(cudaMalloc((void**)&box.h, box.memory * 2));
     CHECK(cudaMemcpy(box.h, box.cpu_h, box.memory*2, cudaMemcpyHostToDevice));
 }  
+
+
+void Fitness::read_xyz_in(char* input_dir)
+{
+    print_line_1();
+    printf("Started reading xyz.in.\n");
+    print_line_2();
+    char file_xyz[200];
+    strcpy(file_xyz, input_dir);
+    strcat(file_xyz, "/xyz.in");
+    FILE *fid_xyz = my_fopen(file_xyz, "r");
+    read_Nc(fid_xyz);
+    read_Na(fid_xyz);
+    read_xyz(fid_xyz);
+    fclose(fid_xyz);
+}
+
+
+void Fitness::read_Nc(FILE* fid)
+{
+    int count = fscanf(fid, "%d", &Nc);
+    if (count != 1) print_error("Reading error for xyz.in.\n");
+    if (Nc < 1)
+        print_error("Number of configurations should >= 1\n");
+    else
+        printf("Number of configurations = %d.\n", Nc);
+}
 
 
 void Fitness::read_Na(FILE* fid)

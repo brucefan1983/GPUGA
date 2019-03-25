@@ -26,13 +26,15 @@ public:
     ~Fitness(void);
     void compute(int, int, double*, double*);
 protected:
-    // functions
+    // functions related to initialization
+    void read_xyz_in(char*);
     void read_Nc(FILE*);
     void read_Na(FILE*);
     void read_xyz(FILE*);
     void read_box(char*);
     void allocate_memory_gpu(void);
     void find_neighbor(void);
+    // functions related to fitness evaluation
     void get_fitness_population(int, int, double*, double*);
     double get_fitness_force(void);
     void find_force(void);
