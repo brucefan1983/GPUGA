@@ -42,12 +42,13 @@ protected:
     double* potential_parameters;
     double* potential_parameters_min;
     double* potential_parameters_max;
-    int Nc;
-    int *Na;
-    int N; // number of atoms
+    int Nc;      // number of configurations
+    int *Na;     // number of atoms in each configuration
+    int *Na_sum; // prefix sum of Na
+    int N;       // total number of atoms (sum of Na)
     int num_types;
     int num_boxes;
-    double cutoff = 2.0;
+    double cutoff = 1.1;
     int *NN, *NL, *type;
     double *x, *y, *z;
     double *fx, *fy, *fz, *pe, *sxx, *syy, *szz;

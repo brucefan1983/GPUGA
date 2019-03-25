@@ -46,7 +46,10 @@ Fitness::Fitness(char* input_dir)
 
 Fitness::~Fitness(void)
 {
-    MY_FREE(Na);
+    cudaFree(Na);
+    cudaFree(Na_sum);
+    cudaFree(box.h);
+
     cudaFree(type);
     cudaFree(x);
     cudaFree(y);
@@ -79,7 +82,6 @@ void Fitness::read_Nc(FILE* fid)
         print_error("Number of configurations should >= 1\n");
     else
         printf("Number of configurations = %d.\n", Nc);
-    MY_MALLOC(Na, int, Nc);
 }  
 
 
@@ -143,24 +145,40 @@ void Fitness::read_box(char* input_dir)
         printf("%d %d %d %g %g %g\n", 
             box.pbc_x, box.pbc_y, box.pbc_z, lx, ly, lz);
     }
-
     fclose(fid_box);
+    CHECK(cudaMalloc((void**)&box.h, box.memory * 2));
+    CHECK(cudaMemcpy(box.h, box.cpu_h, box.memory*2, cudaMemcpyHostToDevice));
+    MY_FREE(box.cpu_h);
 }  
 
 
 void Fitness::read_Na(FILE* fid)
 {
+    int *cpu_Na;
+    int *cpu_Na_sum; 
+    MY_MALLOC(cpu_Na, int, Nc);
+    MY_MALLOC(cpu_Na_sum, int, Nc);
     N = 0;
+    for (int nc = 0; nc < Nc; ++nc) { cpu_Na_sum[nc] = 0; }
     for (int nc = 0; nc < Nc; ++nc)
     {
-        int count = fscanf(fid, "%d", &Na[nc]);
+        int count = fscanf(fid, "%d", &cpu_Na[nc]);
         if (count != 1) print_error("Reading error for xyz.in.\n");
-        N += Na[nc];
-        if (Na[nc] < 1)
+        N += cpu_Na[nc];
+        if (cpu_Na[nc] < 1)
             print_error("Number of atoms %d should >= 1\n");
         else
-            printf("Number of atoms for condiguration %d = %d.\n", nc, Na[nc]);
+            printf("N[%d] = %d.\n", nc, cpu_Na[nc]);
     }
+    for (int nc = 1; nc < Nc; ++nc) 
+        cpu_Na_sum[nc] = cpu_Na_sum[nc-1] + cpu_Na[nc-1];
+    int mem = sizeof(int) * Nc;
+    CHECK(cudaMalloc((void**)&Na, mem));
+    CHECK(cudaMalloc((void**)&Na_sum, mem));
+    CHECK(cudaMemcpy(Na, cpu_Na, mem, cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(Na_sum, cpu_Na_sum, mem, cudaMemcpyHostToDevice));
+    MY_FREE(cpu_Na);
+    MY_FREE(cpu_Na_sum);
 } 
 
 
@@ -237,19 +255,27 @@ void Fitness::allocate_memory_gpu(void)
 
 static __global__ void gpu_find_neighbor
 (
-    int triclinic, int pbc_x, int pbc_y, int pbc_z, int N, double cutoff_square, 
-    const double* __restrict__ box, int *NN, int *NL, double *x, double *y, double *z
+    int triclinic, int pbc_x, int pbc_y, int pbc_z, 
+    int N, int *Na, int *Na_sum,
+    double cutoff_square, const double* __restrict__ box, 
+    int *NN, int *NL, double *x, double *y, double *z
 )
 {
-    int n1 = blockIdx.x * blockDim.x + threadIdx.x;
-    if (n1 < N)
+    int N1 = Na_sum[blockIdx.x];
+    int N2 = N1 + Na[blockIdx.x];
+    int n1 = N1 + threadIdx.x;
+    if (n1 < N2)
     {
-        double x1 = x[n1];  double y1 = y[n1];  double z1 = z[n1];
+        double x1 = x[n1];  
+        double y1 = y[n1];  
+        double z1 = z[n1];
         int count = 0;
-        for (int n2 = 0; n2 < N; ++n2)
+        for (int n2 = N1; n2 < N2; ++n2)
         { 
             if (n2 == n1) { continue; }
-            double x12 = x[n2]-x1; double y12 = y[n2]-y1; double z12 = z[n2]-z1;
+            double x12 = x[n2]-x1; 
+            double y12 = y[n2]-y1; 
+            double z12 = z[n2]-z1;
             dev_apply_mic(triclinic, pbc_x, pbc_y, pbc_z, box, x12, y12, z12);
             double distance_square = x12 * x12 + y12 * y12 + z12 * z12;
             if (distance_square < cutoff_square) { NL[count++ * N + n1] = n2; }
@@ -262,10 +288,10 @@ static __global__ void gpu_find_neighbor
 void Fitness::find_neighbor(void)
 {
     double rc2 = cutoff * cutoff;
-    gpu_find_neighbor<<<(N - 1) / BLOCK_SIZE + 1, BLOCK_SIZE>>>
+    gpu_find_neighbor<<<Nc, BLOCK_SIZE>>>
     (
-        box.triclinic, box.pbc_x, box.pbc_y, box.pbc_z, N, rc2, box.h,
-        NN, NL, x, y, z
+        box.triclinic, box.pbc_x, box.pbc_y, box.pbc_z, 
+        N, Na, Na_sum, rc2, box.h, NN, NL, x, y, z
     );
     CUDA_CHECK_KERNEL
 }
