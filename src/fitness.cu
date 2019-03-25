@@ -38,6 +38,8 @@ Fitness::Fitness(char* input_dir)
     read_Na(fid_xyz);
     read_xyz(fid_xyz);
     fclose(fid_xyz);
+    read_box(input_dir);
+    find_neighbor();
 }
 
 
@@ -77,6 +79,86 @@ void Fitness::read_Nc(FILE* fid)
     else
         printf("Number of configurations = %d.\n", Nc);
     MY_MALLOC(Na, int, Nc);
+}  
+
+
+void Fitness::read_box(char* input_dir)
+{
+    print_line_1();
+    printf("Started reading box.in.\n");
+    print_line_2();
+    char file_box[200];
+    strcpy(file_box, input_dir);
+    strcat(file_box, "/box.in");
+    FILE *fid_box = my_fopen(file_box, "r");
+
+    int count = fscanf(fid_box, "%d", &num_boxes);
+    if (count != 1) print_error("Reading error for box.in.\n");
+    if (num_boxes < 1)
+        print_error("Number of boxes should >= 1\n");
+    else
+        printf("Number of boxes = %d.\n", num_boxes);
+
+
+    count = fscanf(fid_box, "%d", &box.triclinic);
+    if (count != 1) print_error("Reading error for box.in.\n");
+    if (box.triclinic == 0)
+    {
+        printf("Use orthogonal box.\n");
+        box.memory = sizeof(double) * 3;
+    }
+    else if (box.triclinic == 1)
+    {
+        printf("Use triclinic box.\n");
+        box.memory = sizeof(double) * 9;
+    }
+    else
+        print_error("Invalid box type.\n");
+
+    if (box.triclinic == 1)
+    {
+        MY_MALLOC(box.cpu_h, double, 18);
+        double ax, ay, az, bx, by, bz, cx, cy, cz;
+        int count = fscanf(fid_box, "%d%d%d%lf%lf%lf%lf%lf%lf%lf%lf%lf",
+            &box.pbc_x, &box.pbc_y, &box.pbc_z, &ax, &ay, &az, &bx, &by, &bz,
+            &cx, &cy, &cz);
+        if (count != 12) print_error("reading error for xyz.in.\n");
+        box.cpu_h[0] = ax; box.cpu_h[3] = ay; box.cpu_h[6] = az;
+        box.cpu_h[1] = bx; box.cpu_h[4] = by; box.cpu_h[7] = bz;
+        box.cpu_h[2] = cx; box.cpu_h[5] = cy; box.cpu_h[8] = cz;
+        box.get_inverse();
+    }
+    else
+    {
+        MY_MALLOC(box.cpu_h, double, 6);
+        double lx, ly, lz;
+        int count = fscanf(fid_box, "%d%d%d%lf%lf%lf",
+            &box.pbc_x, &box.pbc_y, &box.pbc_z, &lx, &ly, &lz);
+        if (count != 6) print_error("reading error for line 2 of xyz.in.\n");
+        box.cpu_h[0] = lx; box.cpu_h[1] = ly; box.cpu_h[2] = lz;
+        box.cpu_h[3] = lx*0.5; box.cpu_h[4] = ly*0.5; box.cpu_h[5] = lz*0.5;
+    }
+
+    if (box.pbc_x == 1)
+        printf("Use periodic boundary conditions along x.\n");
+    else if (box.pbc_x == 0)
+        printf("Use     free boundary conditions along x.\n");
+    else
+        print_error("invalid boundary conditions along x.\n");
+    if (box.pbc_y == 1)
+        printf("Use periodic boundary conditions along y.\n");
+    else if (box.pbc_y == 0)
+        printf("Use     free boundary conditions along y.\n");
+    else
+        print_error("invalid boundary conditions along y.\n");
+    if (box.pbc_z == 1)
+        printf("Use periodic boundary conditions along z.\n");
+    else if (box.pbc_z == 0)
+        printf("Use     free boundary conditions along z.\n");
+    else
+        print_error("invalid boundary conditions along z.\n");
+
+    fclose(fid_box);
 }  
 
 
@@ -141,12 +223,15 @@ void Fitness::allocate_memory_gpu(void)
 {
     int m1 = sizeof(int) * N;
     int m2 = sizeof(double) * N;
-    CHECK(cudaMalloc((void**)&NN, m1));
-    CHECK(cudaMalloc((void**)&NL, m1 * 20));
+    // read from CPU
     CHECK(cudaMalloc((void**)&type, m1));
     CHECK(cudaMalloc((void**)&x, m2));
     CHECK(cudaMalloc((void**)&y, m2));
     CHECK(cudaMalloc((void**)&z, m2));
+    CHECK(cudaMalloc((void**)&fx_ref, m2));
+    CHECK(cudaMalloc((void**)&fy_ref, m2));
+    CHECK(cudaMalloc((void**)&fz_ref, m2));
+    // Calculated on the GPU
     CHECK(cudaMalloc((void**)&pe, m2));
     CHECK(cudaMalloc((void**)&sxx, m2));
     CHECK(cudaMalloc((void**)&syy, m2));
@@ -154,14 +239,19 @@ void Fitness::allocate_memory_gpu(void)
     CHECK(cudaMalloc((void**)&fx, m2));
     CHECK(cudaMalloc((void**)&fy, m2));
     CHECK(cudaMalloc((void**)&fz, m2));
-    CHECK(cudaMalloc((void**)&fx_ref, m2));
-    CHECK(cudaMalloc((void**)&fy_ref, m2));
-    CHECK(cudaMalloc((void**)&fz_ref, m2));
+    CHECK(cudaMalloc((void**)&NN, m1));
+    CHECK(cudaMalloc((void**)&NL, m1 * 20));
     CHECK(cudaMalloc((void**)&b, m2 * 20));
     CHECK(cudaMalloc((void**)&bp, m2 * 20));
     CHECK(cudaMalloc((void**)&f12x, m2 * 20));
     CHECK(cudaMalloc((void**)&f12y, m2 * 20));
     CHECK(cudaMalloc((void**)&f12z, m2 * 20));
+}
+
+
+void Fitness::find_neighbor(void)
+{
+    //TODO
 }
 
 

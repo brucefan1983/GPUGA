@@ -30,7 +30,9 @@ protected:
     void read_Nc(FILE*);
     void read_Na(FILE*);
     void read_xyz(FILE*);
+    void read_box(char*);
     void allocate_memory_gpu(void);
+    void find_neighbor(void);
     void get_fitness_population(int, int, double*, double*);
     double get_fitness_force(void);
     void find_force(void);
@@ -44,6 +46,7 @@ protected:
     int *Na;
     int N; // number of atoms
     int num_types;
+    int num_boxes;
     int *NN, *NL, *type;
     double *x, *y, *z;
     double *fx, *fy, *fz, *pe, *sxx, *syy, *szz;
