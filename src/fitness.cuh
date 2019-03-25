@@ -47,6 +47,7 @@ protected:
     int N; // number of atoms
     int num_types;
     int num_boxes;
+    double cutoff = 2.0;
     int *NN, *NL, *type;
     double *x, *y, *z;
     double *fx, *fy, *fz, *pe, *sxx, *syy, *szz;
