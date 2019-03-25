@@ -253,50 +253,6 @@ void Fitness::allocate_memory_gpu(void)
 }
 
 
-static __global__ void gpu_find_neighbor
-(
-    int triclinic, int pbc_x, int pbc_y, int pbc_z, 
-    int N, int *Na, int *Na_sum,
-    double cutoff_square, const double* __restrict__ box, 
-    int *NN, int *NL, double *x, double *y, double *z
-)
-{
-    int N1 = Na_sum[blockIdx.x];
-    int N2 = N1 + Na[blockIdx.x];
-    int n1 = N1 + threadIdx.x;
-    if (n1 < N2)
-    {
-        double x1 = x[n1];  
-        double y1 = y[n1];  
-        double z1 = z[n1];
-        int count = 0;
-        for (int n2 = N1; n2 < N2; ++n2)
-        { 
-            if (n2 == n1) { continue; }
-            double x12 = x[n2]-x1; 
-            double y12 = y[n2]-y1; 
-            double z12 = z[n2]-z1;
-            dev_apply_mic(triclinic, pbc_x, pbc_y, pbc_z, box, x12, y12, z12);
-            double distance_square = x12 * x12 + y12 * y12 + z12 * z12;
-            if (distance_square < cutoff_square) { NL[count++ * N + n1] = n2; }
-        }
-        NN[n1] = count;
-    }
-}
-
-
-void Fitness::find_neighbor(void)
-{
-    double rc2 = cutoff * cutoff;
-    gpu_find_neighbor<<<Nc, BLOCK_SIZE>>>
-    (
-        box.triclinic, box.pbc_x, box.pbc_y, box.pbc_z, 
-        N, Na, Na_sum, rc2, box.h, NN, NL, x, y, z
-    );
-    CUDA_CHECK_KERNEL
-}
-
-
 void Fitness::compute
 (
     int population_size, int number_of_variables, 
