@@ -99,17 +99,16 @@ void Fitness::read_box(char* input_dir)
     else
         printf("Number of boxes = %d.\n", num_boxes);
 
-
     count = fscanf(fid_box, "%d", &box.triclinic);
     if (count != 1) print_error("Reading error for box.in.\n");
     if (box.triclinic == 0)
     {
-        printf("Use orthogonal box.\n");
+        printf("orthogonal\n");
         box.memory = sizeof(double) * 3;
     }
     else if (box.triclinic == 1)
     {
-        printf("Use triclinic box.\n");
+        printf("triclinic\n");
         box.memory = sizeof(double) * 9;
     }
     else
@@ -137,26 +136,9 @@ void Fitness::read_box(char* input_dir)
         if (count != 6) print_error("reading error for line 2 of xyz.in.\n");
         box.cpu_h[0] = lx; box.cpu_h[1] = ly; box.cpu_h[2] = lz;
         box.cpu_h[3] = lx*0.5; box.cpu_h[4] = ly*0.5; box.cpu_h[5] = lz*0.5;
+        printf("%d %d %d %g %g %g\n", 
+            box.pbc_x, box.pbc_y, box.pbc_z, lx, ly, lz);
     }
-
-    if (box.pbc_x == 1)
-        printf("Use periodic boundary conditions along x.\n");
-    else if (box.pbc_x == 0)
-        printf("Use     free boundary conditions along x.\n");
-    else
-        print_error("invalid boundary conditions along x.\n");
-    if (box.pbc_y == 1)
-        printf("Use periodic boundary conditions along y.\n");
-    else if (box.pbc_y == 0)
-        printf("Use     free boundary conditions along y.\n");
-    else
-        print_error("invalid boundary conditions along y.\n");
-    if (box.pbc_z == 1)
-        printf("Use periodic boundary conditions along z.\n");
-    else if (box.pbc_z == 0)
-        printf("Use     free boundary conditions along z.\n");
-    else
-        print_error("invalid boundary conditions along z.\n");
 
     fclose(fid_box);
 }  
