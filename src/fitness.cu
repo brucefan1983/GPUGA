@@ -126,6 +126,9 @@ void Fitness::read_box(char* input_dir)
         box.cpu_h[1] = bx; box.cpu_h[4] = by; box.cpu_h[7] = bz;
         box.cpu_h[2] = cx; box.cpu_h[5] = cy; box.cpu_h[8] = cz;
         box.get_inverse();
+        printf("%d %d %d ", box.pbc_x, box.pbc_y, box.pbc_z);
+        for (int k = 0; k < 9; ++k) printf("%g ", box.cpu_h[k]);
+        printf("\n");
     }
     else
     {
