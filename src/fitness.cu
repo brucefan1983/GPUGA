@@ -24,6 +24,7 @@ Get the fitness
 #include "error.cuh"
 #include "read_file.cuh"
 #define BLOCK_SIZE 128
+#define NUM_PARAMS 19 
 
 
 Fitness::Fitness(char* input_dir)
@@ -36,6 +37,8 @@ Fitness::Fitness(char* input_dir)
 
 Fitness::~Fitness(void)
 {
+    MY_FREE(cpu_ters);
+    cudaFree(ters);
     cudaFree(Na);
     cudaFree(Na_sum);
     cudaFree(type);
@@ -223,6 +226,10 @@ void Fitness::read_xyz(FILE* fid)
     MY_FREE(cpu_fx_ref);
     MY_FREE(cpu_fy_ref);
     MY_FREE(cpu_fz_ref);
+
+    int n_entries = num_types * num_types * num_types;
+    MY_MALLOC(cpu_ters, double, n_entries * NUM_PARAMS);
+    CHECK(cudaMalloc((void**)&ters, sizeof(double) * n_entries * NUM_PARAMS));
 }
 
 

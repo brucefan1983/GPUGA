@@ -37,10 +37,11 @@ protected:
     // functions related to fitness evaluation
     void get_fitness_population(int, int, double*, double*);
     double get_fitness_force(void);
+    void initialize_potential(void); 
     void find_force(void);
 
     // variables
-    double *ters;
+    double *ters, *cpu_ters;
     double* potential_parameters;
     double* potential_parameters_min;
     double* potential_parameters_max;

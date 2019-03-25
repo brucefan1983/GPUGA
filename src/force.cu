@@ -25,6 +25,7 @@ Calculate force, energy, and stress
 #define LDG(a, n) __ldg(a + n)
 #define BLOCK_SIZE_FORCE 64 // 128 is also good
 #define EPSILON 1.0e-15
+#define PI 3.141592653589793
 
 //Easy labels for indexing
 #define A 0
@@ -50,6 +51,51 @@ Calculate force, energy, and stress
 #define NUM_PARAMS 19
 
 
+void Fitness::initialize_potential(void)
+{
+    int n_entries = num_types * num_types * num_types;
+    double m = 0.0;
+    double alpha = 0.0;
+    double gamma = 1.0;
+    double a = 1.8308e3;
+    double b = 471.18; 
+    double lambda = 2.4799;
+    double mu = 1.7322;
+    double beta = 1.1000e-6;
+    double n = 0.78734;
+    double c = 1.0039e5;
+    double d = 16.217;
+    double h = -0.59825;
+    double r1 = 2.7;
+    double r2 = 3.0;
+    for (int i = 0; i < n_entries; i++)
+    {
+        cpu_ters[i*NUM_PARAMS + A] = a;
+        cpu_ters[i*NUM_PARAMS + B] = b;
+        cpu_ters[i*NUM_PARAMS + LAMBDA] = lambda;
+        cpu_ters[i*NUM_PARAMS + MU] = mu;
+        cpu_ters[i*NUM_PARAMS + BETA] = beta;
+        cpu_ters[i*NUM_PARAMS + EN] = n;
+        cpu_ters[i*NUM_PARAMS + C] = c;
+        cpu_ters[i*NUM_PARAMS + D] = d;
+        cpu_ters[i*NUM_PARAMS + H] = h;
+        cpu_ters[i*NUM_PARAMS + R1] = r1;
+        cpu_ters[i*NUM_PARAMS + R2] = r2;
+        cpu_ters[i*NUM_PARAMS + M] = m;
+        cpu_ters[i*NUM_PARAMS + ALPHA] = alpha;
+        cpu_ters[i*NUM_PARAMS + GAMMA] = gamma;
+        cpu_ters[i*NUM_PARAMS + C2] = c * c;
+        cpu_ters[i*NUM_PARAMS + D2] = d * d;
+        cpu_ters[i*NUM_PARAMS + ONE_PLUS_C2OVERD2] = 1.0 +
+        cpu_ters[i*NUM_PARAMS + C2] / cpu_ters[i*NUM_PARAMS + D2];
+        cpu_ters[i*NUM_PARAMS + PI_FACTOR] = PI / (r2 - r1);
+        cpu_ters[i*NUM_PARAMS + MINUS_HALF_OVER_N] = - 0.5 / n;
+    }
+    int mem = sizeof(double) * n_entries * NUM_PARAMS;
+    CHECK(cudaMemcpy(ters, cpu_ters, mem, cudaMemcpyHostToDevice));
+}
+
+
 static __device__ void find_fr_and_frp
 (int i, const double* __restrict__ ters, double d12, double &fr, double &frp)
 {
@@ -69,7 +115,7 @@ static __device__ void find_fa_and_fap
 static __device__ void find_fa
 (int i, const double* __restrict__ ters, double d12, double &fa)
 {
-    fa  = LDG(ters, i + B) * exp(- LDG(ters, i + MU) * d12);
+    fa = LDG(ters, i + B) * exp(- LDG(ters, i + MU) * d12);
 }
 
 
@@ -80,9 +126,9 @@ static __device__ void find_fc_and_fcp
     else if (d12 < LDG(ters, i + R2))
     {
         fc  =  cos(LDG(ters, i + PI_FACTOR) *
-                (d12 - LDG(ters, i + R1))) * 0.5 + 0.5;
+            (d12 - LDG(ters, i + R1))) * 0.5 + 0.5;
         fcp = -sin(LDG(ters, i + PI_FACTOR) *
-                (d12 - LDG(ters, i + R1)))*LDG(ters, i + PI_FACTOR)*0.5;
+            (d12 - LDG(ters, i + R1)))*LDG(ters, i + PI_FACTOR)*0.5;
     }
     else {fc  = 0.0; fcp = 0.0;}
 }
@@ -95,7 +141,7 @@ static __device__ void find_fc
     else if (d12 < LDG(ters, i + R2))
     {
         fc = cos(LDG(ters, i + PI_FACTOR) *
-                (d12 - LDG(ters, i + R1))) * 0.5 + 0.5;
+            (d12 - LDG(ters, i + R1))) * 0.5 + 0.5;
     }
     else {fc  = 0.0;}
 }
@@ -105,11 +151,11 @@ static __device__ void find_g_and_gp
 (int i, const double* __restrict__ ters, double cos, double &g, double &gp)
 {
     double temp = LDG(ters, i + D2) + (cos - LDG(ters, i + H)) *
-                (cos - LDG(ters, i + H));
+        (cos - LDG(ters, i + H));
     g  = LDG(ters, i + GAMMA) *
-                (LDG(ters, i + ONE_PLUS_C2OVERD2) - LDG(ters, i + C2) / temp);
+        (LDG(ters, i + ONE_PLUS_C2OVERD2) - LDG(ters, i + C2) / temp);
     gp = LDG(ters, i + GAMMA) *
-            (2.0 * LDG(ters, i + C2) * (cos - LDG(ters, i + H)) / (temp * temp));
+        (2.0 * LDG(ters, i + C2) * (cos - LDG(ters, i + H)) / (temp * temp));
 }
 
 
@@ -117,14 +163,17 @@ static __device__ void find_g
 (int i, const double* __restrict__ ters, double cos, double &g)
 {
     double temp = LDG(ters, i + D2) + (cos - LDG(ters, i + H)) *
-                (cos - LDG(ters, i + H));
+        (cos - LDG(ters, i + H));
     g  = LDG(ters, i + GAMMA) *
-                (LDG(ters, i + ONE_PLUS_C2OVERD2) - LDG(ters, i + C2) / temp);
+        (LDG(ters, i + ONE_PLUS_C2OVERD2) - LDG(ters, i + C2) / temp);
 }
 
 
 static __device__ void find_e_and_ep
-(int i, const double* __restrict__ ters, double d12, double d13, double &e, double &ep)
+(
+    int i, const double* __restrict__ ters, 
+    double d12, double d13, double &e, double &ep
+)
 {
     if (LDG(ters, i + ALPHA) < EPSILON){ e = 1.0; ep = 0.0;}
     else
@@ -199,7 +248,7 @@ static __global__ void find_force_tersoff_step1
                 dev_apply_mic(triclinic, pbc_x, pbc_y, pbc_z, g_box, 
                     x13, y13, z13);
                 double d13 = sqrt(x13 * x13 + y13 * y13 + z13 * z13);
-                double cos123 = (x12 * x13 + y12 * y13 + z12 * z13) / (d12 * d13);
+                double cos123 = (x12 * x13 + y12 * y13 + z12 * z13) / (d12*d13);
                 double fc_ijk_13, g_ijk, e_ijk_12_13;
                 int ijk = type1 * num_types2 + type2 * num_types + type3;
                 if (d13 > LDG(ters, ijk*NUM_PARAMS + R2)) {continue;}
@@ -212,7 +261,8 @@ static __global__ void find_force_tersoff_step1
             int ijj = type1 * num_types2 + type2 * num_types + type2;
             bzn = pow(LDG(ters, ijj*NUM_PARAMS + BETA) *
                 zeta, LDG(ters, ijj*NUM_PARAMS + EN));
-            b_ijj = pow(1.0 + bzn, LDG(ters, ijj*NUM_PARAMS + MINUS_HALF_OVER_N));
+            b_ijj = 
+                pow(1.0 + bzn, LDG(ters, ijj*NUM_PARAMS + MINUS_HALF_OVER_N));
             if (zeta < 1.0e-16) // avoid division by 0
             {
                 g_b[i1 * number_of_particles + n1]  = 1.0;
@@ -276,7 +326,7 @@ static __global__ void find_force_tersoff_step2
             // (i,j) part
             double b12 = LDG(g_b, index);
             double factor3=(fcp_ijj_12*(fr_ijj_12-b12*fa_ijj_12)+
-                          fc_ijj_12*(frp_ijj_12-b12*fap_ijj_12))*d12inv;
+                            fc_ijj_12*(frp_ijj_12-b12*fap_ijj_12))*d12inv;
             double f12x = x12 * factor3 * 0.5;
             double f12y = y12 * factor3 * 0.5;
             double f12z = z12 * factor3 * 0.5;
@@ -320,12 +370,12 @@ static __global__ void find_force_tersoff_step2
                 // exp with d12 - d13
                 double e_ijk_12_13, ep_ijk_12_13;
                 find_e_and_ep(ijk*NUM_PARAMS, ters, d12, d13,
-                                	e_ijk_12_13, ep_ijk_12_13);
+                    e_ijk_12_13, ep_ijk_12_13);
 
                 // exp with d13 - d12
                 double e_ikj_13_12, ep_ikj_13_12;
                 find_e_and_ep(ikj*NUM_PARAMS, ters, d13, d12,
-                                	e_ikj_13_12, ep_ikj_13_12);
+                    e_ikj_13_12, ep_ikj_13_12);
 
                 // derivatives with cosine
                 double dc=-fc_ijj_12*bp12*fa_ijj_12*fc_ijk_13*gp_ijk*e_ijk_12_13+
