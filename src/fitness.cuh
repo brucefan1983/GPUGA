@@ -51,7 +51,7 @@ protected:
     int N;       // total number of atoms (sum of Na)
     int num_types;
     int num_boxes;
-    double cutoff = 1.1;
+    double cutoff = 3.0;
     int *NN, *NL, *type;
     double *x, *y, *z;
     double *fx, *fy, *fz, *pe, *sxx, *syy, *szz;

@@ -22,7 +22,7 @@ find the neighbor list
 #include "fitness.cuh"
 #include "mic.cuh"
 #include "error.cuh"
-#define BLOCK_SIZE 128
+#define BLOCK_SIZE 256
 
 
 static __global__ void gpu_find_neighbor
