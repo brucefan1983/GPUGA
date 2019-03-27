@@ -86,8 +86,51 @@ void Fitness::initialize_potential(void)
         cpu_ters[i*NUM_PARAMS + GAMMA] = gamma;
         cpu_ters[i*NUM_PARAMS + C2] = c * c;
         cpu_ters[i*NUM_PARAMS + D2] = d * d;
-        cpu_ters[i*NUM_PARAMS + ONE_PLUS_C2OVERD2] = 1.0 +
-        cpu_ters[i*NUM_PARAMS + C2] / cpu_ters[i*NUM_PARAMS + D2];
+        cpu_ters[i*NUM_PARAMS + ONE_PLUS_C2OVERD2] = 1.0 + (c * c) / (d * d);
+        cpu_ters[i*NUM_PARAMS + PI_FACTOR] = PI / (r2 - r1);
+        cpu_ters[i*NUM_PARAMS + MINUS_HALF_OVER_N] = - 0.5 / n;
+    }
+    int mem = sizeof(double) * n_entries * NUM_PARAMS;
+    CHECK(cudaMemcpy(ters, cpu_ters, mem, cudaMemcpyHostToDevice));
+}
+
+
+void Fitness::update_potential(double* potential_parameters)
+{
+    int n_entries = num_types * num_types * num_types;
+    double m = 0.0;
+    double alpha = 0.0;
+    double gamma = 1.0;
+    double a = potential_parameters[0];
+    double b = potential_parameters[1];
+    double lambda = potential_parameters[2];
+    double mu = potential_parameters[3];
+    double beta = potential_parameters[4];
+    double n = potential_parameters[5];
+    double c = potential_parameters[6];
+    double d = potential_parameters[7];
+    double h = potential_parameters[8];
+    double r1 = 2.7;
+    double r2 = 3.0;
+    for (int i = 0; i < n_entries; i++)
+    {
+        cpu_ters[i*NUM_PARAMS + A] = a;
+        cpu_ters[i*NUM_PARAMS + B] = b;
+        cpu_ters[i*NUM_PARAMS + LAMBDA] = lambda;
+        cpu_ters[i*NUM_PARAMS + MU] = mu;
+        cpu_ters[i*NUM_PARAMS + BETA] = beta;
+        cpu_ters[i*NUM_PARAMS + EN] = n;
+        cpu_ters[i*NUM_PARAMS + C] = c;
+        cpu_ters[i*NUM_PARAMS + D] = d;
+        cpu_ters[i*NUM_PARAMS + H] = h;
+        cpu_ters[i*NUM_PARAMS + R1] = r1;
+        cpu_ters[i*NUM_PARAMS + R2] = r2;
+        cpu_ters[i*NUM_PARAMS + M] = m;
+        cpu_ters[i*NUM_PARAMS + ALPHA] = alpha;
+        cpu_ters[i*NUM_PARAMS + GAMMA] = gamma;
+        cpu_ters[i*NUM_PARAMS + C2] = c * c;
+        cpu_ters[i*NUM_PARAMS + D2] = d * d;
+        cpu_ters[i*NUM_PARAMS + ONE_PLUS_C2OVERD2] = 1.0 + (c * c) / (d * d);
         cpu_ters[i*NUM_PARAMS + PI_FACTOR] = PI / (r2 - r1);
         cpu_ters[i*NUM_PARAMS + MINUS_HALF_OVER_N] = - 0.5 / n;
     }

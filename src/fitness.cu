@@ -236,21 +236,26 @@ void Fitness::compute
 void Fitness::get_fitness_population
 (
     int population_size, int number_of_variables, 
+    double *parameters_min, double *parameters_max,
     double* population, double* fitness, Neighbor* neighbor
 )
 {
+    double *parameters;
+    MY_MALLOC(parameters, double, number_of_variables);
     for (int n = 0; n < population_size; ++n)
     {
         double* individual = population + n * number_of_variables;
         for (int m = 0; m < number_of_variables; ++m)
         {
-            double a = potential_parameters_min[m];
-            double b = potential_parameters_max[m] - a;
-            potential_parameters[m] = a + b * individual[m];
+            double a = parameters_min[m];
+            double b = parameters_max[m] - a;
+            parameters[m] = a + b * individual[m];
         }
+        update_potential(parameters);
         find_force(neighbor);
         fitness[n] = get_fitness_force();
     }
+    MY_FREE(parameters);
 }
 
 

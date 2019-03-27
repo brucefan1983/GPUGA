@@ -41,6 +41,8 @@ protected:
     double* cumulative_probabilities;
     double* population;
     double* population_copy;
+    double* parameters_min;
+    double* parameters_max;
     // for evolution
     void sort_population(int);
     void output(int, FILE*);
@@ -49,6 +51,7 @@ protected:
     void mutation(void);
     // for initialization
     void read_parameters(char*);
+    void read_potential(char*);
     void parse(char**, int);
     void parse_maximum_generation(char**, int);
     void parse_number_of_variables(char**, int);
