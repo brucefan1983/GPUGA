@@ -19,10 +19,28 @@ find the neighbor list
 ------------------------------------------------------------------------------*/
 
 
-#include "fitness.cuh"
+#include "neighbor.cuh"
+#include "box.cuh"
 #include "mic.cuh"
 #include "error.cuh"
 #define BLOCK_SIZE 256
+
+
+Neighbor::Neighbor
+(int Nc, int N, int *Na, int *Na_sum, double *x, double *y, double *z, Box *box)
+{
+    int m1 = sizeof(int) * N;
+    CHECK(cudaMalloc((void**)&NN, m1));
+    CHECK(cudaMalloc((void**)&NL, m1 * 20));
+    compute(Nc, N, Na, Na_sum, x, y, z, box);
+}
+
+
+Neighbor::~Neighbor(void)
+{
+    CHECK(cudaFree(NN));
+    CHECK(cudaFree(NL));
+}
 
 
 static __global__ void gpu_find_neighbor
@@ -58,13 +76,14 @@ static __global__ void gpu_find_neighbor
 }
 
 
-void Fitness::find_neighbor(void)
+void Neighbor::compute
+(int Nc, int N, int *Na, int *Na_sum, double *x, double *y, double *z, Box *box)
 {
     double rc2 = cutoff * cutoff;
     gpu_find_neighbor<<<Nc, BLOCK_SIZE>>>
     (
-        box.triclinic, box.pbc_x, box.pbc_y, box.pbc_z,
-        N, Na, Na_sum, rc2, box.h, NN, NL, x, y, z
+        box->triclinic, box->pbc_x, box->pbc_y, box->pbc_z,
+        N, Na, Na_sum, rc2, box->h, NN, NL, x, y, z
     );
     CUDA_CHECK_KERNEL
 }

@@ -20,7 +20,7 @@ Get the fitness
 
 
 #include "fitness.cuh"
-#include "mic.cuh"
+#include "neighbor.cuh"
 #include "error.cuh"
 #include "read_file.cuh"
 #define BLOCK_SIZE 128
@@ -31,10 +31,10 @@ Fitness::Fitness(char* input_dir)
 {
     read_xyz_in(input_dir);
     read_box(input_dir);
-    find_neighbor();
+    Neighbor neighbor(Nc, N, Na, Na_sum, x, y, z, &box);
 
 // test the force
-find_force();
+find_force(&neighbor);
 double *cpu_fx;
 MY_MALLOC(cpu_fx, double, N);
 cudaMemcpy(cpu_fx, fx, sizeof(double)*N, cudaMemcpyDeviceToHost);
@@ -66,8 +66,6 @@ Fitness::~Fitness(void)
     cudaFree(fx_ref);
     cudaFree(fy_ref);
     cudaFree(fz_ref);
-    cudaFree(NN);
-    cudaFree(NL);
     cudaFree(pe);
     cudaFree(sxx);
     cudaFree(syy);
@@ -271,8 +269,6 @@ void Fitness::allocate_memory_gpu(void)
     CHECK(cudaMalloc((void**)&fx, m2));
     CHECK(cudaMalloc((void**)&fy, m2));
     CHECK(cudaMalloc((void**)&fz, m2));
-    CHECK(cudaMalloc((void**)&NN, m1));
-    CHECK(cudaMalloc((void**)&NL, m1 * 20));
     CHECK(cudaMalloc((void**)&b, m2 * 20));
     CHECK(cudaMalloc((void**)&bp, m2 * 20));
     CHECK(cudaMalloc((void**)&f12x, m2 * 20));
@@ -305,7 +301,7 @@ void Fitness::compute
 void Fitness::get_fitness_population
 (
     int population_size, int number_of_variables, 
-    double* population, double* fitness
+    double* population, double* fitness, Neighbor* neighbor
 )
 {
     for (int n = 0; n < population_size; ++n)
@@ -317,7 +313,7 @@ void Fitness::get_fitness_population
             double b = potential_parameters_max[m] - a;
             potential_parameters[m] = a + b * individual[m];
         }
-        find_force();
+        find_force(neighbor);
         fitness[n] = get_fitness_force();
     }
 }

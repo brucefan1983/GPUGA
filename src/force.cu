@@ -20,6 +20,7 @@ Calculate force, energy, and stress
 
 
 #include "fitness.cuh"
+#include "neighbor.cuh"
 #include "mic.cuh"
 #include "error.cuh"
 #define LDG(a, n) __ldg(a + n)
@@ -476,7 +477,7 @@ static __global__ void find_force_tersoff_step3
 }
 
 
-void Fitness::find_force(void)
+void Fitness::find_force(Neighbor* neighbor)
 {
     initialize_potential(); // set up potential parameters
 
@@ -484,18 +485,20 @@ void Fitness::find_force(void)
     find_force_tersoff_step1<<<grid_size, BLOCK_SIZE_FORCE>>>
     (
         N, box.triclinic, box.pbc_x, box.pbc_y, box.pbc_z, num_types,
-        NN, NL, type, ters, x, y, z, box.h, b, bp
+        neighbor->NN, neighbor->NL, type, ters, x, y, z, box.h, b, bp
     );
     CUDA_CHECK_KERNEL
     find_force_tersoff_step2<<<grid_size, BLOCK_SIZE_FORCE>>>
     (
         N, box.triclinic, box.pbc_x, box.pbc_y, box.pbc_z, num_types,
-        NN, NL, type, ters, b, bp, x, y, z, box.h, pe, f12x, f12y, f12z
+        neighbor->NN, neighbor->NL, type, ters, b, bp, x, y, z, box.h, 
+        pe, f12x, f12y, f12z
     );
     CUDA_CHECK_KERNEL
     find_force_tersoff_step3<<<grid_size, BLOCK_SIZE_FORCE>>>
     (
-        N, box.triclinic, box.pbc_x, box.pbc_y, box.pbc_z, NN, NL, 
+        N, box.triclinic, box.pbc_x, box.pbc_y, box.pbc_z, 
+        neighbor->NN, neighbor->NL, 
         f12x, f12y, f12z, x, y, z, box.h, fx, fy, fz, sxx, syy, szz
     );
     CUDA_CHECK_KERNEL
