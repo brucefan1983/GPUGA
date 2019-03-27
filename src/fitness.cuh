@@ -39,26 +39,23 @@ protected:
     double get_fitness_force(void);
     void initialize_potential(void); 
     void find_force(Neighbor*);
-
-    // variables
+    // integer variables
+    int Nc;      // number of configurations
+    int N;       // total number of atoms (sum of Na)
+    int num_types;
+    int *Na;     // number of atoms in each configuration
+    int *Na_sum; // prefix sum of Na
+    int *type;
+    // real arrays
     double *ters, *cpu_ters;
     double* potential_parameters;
     double* potential_parameters_min;
     double* potential_parameters_max;
-    int Nc;      // number of configurations
-    int *Na;     // number of atoms in each configuration
-    int *Na_sum; // prefix sum of Na
-    int N;       // total number of atoms (sum of Na)
-    int num_types;
-    int num_boxes;
-    int *type;
-    double *x, *y, *z;
-    double *fx, *fy, *fz, *pe, *sxx, *syy, *szz;
+    double *x, *y, *z, *fx, *fy, *fz, *pe, *sxx, *syy, *szz;
     double *fx_ref, *fy_ref, *fz_ref; 
     double *b, *bp, *f12x, *f12y, *f12z;
     double *force_error_gpu, *force_error_cpu;
     double force_ref_square_sum;
-
     // other classes
     Box box;
 };

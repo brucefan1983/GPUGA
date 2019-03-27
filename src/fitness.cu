@@ -30,7 +30,7 @@ Get the fitness
 Fitness::Fitness(char* input_dir)
 {
     read_xyz_in(input_dir);
-    read_box(input_dir);
+    box.read_file(input_dir);
     Neighbor neighbor(Nc, N, Na, Na_sum, x, y, z, &box);
 
 // test the force
@@ -79,72 +79,6 @@ Fitness::~Fitness(void)
     cudaFree(f12y);
     cudaFree(f12z);
 }
-
-
-void Fitness::read_box(char* input_dir)
-{
-    print_line_1();
-    printf("Started reading box.in.\n");
-    print_line_2();
-    char file_box[200];
-    strcpy(file_box, input_dir);
-    strcat(file_box, "/box.in");
-    FILE *fid_box = my_fopen(file_box, "r");
-
-    int count = fscanf(fid_box, "%d", &num_boxes);
-    if (count != 1) print_error("Reading error for box.in.\n");
-    if (num_boxes < 1)
-        print_error("Number of boxes should >= 1\n");
-    else
-        printf("Number of boxes = %d.\n", num_boxes);
-
-    count = fscanf(fid_box, "%d", &box.triclinic);
-    if (count != 1) print_error("Reading error for box.in.\n");
-    if (box.triclinic == 0)
-    {
-        printf("orthogonal\n");
-        box.memory = sizeof(double) * 3;
-    }
-    else if (box.triclinic == 1)
-    {
-        printf("triclinic\n");
-        box.memory = sizeof(double) * 9;
-    }
-    else
-        print_error("Invalid box type.\n");
-
-    if (box.triclinic == 1)
-    {
-        MY_MALLOC(box.cpu_h, double, 18);
-        double ax, ay, az, bx, by, bz, cx, cy, cz;
-        int count = fscanf(fid_box, "%d%d%d%lf%lf%lf%lf%lf%lf%lf%lf%lf",
-            &box.pbc_x, &box.pbc_y, &box.pbc_z, &ax, &ay, &az, &bx, &by, &bz,
-            &cx, &cy, &cz);
-        if (count != 12) print_error("reading error for xyz.in.\n");
-        box.cpu_h[0] = ax; box.cpu_h[3] = ay; box.cpu_h[6] = az;
-        box.cpu_h[1] = bx; box.cpu_h[4] = by; box.cpu_h[7] = bz;
-        box.cpu_h[2] = cx; box.cpu_h[5] = cy; box.cpu_h[8] = cz;
-        box.get_inverse();
-        printf("%d %d %d ", box.pbc_x, box.pbc_y, box.pbc_z);
-        for (int k = 0; k < 9; ++k) printf("%g ", box.cpu_h[k]);
-        printf("\n");
-    }
-    else
-    {
-        MY_MALLOC(box.cpu_h, double, 6);
-        double lx, ly, lz;
-        int count = fscanf(fid_box, "%d%d%d%lf%lf%lf",
-            &box.pbc_x, &box.pbc_y, &box.pbc_z, &lx, &ly, &lz);
-        if (count != 6) print_error("reading error for line 2 of xyz.in.\n");
-        box.cpu_h[0] = lx; box.cpu_h[1] = ly; box.cpu_h[2] = lz;
-        box.cpu_h[3] = lx*0.5; box.cpu_h[4] = ly*0.5; box.cpu_h[5] = lz*0.5;
-        printf("%d %d %d %g %g %g\n", 
-            box.pbc_x, box.pbc_y, box.pbc_z, lx, ly, lz);
-    }
-    fclose(fid_box);
-    CHECK(cudaMalloc((void**)&box.h, box.memory * 2));
-    CHECK(cudaMemcpy(box.h, box.cpu_h, box.memory*2, cudaMemcpyHostToDevice));
-}  
 
 
 void Fitness::read_xyz_in(char* input_dir)
