@@ -27,7 +27,6 @@ public:
     int pbc_y = 1;       // pbc_y = 1 means periodic in the y-direction
     int pbc_z = 1;       // pbc_z = 1 means periodic in the z-direction
     int triclinic = 0;   // triclinic = 1 means the box is non-orthogonal
-    int memory = 0;      // memory for box matrix
     double* h;             // GPU box data
     double* cpu_h;         // CPU box data
     double get_volume(void); // get the volume of the box

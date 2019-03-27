@@ -49,6 +49,7 @@ for (int n = 0; n < N; ++n)
     fprintf(fid, "%20.10f\n", cpu_fx[n]);
 }
 fclose(fid);
+MY_FREE(cpu_fx);
 // test the force over
 }
 

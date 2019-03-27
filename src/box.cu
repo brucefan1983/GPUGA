@@ -40,50 +40,44 @@ void Box::read_file(char* input_dir)
     else
         printf("Number of boxes = %d.\n", num_boxes);
 
-    count = fscanf(fid_box, "%d", &triclinic);
-    if (count != 1) print_error("Reading error for box.in.\n");
-    if (triclinic == 0)
+    MY_MALLOC(cpu_h, double, 18 * num_boxes);
+    for (int n = 0; n < num_boxes; ++n)
     {
-        printf("orthogonal\n");
-        memory = sizeof(double) * 3;
-    }
-    else if (triclinic == 1)
-    {
-        printf("triclinic\n");
-        memory = sizeof(double) * 18;
-    }
-    else
-        print_error("Invalid box type.\n");
+        count = fscanf(fid_box, "%d", &triclinic);
+        if (count != 1) print_error("Reading error for box.in.\n");
+        if (triclinic == 0) printf("orthogonal\n");
+        else if (triclinic == 1) printf("triclinic\n");
+        else print_error("Invalid box type.\n");
 
-    if (triclinic == 1)
-    {
-        MY_MALLOC(cpu_h, double, 18);
-        double ax, ay, az, bx, by, bz, cx, cy, cz;
-        int count = fscanf(fid_box, "%d%d%d%lf%lf%lf%lf%lf%lf%lf%lf%lf",
-            &pbc_x, &pbc_y, &pbc_z, &ax, &ay, &az, &bx, &by, &bz,
-            &cx, &cy, &cz);
-        if (count != 12) print_error("reading error for box.in.\n");
-        cpu_h[0] = ax; cpu_h[3] = ay; cpu_h[6] = az;
-        cpu_h[1] = bx; cpu_h[4] = by; cpu_h[7] = bz;
-        cpu_h[2] = cx; cpu_h[5] = cy; cpu_h[8] = cz;
-        get_inverse();
-        printf("%d %d %d ", pbc_x, pbc_y, pbc_z);
-        for (int k = 0; k < 9; ++k) printf("%g ", cpu_h[k]);
-        printf("\n");
+        if (triclinic == 1)
+        {
+            double ax, ay, az, bx, by, bz, cx, cy, cz;
+            int count = fscanf(fid_box, "%d%d%d%lf%lf%lf%lf%lf%lf%lf%lf%lf",
+                &pbc_x, &pbc_y, &pbc_z, &ax, &ay, &az, &bx, &by, &bz,
+                &cx, &cy, &cz);
+            if (count != 12) print_error("reading error for box.in.\n");
+            cpu_h[0] = ax; cpu_h[3] = ay; cpu_h[6] = az;
+            cpu_h[1] = bx; cpu_h[4] = by; cpu_h[7] = bz;
+            cpu_h[2] = cx; cpu_h[5] = cy; cpu_h[8] = cz;
+            get_inverse();
+            printf("%d %d %d ", pbc_x, pbc_y, pbc_z);
+            for (int k = 0; k < 9; ++k) printf("%g ", cpu_h[k]);
+            printf("\n");
+        }
+        else
+        {
+            double lx, ly, lz;
+            int count = fscanf(fid_box, "%d%d%d%lf%lf%lf",
+                &pbc_x, &pbc_y, &pbc_z, &lx, &ly, &lz);
+            if (count != 6) print_error("reading error for box.in.\n");
+            cpu_h[0] = lx; cpu_h[1] = ly; cpu_h[2] = lz;
+            printf("%d %d %d %g %g %g\n", pbc_x, pbc_y, pbc_z, lx, ly, lz);
+        }
+        fclose(fid_box);
+        int memory = sizeof(double) * num_boxes * 18;
+        CHECK(cudaMalloc((void**)&h, memory));
+        CHECK(cudaMemcpy(h, cpu_h, memory, cudaMemcpyHostToDevice));
     }
-    else
-    {
-        MY_MALLOC(cpu_h, double, 3);
-        double lx, ly, lz;
-        int count = fscanf(fid_box, "%d%d%d%lf%lf%lf",
-            &pbc_x, &pbc_y, &pbc_z, &lx, &ly, &lz);
-        if (count != 6) print_error("reading error for box.in.\n");
-        cpu_h[0] = lx; cpu_h[1] = ly; cpu_h[2] = lz;
-        printf("%d %d %d %g %g %g\n", pbc_x, pbc_y, pbc_z, lx, ly, lz);
-    }
-    fclose(fid_box);
-    CHECK(cudaMalloc((void**)&h, memory));
-    CHECK(cudaMemcpy(h, cpu_h, memory, cudaMemcpyHostToDevice));
 }  
 
 
