@@ -32,6 +32,24 @@ Fitness::Fitness(char* input_dir)
     read_xyz_in(input_dir);
     read_box(input_dir);
     find_neighbor();
+
+// test the force
+find_force();
+double *cpu_fx;
+MY_MALLOC(cpu_fx, double, N);
+cudaMemcpy(cpu_fx, fx, sizeof(double)*N, cudaMemcpyDeviceToHost);
+FILE* fid = my_fopen("f.out", "w");
+for (int n = 0; n < N; ++n)
+{
+    fprintf(fid, "%20.10f\n", cpu_fx[n]);
+}
+cudaMemcpy(cpu_fx, fx_ref, sizeof(double)*N, cudaMemcpyDeviceToHost);
+for (int n = 0; n < N; ++n)
+{
+    fprintf(fid, "%20.10f\n", cpu_fx[n]);
+}
+fclose(fid);
+// test the force over
 }
 
 

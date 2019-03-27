@@ -478,6 +478,8 @@ static __global__ void find_force_tersoff_step3
 
 void Fitness::find_force(void)
 {
+    initialize_potential(); // set up potential parameters
+
     int grid_size = (N - 1) / BLOCK_SIZE_FORCE + 1;
     find_force_tersoff_step1<<<grid_size, BLOCK_SIZE_FORCE>>>
     (

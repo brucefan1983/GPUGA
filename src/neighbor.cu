@@ -38,6 +38,7 @@ static __global__ void gpu_find_neighbor
     int n1 = N1 + threadIdx.x;
     if (n1 < N2)
     {
+        const double* __restrict__ h = box;
         double x1 = x[n1];  
         double y1 = y[n1];  
         double z1 = z[n1];
@@ -48,7 +49,7 @@ static __global__ void gpu_find_neighbor
             double x12 = x[n2]-x1; 
             double y12 = y[n2]-y1; 
             double z12 = z[n2]-z1;
-            dev_apply_mic(triclinic, pbc_x, pbc_y, pbc_z, box, x12, y12, z12);
+            dev_apply_mic(triclinic, pbc_x, pbc_y, pbc_z, h, x12, y12, z12);
             double distance_square = x12 * x12 + y12 * y12 + z12 * z12;
             if (distance_square < cutoff_square) { NL[count++ * N + n1] = n2; }
         }
