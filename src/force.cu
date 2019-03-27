@@ -477,11 +477,36 @@ static __global__ void find_force_tersoff_step3
 }
 
 
+static __global__ void initialize_properties
+(
+    int N, double *g_fx, double *g_fy, double *g_fz, double *g_pe,
+    double *g_sx, double *g_sy, double *g_sz
+)
+{
+    int n1 = blockIdx.x * blockDim.x + threadIdx.x;
+    if (n1 < N)
+    {
+        g_fx[n1] = 0.0;
+        g_fy[n1] = 0.0;
+        g_fz[n1] = 0.0;
+        g_sx[n1] = 0.0;
+        g_sy[n1] = 0.0;
+        g_sz[n1] = 0.0;
+        g_pe[n1] = 0.0;
+    }
+}
+
+
 void Fitness::find_force(Neighbor* neighbor)
 {
     initialize_potential(); // set up potential parameters
 
     int grid_size = (N - 1) / BLOCK_SIZE_FORCE + 1;
+
+    initialize_properties<<<grid_size, BLOCK_SIZE_FORCE>>>
+    (N, fx, fy, fz, pe, sxx, syy, szz);
+    CUDA_CHECK_KERNEL
+
     find_force_tersoff_step1<<<grid_size, BLOCK_SIZE_FORCE>>>
     (
         N, box.triclinic, box.pbc_x, box.pbc_y, box.pbc_z, num_types,

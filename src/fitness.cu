@@ -34,7 +34,7 @@ Fitness::Fitness(char* input_dir)
     Neighbor neighbor(Nc, N, Na, Na_sum, x, y, z, &box);
 
 // test the force
-find_force(&neighbor);
+for (int n = 0; n < 10000; ++n) find_force(&neighbor);
 double *cpu_fx;
 MY_MALLOC(cpu_fx, double, N);
 cudaMemcpy(cpu_fx, fx, sizeof(double)*N, cudaMemcpyDeviceToHost);

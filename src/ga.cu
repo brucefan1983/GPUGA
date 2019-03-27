@@ -204,6 +204,9 @@ int GA::get_a_parent(void)
 
 void GA::read_parameters(char* input_dir)
 {
+    print_line_1();
+    printf("Started reading ga.in.\n");
+    print_line_2();
     char file_run[200];
     strcpy(file_run, input_dir);
     strcat(file_run, "/ga.in");
