@@ -23,6 +23,7 @@ Calculate force, energy, and stress
 #include "neighbor.cuh"
 #include "mic.cuh"
 #include "error.cuh"
+#include "common.cuh"
 #define LDG(a, n) __ldg(a + n)
 #define BLOCK_SIZE_FORCE 64 // 128 is also good
 #define EPSILON 1.0e-15
@@ -48,8 +49,6 @@ Calculate force, energy, and stress
 #define ONE_PLUS_C2OVERD2 16
 #define PI_FACTOR 17
 #define MINUS_HALF_OVER_N 18
-
-#define NUM_PARAMS 19
 
 
 void Fitness::initialize_potential(void)

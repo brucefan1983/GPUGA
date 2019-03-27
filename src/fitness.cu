@@ -23,8 +23,8 @@ Get the fitness
 #include "neighbor.cuh"
 #include "error.cuh"
 #include "read_file.cuh"
+#include "common.cuh"
 #define BLOCK_SIZE 128
-#define NUM_PARAMS 19 
 
 
 Fitness::Fitness(char* input_dir)
@@ -204,11 +204,11 @@ void Fitness::allocate_memory_gpu(void)
     CHECK(cudaMalloc((void**)&fx, m2));
     CHECK(cudaMalloc((void**)&fy, m2));
     CHECK(cudaMalloc((void**)&fz, m2));
-    CHECK(cudaMalloc((void**)&b, m2 * 20));
-    CHECK(cudaMalloc((void**)&bp, m2 * 20));
-    CHECK(cudaMalloc((void**)&f12x, m2 * 20));
-    CHECK(cudaMalloc((void**)&f12y, m2 * 20));
-    CHECK(cudaMalloc((void**)&f12z, m2 * 20));
+    CHECK(cudaMalloc((void**)&b, m2 * MN));
+    CHECK(cudaMalloc((void**)&bp, m2 * MN));
+    CHECK(cudaMalloc((void**)&f12x, m2 * MN));
+    CHECK(cudaMalloc((void**)&f12y, m2 * MN));
+    CHECK(cudaMalloc((void**)&f12z, m2 * MN));
 }
 
 

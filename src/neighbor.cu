@@ -23,6 +23,7 @@ find the neighbor list
 #include "box.cuh"
 #include "mic.cuh"
 #include "error.cuh"
+#include "common.cuh"
 #define BLOCK_SIZE 256
 
 
@@ -31,7 +32,7 @@ Neighbor::Neighbor
 {
     int m1 = sizeof(int) * N;
     CHECK(cudaMalloc((void**)&NN, m1));
-    CHECK(cudaMalloc((void**)&NL, m1 * 20));
+    CHECK(cudaMalloc((void**)&NL, m1 * MN));
     compute(Nc, N, Na, Na_sum, x, y, z, box);
 }
 
@@ -80,7 +81,7 @@ void Neighbor::compute
 (int Nc, int N, int *Na, int *Na_sum, double *x, double *y, double *z, Box *box)
 {
     double rc2 = cutoff * cutoff;
-    gpu_find_neighbor<<<Nc, BLOCK_SIZE>>>
+    gpu_find_neighbor<<<Nc, MAX_ATOM_NUMBER>>>
     (
         box->triclinic, box->pbc_x, box->pbc_y, box->pbc_z,
         N, Na, Na_sum, rc2, box->h, NN, NL, x, y, z
