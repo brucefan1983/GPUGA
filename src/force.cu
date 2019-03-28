@@ -69,15 +69,15 @@ void Fitness::initialize_potential(void)
     double h = -0.59825;
 */
 
-    double a = 1642.67;
-    double b = 323.773; 
-    double lambda = 2.51187;
-    double mu = 1.59088;
-    double beta = 1.13575e-06;
-    double n = 0.784486;
-    double c = 138554;
-    double d = 18.6407;
-    double h = -0.664453;
+    double a = 1854.62;
+    double b = 492.509; 
+    double lambda = 2.47377;
+    double mu = 1.74346;
+    double beta = 1.05494e-06;
+    double n = 0.786418;
+    double c = 100948;
+    double d = 16.2508;
+    double h = -0.597198;
 
     double r1 = 2.7;
     double r2 = 3.0;

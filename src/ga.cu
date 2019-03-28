@@ -102,15 +102,8 @@ void GA::compute(char* input_dir, Fitness* fitness_function)
     FILE* fid = my_fopen(file, "w");
     for (int n = 0; n <  maximum_generation; ++n)
     {
-#if 0
-        fitness_function->compute
-        (population_size, number_of_variables, population, fitness);
-#else
-        fitness_function->get_fitness_population(population_size, 
-            number_of_variables, parameters_min, parameters_max, 
-            population, fitness);
-#endif
-
+        fitness_function->compute(population_size, number_of_variables, 
+            parameters_min, parameters_max, population, fitness);
         sort_population(n);
         output(n, fid);
         if (fitness[0] < minimum_cost) { break; }

@@ -220,27 +220,6 @@ void Fitness::allocate_memory_gpu(void)
 void Fitness::compute
 (
     int population_size, int number_of_variables, 
-    double* population, double* fitness
-)
-{
-    // a test function y = x1^2 + x2^2 + ... with solution x1 = x2 = ... = 0
-    for (int n = 0; n < population_size; ++n)
-    {
-        double* individual = population + n * number_of_variables;
-        double sum = 0.0;
-        for (int m = 0; m < number_of_variables; ++m)
-        {
-            double tmp = (individual[m] * 2.0 - 1);
-            sum += tmp * tmp;
-        }
-        fitness[n] = sum;
-    }
-}
-
-
-void Fitness::get_fitness_population
-(
-    int population_size, int number_of_variables, 
     double *parameters_min, double *parameters_max,
     double* population, double* fitness
 )
@@ -315,7 +294,7 @@ double Fitness::get_fitness_force(double *error_cpu, double *error_gpu)
     CHECK(cudaMemcpy(error_cpu, error_gpu, sizeof(double), 
         cudaMemcpyDeviceToHost));
     error_cpu[0] /= force_ref_square_sum;
-    return error_cpu[0];
+    return sqrt(error_cpu[0]);
 }
 
 

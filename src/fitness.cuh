@@ -25,8 +25,7 @@ class Fitness
 public:
     Fitness(char*);
     ~Fitness(void);
-    void compute(int, int, double*, double*);
-    void get_fitness_population(int, int, double*, double*, double*, double*);
+    void compute(int, int, double*, double*, double*, double*);
 protected:
     // functions related to initialization
     void read_xyz_in(char*);
