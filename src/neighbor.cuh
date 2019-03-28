@@ -22,12 +22,10 @@ class Neighbor
 {
 public:
     int *NN, *NL;
-    Neighbor(int, int, int*, int*, double*, double*, double*, Box*);
     ~Neighbor(void);
-    
+    void compute(int, int, int*, int*, double*, double*, double*, Box*);
 protected:
     double cutoff = 3.0;
-    void compute(int, int, int*, int*, double*, double*, double*, Box*);
 };
 
 

@@ -20,7 +20,6 @@ Calculate force, energy, and stress
 
 
 #include "fitness.cuh"
-#include "neighbor.cuh"
 #include "mic.cuh"
 #include "error.cuh"
 #include "common.cuh"
@@ -57,6 +56,8 @@ void Fitness::initialize_potential(void)
     double m = 0.0;
     double alpha = 0.0;
     double gamma = 1.0;
+
+/*
     double a = 1.8308e3;
     double b = 471.18; 
     double lambda = 2.4799;
@@ -66,6 +67,18 @@ void Fitness::initialize_potential(void)
     double c = 1.0039e5;
     double d = 16.217;
     double h = -0.59825;
+*/
+
+    double a = 1642.67;
+    double b = 323.773; 
+    double lambda = 2.51187;
+    double mu = 1.59088;
+    double beta = 1.13575e-06;
+    double n = 0.784486;
+    double c = 138554;
+    double d = 18.6407;
+    double h = -0.664453;
+
     double r1 = 2.7;
     double r2 = 3.0;
     for (int i = 0; i < n_entries; i++)
@@ -539,10 +552,8 @@ static __global__ void initialize_properties
 }
 
 
-void Fitness::find_force(Neighbor* neighbor)
+void Fitness::find_force(void)
 {
-    initialize_potential(); // set up potential parameters
-
     int grid_size = (N - 1) / BLOCK_SIZE_FORCE + 1;
 
     initialize_properties<<<grid_size, BLOCK_SIZE_FORCE>>>
@@ -552,20 +563,20 @@ void Fitness::find_force(Neighbor* neighbor)
     find_force_tersoff_step1<<<grid_size, BLOCK_SIZE_FORCE>>>
     (
         N, box.triclinic, box.pbc_x, box.pbc_y, box.pbc_z, num_types,
-        neighbor->NN, neighbor->NL, type, ters, x, y, z, box.h, b, bp
+        neighbor.NN, neighbor.NL, type, ters, x, y, z, box.h, b, bp
     );
     CUDA_CHECK_KERNEL
     find_force_tersoff_step2<<<grid_size, BLOCK_SIZE_FORCE>>>
     (
         N, box.triclinic, box.pbc_x, box.pbc_y, box.pbc_z, num_types,
-        neighbor->NN, neighbor->NL, type, ters, b, bp, x, y, z, box.h, 
+        neighbor.NN, neighbor.NL, type, ters, b, bp, x, y, z, box.h, 
         pe, f12x, f12y, f12z
     );
     CUDA_CHECK_KERNEL
     find_force_tersoff_step3<<<grid_size, BLOCK_SIZE_FORCE>>>
     (
         N, box.triclinic, box.pbc_x, box.pbc_y, box.pbc_z, 
-        neighbor->NN, neighbor->NL, 
+        neighbor.NN, neighbor.NL, 
         f12x, f12y, f12z, x, y, z, box.h, fx, fy, fz, sxx, syy, szz
     );
     CUDA_CHECK_KERNEL

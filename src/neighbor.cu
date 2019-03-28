@@ -27,16 +27,6 @@ find the neighbor list
 #define BLOCK_SIZE 256
 
 
-Neighbor::Neighbor
-(int Nc, int N, int *Na, int *Na_sum, double *x, double *y, double *z, Box *box)
-{
-    int m1 = sizeof(int) * N;
-    CHECK(cudaMalloc((void**)&NN, m1));
-    CHECK(cudaMalloc((void**)&NL, m1 * MN));
-    compute(Nc, N, Na, Na_sum, x, y, z, box);
-}
-
-
 Neighbor::~Neighbor(void)
 {
     CHECK(cudaFree(NN));
@@ -80,6 +70,9 @@ static __global__ void gpu_find_neighbor
 void Neighbor::compute
 (int Nc, int N, int *Na, int *Na_sum, double *x, double *y, double *z, Box *box)
 {
+    int m1 = sizeof(int) * N;
+    CHECK(cudaMalloc((void**)&NN, m1));
+    CHECK(cudaMalloc((void**)&NL, m1 * MN));
     double rc2 = cutoff * cutoff;
     gpu_find_neighbor<<<Nc, MAX_ATOM_NUMBER>>>
     (

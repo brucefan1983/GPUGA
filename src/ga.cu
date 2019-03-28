@@ -91,14 +91,26 @@ void GA::read_potential(char* input_dir)
 
 void GA::compute(char* input_dir, Fitness* fitness_function)
 {
+    print_line_1();
+    printf("Started GA evolution.\n");
+    print_line_2();
+    printf("generation best fitness\n");
+
     char file[200];
     strcpy(file, input_dir);
     strcat(file, "/ga.out");
     FILE* fid = my_fopen(file, "w");
     for (int n = 0; n <  maximum_generation; ++n)
     {
+#if 0
         fitness_function->compute
         (population_size, number_of_variables, population, fitness);
+#else
+        fitness_function->get_fitness_population(population_size, 
+            number_of_variables, parameters_min, parameters_max, 
+            population, fitness);
+#endif
+
         sort_population(n);
         output(n, fid);
         if (fitness[0] < minimum_cost) { break; }
@@ -161,10 +173,16 @@ void GA::sort_population(int generation)
 
 void GA::output(int generation, FILE* fid)
 {
+    if (0 == (generation + 1) % 10)
+    {
+        printf("%10d %g\n", generation + 1, fitness[0]);
+    }
     fprintf(fid, "%d %g ", generation, fitness[0]);
     for (int m = 0; m < number_of_variables; ++m)
     {
-        fprintf(fid, "%g ", 2 * population[m] - 1);
+        double a = parameters_min[m];
+        double b = parameters_max[m] - a;
+        fprintf(fid, "%g ", a + b * population[m]);
     }
     fprintf(fid, "\n");
     fflush(fid);

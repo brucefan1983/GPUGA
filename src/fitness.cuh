@@ -16,8 +16,8 @@
 
 #pragma once
 #include "box.cuh"
+#include "neighbor.cuh"
 #include <stdio.h>
-class Neighbor;
 
 
 class Fitness
@@ -26,6 +26,7 @@ public:
     Fitness(char*);
     ~Fitness(void);
     void compute(int, int, double*, double*);
+    void get_fitness_population(int, int, double*, double*, double*, double*);
 protected:
     // functions related to initialization
     void read_xyz_in(char*);
@@ -35,12 +36,10 @@ protected:
     void read_box(char*);
     void allocate_memory_gpu(void);
     // functions related to fitness evaluation
-    void get_fitness_population
-    (int, int, double*, double*, double*, double*, Neighbor*);
-    double get_fitness_force(void);
+    double get_fitness_force(double*, double*);
     void initialize_potential(void); 
     void update_potential(double*);
-    void find_force(Neighbor*);
+    void find_force(void);
     // integer variables
     int Nc;      // number of configurations
     int N;       // total number of atoms (sum of Na)
@@ -53,10 +52,10 @@ protected:
     double *x, *y, *z, *fx, *fy, *fz, *pe, *sxx, *syy, *szz;
     double *fx_ref, *fy_ref, *fz_ref; 
     double *b, *bp, *f12x, *f12y, *f12z;
-    double *force_error_gpu, *force_error_cpu;
     double force_ref_square_sum;
     // other classes
     Box box;
+    Neighbor neighbor;
 };
 
 
