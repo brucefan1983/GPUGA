@@ -23,7 +23,7 @@ The class defining the simulation box.
 #include "error.cuh"
 
 
-void Box::read_file(char* input_dir)
+void Box::read_file(char* input_dir, int Nc)
 {
     print_line_1();
     printf("Started reading box.in.\n");
@@ -33,21 +33,18 @@ void Box::read_file(char* input_dir)
     strcat(file_box, "/box.in");
     FILE *fid_box = my_fopen(file_box, "r");
 
-    int count = fscanf(fid_box, "%d", &num_boxes);
-    if (count != 1) print_error("Reading error for box.in.\n");
-    if (num_boxes < 1)
-        print_error("Number of boxes should >= 1\n");
-    else
-        printf("Number of boxes = %d.\n", num_boxes);
-
-    MY_MALLOC(cpu_h, double, 18 * num_boxes);
-    for (int n = 0; n < num_boxes; ++n)
+    MY_MALLOC(cpu_pe_ref, double, Nc);
+    MY_MALLOC(cpu_h, double, 18 * Nc);
+    pe_ref_square_sum = 0.0;
+    for (int n = 0; n < Nc; ++n)
     {
-        count = fscanf(fid_box, "%d", &triclinic);
-        if (count != 1) print_error("Reading error for box.in.\n");
-        if (triclinic == 0) printf("orthogonal\n");
-        else if (triclinic == 1) printf("triclinic\n");
+        int count = fscanf(fid_box, "%d%lf", &triclinic, &cpu_pe_ref[n]);
+        if (count != 2) print_error("Reading error for box.in.\n");
+        if (triclinic == 0) printf("orthogonal %g\n", cpu_pe_ref[n]);
+        else if (triclinic == 1) printf("triclinic %g\n", cpu_pe_ref[n]);
         else print_error("Invalid box type.\n");
+
+        pe_ref_square_sum += cpu_pe_ref[n] * cpu_pe_ref[n];
 
         if (triclinic == 1)
         {
@@ -73,11 +70,15 @@ void Box::read_file(char* input_dir)
             cpu_h[0] = lx; cpu_h[1] = ly; cpu_h[2] = lz;
             printf("%d %d %d %g %g %g\n", pbc_x, pbc_y, pbc_z, lx, ly, lz);
         }
-        fclose(fid_box);
-        int memory = sizeof(double) * num_boxes * 18;
-        CHECK(cudaMalloc((void**)&h, memory));
-        CHECK(cudaMemcpy(h, cpu_h, memory, cudaMemcpyHostToDevice));
     }
+    fclose(fid_box);
+
+    int memory = sizeof(double) * Nc * 18;
+    CHECK(cudaMalloc((void**)&h, memory));
+    CHECK(cudaMemcpy(h, cpu_h, memory, cudaMemcpyHostToDevice));
+    memory = sizeof(double) * Nc;
+    CHECK(cudaMalloc((void**)&pe_ref, memory));
+    CHECK(cudaMemcpy(pe_ref, cpu_pe_ref, memory, cudaMemcpyHostToDevice));
 }  
 
 
@@ -85,6 +86,8 @@ Box::~Box(void)
 {
     MY_FREE(cpu_h);
     CHECK(cudaFree(h));
+    MY_FREE(cpu_pe_ref);
+    CHECK(cudaFree(pe_ref)); 
 }
 
 

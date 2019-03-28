@@ -30,7 +30,7 @@ Get the fitness
 Fitness::Fitness(char* input_dir)
 {
     read_xyz_in(input_dir);
-    box.read_file(input_dir);
+    box.read_file(input_dir, Nc);
     neighbor.compute(Nc, N, Na, Na_sum, x, y, z, &box);
     
 // test the force
@@ -327,14 +327,14 @@ static __global__ void gpu_sum_pe_error
 
 double Fitness::get_fitness_energy(double* error_cpu, double* error_gpu)
 { 
-    gpu_sum_pe_error<<<Nc, 256>>>(Na, Na_sum, pe, pe_ref, error_gpu);
+    gpu_sum_pe_error<<<Nc, 256>>>(Na, Na_sum, pe, box.pe_ref, error_gpu);
     int mem = sizeof(double) * Nc;
     CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
     for (int n = 0; n < Nc; ++n)
     {
         error_cpu[0] += error_cpu[n];
     }
-    return sqrt(error_cpu[0] / pe_ref_square_sum);
+    return sqrt(error_cpu[0] / box.pe_ref_square_sum);
 }
 
 
