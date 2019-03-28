@@ -226,8 +226,8 @@ void Fitness::compute
 {
     double *parameters;
     double *error_gpu, *error_cpu;
-    MY_MALLOC(error_cpu, double, 1);
-    CHECK(cudaMalloc((void**)&error_gpu, sizeof(double) * 1));
+    MY_MALLOC(error_cpu, double, Nc);
+    CHECK(cudaMalloc((void**)&error_gpu, sizeof(double) * Nc));
     MY_MALLOC(parameters, double, number_of_variables);
     for (int n = 0; n < population_size; ++n)
     {
@@ -240,7 +240,8 @@ void Fitness::compute
         }
         update_potential(parameters);
         find_force();
-        fitness[n] = get_fitness_force(error_cpu, error_gpu);
+        fitness[n] = 0.5 * get_fitness_force(error_cpu, error_gpu);
+        fitness[n] += 0.5 * get_fitness_energy(error_cpu, error_gpu);
     }
     MY_FREE(parameters);
     MY_FREE(error_cpu);
@@ -315,7 +316,7 @@ static __global__ void gpu_sum_pe_error
     __syncthreads();
     if (tid < 128) { s_pe[tid] += s_pe[tid + 128]; }  __syncthreads();
     if (tid <  64) { s_pe[tid] += s_pe[tid + 64];  }  __syncthreads();
-    if (tid <  32) { warp_reduce(s_pe, tid);         }
+    if (tid <  32) { warp_reduce(s_pe, tid);       }
     if (tid ==  0) 
     {
         double diff = s_pe[0] - g_pe_ref[bid];
