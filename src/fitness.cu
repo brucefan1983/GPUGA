@@ -51,7 +51,7 @@ for (int n = 0; n < N; ++n)
 }
 fclose(fid);
 MY_FREE(cpu_fx);
-exit(1); 
+
 }
 
 
@@ -295,6 +295,45 @@ double Fitness::get_fitness_force(double *error_cpu, double *error_gpu)
         cudaMemcpyDeviceToHost));
     error_cpu[0] /= force_ref_square_sum;
     return sqrt(error_cpu[0]);
+}
+
+
+static __global__ void gpu_sum_pe_error
+(int *g_Na, int *g_Na_sum, double *g_pe, double *g_pe_ref, double *error_gpu)
+{
+    int tid = threadIdx.x;
+    int bid = blockIdx.x;
+    int Na = g_Na[bid];
+    int offset = g_Na_sum[bid];
+    __shared__ double s_pe[256];
+    s_pe[tid] = 0.0;
+    if (tid < Na)
+    {
+        int n = offset + tid; // particle index
+        s_pe[tid] += g_pe[n];
+    }
+    __syncthreads();
+    if (tid < 128) { s_pe[tid] += s_pe[tid + 128]; }  __syncthreads();
+    if (tid <  64) { s_pe[tid] += s_pe[tid + 64];  }  __syncthreads();
+    if (tid <  32) { warp_reduce(s_pe, tid);         }
+    if (tid ==  0) 
+    {
+        double diff = s_pe[0] - g_pe_ref[bid];
+        error_gpu[bid] = diff * diff;
+    }
+}
+
+
+double Fitness::get_fitness_energy(double* error_cpu, double* error_gpu)
+{ 
+    gpu_sum_pe_error<<<Nc, 256>>>(Na, Na_sum, pe, pe_ref, error_gpu);
+    int mem = sizeof(double) * Nc;
+    CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
+    for (int n = 0; n < Nc; ++n)
+    {
+        error_cpu[0] += error_cpu[n];
+    }
+    return sqrt(error_cpu[0] / pe_ref_square_sum);
 }
 
 

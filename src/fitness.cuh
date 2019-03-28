@@ -36,6 +36,7 @@ protected:
     void allocate_memory_gpu(void);
     // functions related to fitness evaluation
     double get_fitness_force(double*, double*);
+    double get_fitness_energy(double*, double*);
     void initialize_potential(void); 
     void update_potential(double*);
     void find_force(void);
@@ -47,11 +48,10 @@ protected:
     int *Na_sum; // prefix sum of Na
     int *type;
     // real variables
-    double *ters, *cpu_ters;
+    double *ters, *cpu_ters, *b, *bp, *f12x, *f12y, *f12z;
     double *x, *y, *z, *fx, *fy, *fz, *pe, *sxx, *syy, *szz;
-    double *fx_ref, *fy_ref, *fz_ref; 
-    double *b, *bp, *f12x, *f12y, *f12z;
-    double force_ref_square_sum;
+    double *fx_ref, *fy_ref, *fz_ref, *pe_ref; 
+    double force_ref_square_sum, pe_ref_square_sum;
     // other classes
     Box box;
     Neighbor neighbor;

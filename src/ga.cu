@@ -94,8 +94,6 @@ void GA::compute(char* input_dir, Fitness* fitness_function)
     print_line_1();
     printf("Started GA evolution.\n");
     print_line_2();
-    printf("generation best fitness\n");
-
     char file[200];
     strcpy(file, input_dir);
     strcat(file, "/ga.out");
@@ -108,7 +106,7 @@ void GA::compute(char* input_dir, Fitness* fitness_function)
         output(n, fid);
         if (fitness[0] < minimum_cost) { break; }
         crossover();
-        mutation();
+        mutation(n);
     }
     fclose(fid);
 }
@@ -168,7 +166,7 @@ void GA::output(int generation, FILE* fid)
 {
     if (0 == (generation + 1) % 10)
     {
-        printf("%10d %g\n", generation + 1, fitness[0]);
+        printf("generation = %d, fitness = %g\n", generation + 1, fitness[0]);
     }
     fprintf(fid, "%d %g ", generation, fitness[0]);
     for (int m = 0; m < number_of_variables; ++m)
@@ -211,10 +209,11 @@ void GA::crossover(void)
 }
 
 
-void GA::mutation(void)
+void GA::mutation(int n)
 {
+    double rate_n = mutation_rate * (1.0 - double(n) / maximum_generation);
     int m = population_size * number_of_variables;
-    int number_of_mutations = round(m * mutation_rate);
+    int number_of_mutations = round(m * rate_n);
     for (int n = 0; n < number_of_mutations; ++n)
     {
         std::uniform_int_distribution<int> r1(number_of_variables, m - 1);
@@ -366,13 +365,13 @@ void GA::parse_mutation_rate(char **param, int num_param)
     {
         print_error("mutation_rate should be a number.\n");
     }
-    if (mutation_rate < 0.01)
+    if (mutation_rate < 0)
     {
-        print_error("mutation_rate should >= 0.01.\n");
+        print_error("mutation_rate should >= 0.\n");
     }
-    if (mutation_rate > 0.50)
+    if (mutation_rate > 1)
     {
-        print_error("mutation_rate should <= 0.5.\n");
+        print_error("mutation_rate should <= 1.\n");
     }
     printf("mutation_rate = %g.\n", mutation_rate);
 }

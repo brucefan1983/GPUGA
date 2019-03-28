@@ -48,7 +48,7 @@ protected:
     void output(int, FILE*);
     void crossover(void);
     int get_a_parent(void);
-    void mutation(void);
+    void mutation(int);
     // for initialization
     void read_parameters(char*);
     void read_potential(char*);
