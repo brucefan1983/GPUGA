@@ -55,8 +55,6 @@ void Fitness::initialize_potential(void)
     double m = 0.0;
     double alpha = 0.0;
     double gamma = 1.0;
-
-/*
     double a = 1.8308e3;
     double b = 471.18; 
     double lambda = 2.4799;
@@ -66,18 +64,6 @@ void Fitness::initialize_potential(void)
     double c = 1.0039e5;
     double d = 16.217;
     double h = -0.59825;
-*/
-
-    double a = 1854.62;
-    double b = 492.509; 
-    double lambda = 2.47377;
-    double mu = 1.74346;
-    double beta = 1.05494e-06;
-    double n = 0.786418;
-    double c = 100948;
-    double d = 16.2508;
-    double h = -0.597198;
-
     double r1 = 2.7;
     double r2 = 3.0;
     for (int i = 0; i < n_entries; i++)
@@ -280,6 +266,7 @@ static __global__ void find_force_tersoff_step1
     if (n1 < N2)
     {
         int num_types2 = num_types * num_types;
+        const double* __restrict__ h = g_box + 18 * blockIdx.x;
         int triclinic = LDG(g_triclinic, blockIdx.x);
         int neighbor_number = g_neighbor_number[n1];
         int type1 = g_type[n1];
@@ -293,7 +280,7 @@ static __global__ void find_force_tersoff_step1
             double x12  = LDG(g_x, n2) - x1;
             double y12  = LDG(g_y, n2) - y1;
             double z12  = LDG(g_z, n2) - z1;
-            dev_apply_mic(triclinic, g_box, x12, y12, z12);
+            dev_apply_mic(triclinic, h, x12, y12, z12);
             double d12 = sqrt(x12 * x12 + y12 * y12 + z12 * z12);
             double zeta = 0.0;
             for (int i2 = 0; i2 < neighbor_number; ++i2)
@@ -304,7 +291,7 @@ static __global__ void find_force_tersoff_step1
                 double x13 = LDG(g_x, n3) - x1;
                 double y13 = LDG(g_y, n3) - y1;
                 double z13 = LDG(g_z, n3) - z1;
-                dev_apply_mic(triclinic, g_box, x13, y13, z13);
+                dev_apply_mic(triclinic, h, x13, y13, z13);
                 double d13 = sqrt(x13 * x13 + y13 * y13 + z13 * z13);
                 double cos123 = (x12 * x13 + y12 * y13 + z12 * z13) / (d12*d13);
                 double fc_ijk_13, g_ijk, e_ijk_12_13;
@@ -359,6 +346,7 @@ static __global__ void find_force_tersoff_step2
     if (n1 < N2)
     {
         int num_types2 = num_types * num_types;
+        const double* __restrict__ h = g_box + 18 * blockIdx.x;
         int triclinic = LDG(g_triclinic, blockIdx.x);
         int neighbor_number = g_neighbor_number[n1];
         int type1 = g_type[n1];
@@ -375,7 +363,7 @@ static __global__ void find_force_tersoff_step2
             double x12  = LDG(g_x, n2) - x1;
             double y12  = LDG(g_y, n2) - y1;
             double z12  = LDG(g_z, n2) - z1;
-            dev_apply_mic(triclinic, g_box, x12, y12, z12);
+            dev_apply_mic(triclinic, h, x12, y12, z12);
             double d12 = sqrt(x12 * x12 + y12 * y12 + z12 * z12);
             double d12inv = 1.0 / d12;
             double fc_ijj_12, fcp_ijj_12;
@@ -407,7 +395,7 @@ static __global__ void find_force_tersoff_step2
                 double x13 = LDG(g_x, n3) - x1;
                 double y13 = LDG(g_y, n3) - y1;
                 double z13 = LDG(g_z, n3) - z1;
-                dev_apply_mic(triclinic, g_box, x13, y13, z13);
+                dev_apply_mic(triclinic, h, x13, y13, z13);
                 double d13 = sqrt(x13 * x13 + y13 * y13 + z13 * z13);
                 double fc_ikk_13, fc_ijk_13, fa_ikk_13, fc_ikj_12, fcp_ikj_12;
                 int ikj = type1 * num_types2 + type3 * num_types + type2;
@@ -487,6 +475,7 @@ static __global__ void find_force_tersoff_step3
         double s_sx = 0.0; // virial_stress_x
         double s_sy = 0.0; // virial_stress_y
         double s_sz = 0.0; // virial_stress_z
+        const double* __restrict__ h = g_box + 18 * blockIdx.x;
         int triclinic = LDG(g_triclinic, blockIdx.x);
         int neighbor_number = g_neighbor_number[n1];
         double x1 = LDG(g_x, n1); 
@@ -502,7 +491,7 @@ static __global__ void find_force_tersoff_step3
             double x12  = LDG(g_x, n2) - x1;
             double y12  = LDG(g_y, n2) - y1;
             double z12  = LDG(g_z, n2) - z1;
-            dev_apply_mic(triclinic, g_box, x12, y12, z12);
+            dev_apply_mic(triclinic, h, x12, y12, z12);
 
             double f12x = LDG(g_f12x, index);
             double f12y = LDG(g_f12y, index);
@@ -568,19 +557,19 @@ void Fitness::find_force(void)
     (N, fx, fy, fz, pe, sxx, syy, szz);
     CUDA_CHECK_KERNEL
 
-    find_force_tersoff_step1<<<grid_size, MAX_ATOM_NUMBER>>>
+    find_force_tersoff_step1<<<Nc, MAX_ATOM_NUMBER>>>
     (
         N, Na, Na_sum, box.triclinic, num_types,
         neighbor.NN, neighbor.NL, type, ters, x, y, z, box.h, b, bp
     );
     CUDA_CHECK_KERNEL
-    find_force_tersoff_step2<<<grid_size, MAX_ATOM_NUMBER>>>
+    find_force_tersoff_step2<<<Nc, MAX_ATOM_NUMBER>>>
     (
         N, Na, Na_sum, box.triclinic, num_types, neighbor.NN, neighbor.NL, type, 
         ters, b, bp, x, y, z, box.h, pe, f12x, f12y, f12z
     );
     CUDA_CHECK_KERNEL
-    find_force_tersoff_step3<<<grid_size, MAX_ATOM_NUMBER>>>
+    find_force_tersoff_step3<<<Nc, MAX_ATOM_NUMBER>>>
     (
         N, Na, Na_sum, box.triclinic, neighbor.NN, neighbor.NL, 
         f12x, f12y, f12z, x, y, z, box.h, fx, fy, fz, sxx, syy, szz

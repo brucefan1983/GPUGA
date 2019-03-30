@@ -51,7 +51,6 @@ for (int n = 0; n < N; ++n)
 }
 fclose(fid);
 MY_FREE(cpu_fx);
-//exit(1);
 }
 
 
