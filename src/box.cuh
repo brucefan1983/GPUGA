@@ -32,8 +32,8 @@ public:
     double *pe_ref, *cpu_pe_ref; 
     double pe_ref_square_sum;
     // functions
-    double get_volume(void); // get the volume of the box
-    void get_inverse(void);  // get the inverse box matrix
+    double get_volume(double*); // get the volume of the box
+    void get_inverse(double*);  // get the inverse box matrix
 };
 
 

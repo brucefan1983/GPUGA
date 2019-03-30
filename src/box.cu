@@ -38,6 +38,8 @@ void Box::read_file(char* input_dir, int Nc)
     pe_ref_square_sum = 0.0;
     for (int n = 0; n < Nc; ++n)
     {
+        double *h_local = cpu_h + n * 18; // define a local pointer
+
         int count = fscanf(fid_box, "%d%lf", &triclinic, &cpu_pe_ref[n]);
         if (count != 2) print_error("Reading error for box.in.\n");
         if (triclinic == 0) printf("orthogonal %g\n", cpu_pe_ref[n]);
@@ -53,12 +55,12 @@ void Box::read_file(char* input_dir, int Nc)
                 &pbc_x, &pbc_y, &pbc_z, &ax, &ay, &az, &bx, &by, &bz,
                 &cx, &cy, &cz);
             if (count != 12) print_error("reading error for box.in.\n");
-            cpu_h[0] = ax; cpu_h[3] = ay; cpu_h[6] = az;
-            cpu_h[1] = bx; cpu_h[4] = by; cpu_h[7] = bz;
-            cpu_h[2] = cx; cpu_h[5] = cy; cpu_h[8] = cz;
-            get_inverse();
+            h_local[0] = ax; h_local[3] = ay; h_local[6] = az;
+            h_local[1] = bx; h_local[4] = by; h_local[7] = bz;
+            h_local[2] = cx; h_local[5] = cy; h_local[8] = cz;
+            get_inverse(h_local);
             printf("%d %d %d ", pbc_x, pbc_y, pbc_z);
-            for (int k = 0; k < 9; ++k) printf("%g ", cpu_h[k]);
+            for (int k = 0; k < 9; ++k) printf("%g ", h_local[k]);
             printf("\n");
         }
         else
@@ -67,7 +69,7 @@ void Box::read_file(char* input_dir, int Nc)
             int count = fscanf(fid_box, "%d%d%d%lf%lf%lf",
                 &pbc_x, &pbc_y, &pbc_z, &lx, &ly, &lz);
             if (count != 6) print_error("reading error for box.in.\n");
-            cpu_h[0] = lx; cpu_h[1] = ly; cpu_h[2] = lz;
+            h_local[0] = lx; h_local[1] = ly; h_local[2] = lz;
             printf("%d %d %d %g %g %g\n", pbc_x, pbc_y, pbc_z, lx, ly, lz);
         }
     }
@@ -91,7 +93,7 @@ Box::~Box(void)
 }
 
 
-double Box::get_volume(void)
+double Box::get_volume(double *cpu_h)
 {
     double volume;
     if (triclinic)
@@ -108,7 +110,7 @@ double Box::get_volume(void)
 }
 
 
-void Box::get_inverse(void)
+void Box::get_inverse(double *cpu_h)
 {
     cpu_h[9]  = cpu_h[4]*cpu_h[8] - cpu_h[5]*cpu_h[7];
     cpu_h[10] = cpu_h[2]*cpu_h[7] - cpu_h[1]*cpu_h[8];
@@ -119,7 +121,7 @@ void Box::get_inverse(void)
     cpu_h[15] = cpu_h[3]*cpu_h[7] - cpu_h[4]*cpu_h[6];
     cpu_h[16] = cpu_h[1]*cpu_h[6] - cpu_h[0]*cpu_h[7];
     cpu_h[17] = cpu_h[0]*cpu_h[4] - cpu_h[1]*cpu_h[3];
-    double volume = get_volume();
+    double volume = get_volume(cpu_h);
     for (int n = 9; n < 18; n++)
     {
         cpu_h[n] /= volume;

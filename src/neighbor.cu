@@ -47,7 +47,7 @@ static __global__ void gpu_find_neighbor
     int n1 = N1 + threadIdx.x;
     if (n1 < N2)
     {
-        const double* __restrict__ h = box;
+        const double* __restrict__ h = box + 18 * blockIdx.x;
         double x1 = x[n1];  
         double y1 = y[n1];  
         double z1 = z[n1];
