@@ -264,7 +264,7 @@ static __device__ void find_e
 // step 1: pre-compute all the bond-order functions and their derivatives
 static __global__ void find_force_tersoff_step1
 (
-    int number_of_particles, int triclinic, int pbc_x, int pbc_y, int pbc_z,
+    int number_of_particles, int triclinic, 
     int num_types, int* g_neighbor_number, int* g_neighbor_list, int* g_type,
     const double* __restrict__ ters,
     const double* __restrict__ g_x,
@@ -290,7 +290,7 @@ static __global__ void find_force_tersoff_step1
             double x12  = LDG(g_x, n2) - x1;
             double y12  = LDG(g_y, n2) - y1;
             double z12  = LDG(g_z, n2) - z1;
-            dev_apply_mic(triclinic, pbc_x, pbc_y, pbc_z, g_box, x12, y12, z12);
+            dev_apply_mic(triclinic, g_box, x12, y12, z12);
             double d12 = sqrt(x12 * x12 + y12 * y12 + z12 * z12);
             double zeta = 0.0;
             for (int i2 = 0; i2 < neighbor_number; ++i2)
@@ -301,8 +301,7 @@ static __global__ void find_force_tersoff_step1
                 double x13 = LDG(g_x, n3) - x1;
                 double y13 = LDG(g_y, n3) - y1;
                 double z13 = LDG(g_z, n3) - z1;
-                dev_apply_mic(triclinic, pbc_x, pbc_y, pbc_z, g_box, 
-                    x13, y13, z13);
+                dev_apply_mic(triclinic, g_box, x13, y13, z13);
                 double d13 = sqrt(x13 * x13 + y13 * y13 + z13 * z13);
                 double cos123 = (x12 * x13 + y12 * y13 + z12 * z13) / (d12*d13);
                 double fc_ijk_13, g_ijk, e_ijk_12_13;
@@ -338,7 +337,7 @@ static __global__ void find_force_tersoff_step1
 // step 2: calculate all the partial forces dU_i/dr_ij
 static __global__ void find_force_tersoff_step2
 (
-    int number_of_particles, int triclinic, int pbc_x, int pbc_y, int pbc_z,
+    int number_of_particles, int triclinic, 
     int num_types, int *g_neighbor_number, int *g_neighbor_list, int *g_type,
     const double* __restrict__ ters,
     const double* __restrict__ g_b,
@@ -369,7 +368,7 @@ static __global__ void find_force_tersoff_step2
             double x12  = LDG(g_x, n2) - x1;
             double y12  = LDG(g_y, n2) - y1;
             double z12  = LDG(g_z, n2) - z1;
-            dev_apply_mic(triclinic, pbc_x, pbc_y, pbc_z, g_box, x12, y12, z12);
+            dev_apply_mic(triclinic, g_box, x12, y12, z12);
             double d12 = sqrt(x12 * x12 + y12 * y12 + z12 * z12);
             double d12inv = 1.0 / d12;
             double fc_ijj_12, fcp_ijj_12;
@@ -401,8 +400,7 @@ static __global__ void find_force_tersoff_step2
                 double x13 = LDG(g_x, n3) - x1;
                 double y13 = LDG(g_y, n3) - y1;
                 double z13 = LDG(g_z, n3) - z1;
-                dev_apply_mic(triclinic, pbc_x, pbc_y, pbc_z, g_box, 
-                    x13, y13, z13);
+                dev_apply_mic(triclinic, g_box, x13, y13, z13);
                 double d13 = sqrt(x13 * x13 + y13 * y13 + z13 * z13);
                 double fc_ikk_13, fc_ijk_13, fa_ikk_13, fc_ikj_12, fcp_ikj_12;
                 int ikj = type1 * num_types2 + type3 * num_types + type2;
@@ -457,7 +455,7 @@ static __global__ void find_force_tersoff_step2
 
 static __global__ void find_force_tersoff_step3
 (
-    int number_of_particles, int triclinic, int pbc_x, int pbc_y, int pbc_z,
+    int number_of_particles, int triclinic, 
     int *g_neighbor_number, int *g_neighbor_list,
     const double* __restrict__ g_f12x,
     const double* __restrict__ g_f12y,
@@ -494,7 +492,7 @@ static __global__ void find_force_tersoff_step3
             double x12  = LDG(g_x, n2) - x1;
             double y12  = LDG(g_y, n2) - y1;
             double z12  = LDG(g_z, n2) - z1;
-            dev_apply_mic(triclinic, pbc_x, pbc_y, pbc_z, g_box, x12, y12, z12);
+            dev_apply_mic(triclinic, g_box, x12, y12, z12);
 
             double f12x = LDG(g_f12x, index);
             double f12y = LDG(g_f12y, index);
@@ -562,21 +560,19 @@ void Fitness::find_force(void)
 
     find_force_tersoff_step1<<<grid_size, BLOCK_SIZE_FORCE>>>
     (
-        N, box.triclinic, box.pbc_x, box.pbc_y, box.pbc_z, num_types,
+        N, box.triclinic, num_types,
         neighbor.NN, neighbor.NL, type, ters, x, y, z, box.h, b, bp
     );
     CUDA_CHECK_KERNEL
     find_force_tersoff_step2<<<grid_size, BLOCK_SIZE_FORCE>>>
     (
-        N, box.triclinic, box.pbc_x, box.pbc_y, box.pbc_z, num_types,
-        neighbor.NN, neighbor.NL, type, ters, b, bp, x, y, z, box.h, 
-        pe, f12x, f12y, f12z
+        N, box.triclinic, num_types, neighbor.NN, neighbor.NL, type, 
+        ters, b, bp, x, y, z, box.h, pe, f12x, f12y, f12z
     );
     CUDA_CHECK_KERNEL
     find_force_tersoff_step3<<<grid_size, BLOCK_SIZE_FORCE>>>
     (
-        N, box.triclinic, box.pbc_x, box.pbc_y, box.pbc_z, 
-        neighbor.NN, neighbor.NL, 
+        N, box.triclinic, neighbor.NN, neighbor.NL, 
         f12x, f12y, f12z, x, y, z, box.h, fx, fy, fz, sxx, syy, szz
     );
     CUDA_CHECK_KERNEL

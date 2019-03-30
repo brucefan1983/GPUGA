@@ -51,26 +51,23 @@ void Box::read_file(char* input_dir, int Nc)
         if (triclinic == 1)
         {
             double ax, ay, az, bx, by, bz, cx, cy, cz;
-            int count = fscanf(fid_box, "%d%d%d%lf%lf%lf%lf%lf%lf%lf%lf%lf",
-                &pbc_x, &pbc_y, &pbc_z, &ax, &ay, &az, &bx, &by, &bz,
-                &cx, &cy, &cz);
-            if (count != 12) print_error("reading error for box.in.\n");
+            int count = fscanf(fid_box, "%lf%lf%lf%lf%lf%lf%lf%lf%lf",
+                &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+            if (count != 9) print_error("reading error for box.in.\n");
             h_local[0] = ax; h_local[3] = ay; h_local[6] = az;
             h_local[1] = bx; h_local[4] = by; h_local[7] = bz;
             h_local[2] = cx; h_local[5] = cy; h_local[8] = cz;
             get_inverse(h_local);
-            printf("%d %d %d ", pbc_x, pbc_y, pbc_z);
             for (int k = 0; k < 9; ++k) printf("%g ", h_local[k]);
             printf("\n");
         }
         else
         {
             double lx, ly, lz;
-            int count = fscanf(fid_box, "%d%d%d%lf%lf%lf",
-                &pbc_x, &pbc_y, &pbc_z, &lx, &ly, &lz);
-            if (count != 6) print_error("reading error for box.in.\n");
+            int count = fscanf(fid_box, "%lf%lf%lf", &lx, &ly, &lz);
+            if (count != 3) print_error("reading error for box.in.\n");
             h_local[0] = lx; h_local[1] = ly; h_local[2] = lz;
-            printf("%d %d %d %g %g %g\n", pbc_x, pbc_y, pbc_z, lx, ly, lz);
+            printf("%g %g %g\n", lx, ly, lz);
         }
     }
     fclose(fid_box);

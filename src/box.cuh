@@ -22,9 +22,6 @@ class Box
 public:
     void read_file(char*, int);
     ~Box(void);
-    int pbc_x = 1;       // pbc_x = 1 means periodic in the x-direction
-    int pbc_y = 1;       // pbc_y = 1 means periodic in the y-direction
-    int pbc_z = 1;       // pbc_z = 1 means periodic in the z-direction
     int triclinic = 0;   // triclinic = 1 means the box is non-orthogonal
     double* h;             // GPU box data
     double* cpu_h;         // CPU box data

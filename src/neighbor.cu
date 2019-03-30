@@ -36,8 +36,7 @@ Neighbor::~Neighbor(void)
 
 static __global__ void gpu_find_neighbor
 (
-    int triclinic, int pbc_x, int pbc_y, int pbc_z, 
-    int N, int *Na, int *Na_sum,
+    int triclinic, int N, int *Na, int *Na_sum,
     double cutoff_square, const double* __restrict__ box, 
     int *NN, int *NL, double *x, double *y, double *z
 )
@@ -58,7 +57,7 @@ static __global__ void gpu_find_neighbor
             double x12 = x[n2]-x1; 
             double y12 = y[n2]-y1; 
             double z12 = z[n2]-z1;
-            dev_apply_mic(triclinic, pbc_x, pbc_y, pbc_z, h, x12, y12, z12);
+            dev_apply_mic(triclinic, h, x12, y12, z12);
             double distance_square = x12 * x12 + y12 * y12 + z12 * z12;
             if (distance_square < cutoff_square) { NL[count++ * N + n1] = n2; }
         }
@@ -75,10 +74,7 @@ void Neighbor::compute
     CHECK(cudaMalloc((void**)&NL, m1 * MN));
     double rc2 = cutoff * cutoff;
     gpu_find_neighbor<<<Nc, MAX_ATOM_NUMBER>>>
-    (
-        box->triclinic, box->pbc_x, box->pbc_y, box->pbc_z,
-        N, Na, Na_sum, rc2, box->h, NN, NL, x, y, z
-    );
+    (box->triclinic, N, Na, Na_sum, rc2, box->h, NN, NL, x, y, z);
     CUDA_CHECK_KERNEL
 }
 
