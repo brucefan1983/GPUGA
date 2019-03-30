@@ -36,7 +36,7 @@ Neighbor::~Neighbor(void)
 
 static __global__ void gpu_find_neighbor
 (
-    int triclinic, int N, int *Na, int *Na_sum,
+    const int* __restrict__ g_triclinic, int N, int *Na, int *Na_sum,
     double cutoff_square, const double* __restrict__ box, 
     int *NN, int *NL, double *x, double *y, double *z
 )
@@ -47,6 +47,7 @@ static __global__ void gpu_find_neighbor
     if (n1 < N2)
     {
         const double* __restrict__ h = box + 18 * blockIdx.x;
+        int triclinic = LDG(g_triclinic, blockIdx.x);
         double x1 = x[n1];  
         double y1 = y[n1];  
         double z1 = z[n1];

@@ -35,7 +35,7 @@ Fitness::Fitness(char* input_dir)
     
 // test the force
 initialize_potential(); // set up potential parameters
-find_force();
+for (int n = 0; n < 20000; n++) find_force();
 double *cpu_fx;
 MY_MALLOC(cpu_fx, double, N);
 cudaMemcpy(cpu_fx, fx, sizeof(double)*N, cudaMemcpyDeviceToHost);
@@ -51,7 +51,7 @@ for (int n = 0; n < N; ++n)
 }
 fclose(fid);
 MY_FREE(cpu_fx);
-exit(1);
+//exit(1);
 }
 
 

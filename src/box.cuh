@@ -22,15 +22,15 @@ class Box
 public:
     void read_file(char*, int);
     ~Box(void);
-    int triclinic = 0;   // triclinic = 1 means the box is non-orthogonal
+    int *triclinic, *cpu_triclinic; // box type
     double* h;             // GPU box data
     double* cpu_h;         // CPU box data
     // energy for the whole box 
     double *pe_ref, *cpu_pe_ref; 
     double pe_ref_square_sum;
     // functions
-    double get_volume(double*); // get the volume of the box
-    void get_inverse(double*);  // get the inverse box matrix
+    double get_volume(int, double*); // get the volume of the box
+    void get_inverse(int, double*);  // get the inverse box matrix
 };
 
 

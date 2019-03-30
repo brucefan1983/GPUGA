@@ -24,7 +24,6 @@ Calculate force, energy, and stress
 #include "error.cuh"
 #include "common.cuh"
 #define LDG(a, n) __ldg(a + n)
-#define BLOCK_SIZE_FORCE 64 // 128 is also good
 #define EPSILON 1.0e-15
 #define PI 3.141592653589793
 
@@ -264,7 +263,8 @@ static __device__ void find_e
 // step 1: pre-compute all the bond-order functions and their derivatives
 static __global__ void find_force_tersoff_step1
 (
-    int number_of_particles, int triclinic, 
+    int number_of_particles, int *Na, int *Na_sum,
+    const int* __restrict__ g_triclinic, 
     int num_types, int* g_neighbor_number, int* g_neighbor_list, int* g_type,
     const double* __restrict__ ters,
     const double* __restrict__ g_x,
@@ -274,10 +274,13 @@ static __global__ void find_force_tersoff_step1
     double* g_b, double* g_bp
 )
 {
-    int num_types2 = num_types * num_types;
-    int n1 = blockIdx.x * blockDim.x + threadIdx.x;
-    if (n1 < number_of_particles)
+    int N1 = Na_sum[blockIdx.x];
+    int N2 = N1 + Na[blockIdx.x];
+    int n1 = N1 + threadIdx.x;
+    if (n1 < N2)
     {
+        int num_types2 = num_types * num_types;
+        int triclinic = LDG(g_triclinic, blockIdx.x);
         int neighbor_number = g_neighbor_number[n1];
         int type1 = g_type[n1];
         double x1 = LDG(g_x, n1); 
@@ -337,7 +340,8 @@ static __global__ void find_force_tersoff_step1
 // step 2: calculate all the partial forces dU_i/dr_ij
 static __global__ void find_force_tersoff_step2
 (
-    int number_of_particles, int triclinic, 
+    int number_of_particles, int *Na, int *Na_sum,
+    const int* __restrict__ g_triclinic, 
     int num_types, int *g_neighbor_number, int *g_neighbor_list, int *g_type,
     const double* __restrict__ ters,
     const double* __restrict__ g_b,
@@ -349,10 +353,13 @@ static __global__ void find_force_tersoff_step2
     double *g_potential, double *g_f12x, double *g_f12y, double *g_f12z
 )
 {
-    int n1 = blockIdx.x * blockDim.x + threadIdx.x;
-    int num_types2 = num_types * num_types;
-    if (n1 < number_of_particles)
+    int N1 = Na_sum[blockIdx.x];
+    int N2 = N1 + Na[blockIdx.x];
+    int n1 = N1 + threadIdx.x;
+    if (n1 < N2)
     {
+        int num_types2 = num_types * num_types;
+        int triclinic = LDG(g_triclinic, blockIdx.x);
         int neighbor_number = g_neighbor_number[n1];
         int type1 = g_type[n1];
         double x1 = LDG(g_x, n1); 
@@ -455,7 +462,8 @@ static __global__ void find_force_tersoff_step2
 
 static __global__ void find_force_tersoff_step3
 (
-    int number_of_particles, int triclinic, 
+    int number_of_particles, int *Na, int *Na_sum,
+    const int* __restrict__ g_triclinic,
     int *g_neighbor_number, int *g_neighbor_list,
     const double* __restrict__ g_f12x,
     const double* __restrict__ g_f12y,
@@ -468,16 +476,18 @@ static __global__ void find_force_tersoff_step3
     double *g_sx, double *g_sy, double *g_sz
 )
 {
-    int n1 = blockIdx.x * blockDim.x + threadIdx.x;
-    double s_fx = 0.0; // force_x
-    double s_fy = 0.0; // force_y
-    double s_fz = 0.0; // force_z
-    double s_sx = 0.0; // virial_stress_x
-    double s_sy = 0.0; // virial_stress_y
-    double s_sz = 0.0; // virial_stress_z
-
-    if (n1 < number_of_particles)
+    int N1 = Na_sum[blockIdx.x];
+    int N2 = N1 + Na[blockIdx.x];
+    int n1 = N1 + threadIdx.x;
+    if (n1 < N2)
     {
+        double s_fx = 0.0; // force_x
+        double s_fy = 0.0; // force_y
+        double s_fz = 0.0; // force_z
+        double s_sx = 0.0; // virial_stress_x
+        double s_sy = 0.0; // virial_stress_y
+        double s_sz = 0.0; // virial_stress_z
+        int triclinic = LDG(g_triclinic, blockIdx.x);
         int neighbor_number = g_neighbor_number[n1];
         double x1 = LDG(g_x, n1); 
         double y1 = LDG(g_y, n1); 
@@ -552,27 +562,27 @@ static __global__ void initialize_properties
 
 void Fitness::find_force(void)
 {
-    int grid_size = (N - 1) / BLOCK_SIZE_FORCE + 1;
+    int grid_size = (N - 1) / MAX_ATOM_NUMBER + 1;
 
-    initialize_properties<<<grid_size, BLOCK_SIZE_FORCE>>>
+    initialize_properties<<<grid_size, MAX_ATOM_NUMBER>>>
     (N, fx, fy, fz, pe, sxx, syy, szz);
     CUDA_CHECK_KERNEL
 
-    find_force_tersoff_step1<<<grid_size, BLOCK_SIZE_FORCE>>>
+    find_force_tersoff_step1<<<grid_size, MAX_ATOM_NUMBER>>>
     (
-        N, box.triclinic, num_types,
+        N, Na, Na_sum, box.triclinic, num_types,
         neighbor.NN, neighbor.NL, type, ters, x, y, z, box.h, b, bp
     );
     CUDA_CHECK_KERNEL
-    find_force_tersoff_step2<<<grid_size, BLOCK_SIZE_FORCE>>>
+    find_force_tersoff_step2<<<grid_size, MAX_ATOM_NUMBER>>>
     (
-        N, box.triclinic, num_types, neighbor.NN, neighbor.NL, type, 
+        N, Na, Na_sum, box.triclinic, num_types, neighbor.NN, neighbor.NL, type, 
         ters, b, bp, x, y, z, box.h, pe, f12x, f12y, f12z
     );
     CUDA_CHECK_KERNEL
-    find_force_tersoff_step3<<<grid_size, BLOCK_SIZE_FORCE>>>
+    find_force_tersoff_step3<<<grid_size, MAX_ATOM_NUMBER>>>
     (
-        N, box.triclinic, neighbor.NN, neighbor.NL, 
+        N, Na, Na_sum, box.triclinic, neighbor.NN, neighbor.NL, 
         f12x, f12y, f12z, x, y, z, box.h, fx, fy, fz, sxx, syy, szz
     );
     CUDA_CHECK_KERNEL
