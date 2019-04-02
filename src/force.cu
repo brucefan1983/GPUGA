@@ -35,18 +35,14 @@ Calculate force, energy, and stress
 #define BETA 4
 #define EN 5 //special name for n to avoid conflict
 #define C 6
-#define D 7
-#define H 8
-#define R1 9
-#define R2 10
-#define M 11
-#define ALPHA 12
-#define GAMMA 13
-#define C2 14
-#define D2 15
-#define ONE_PLUS_C2OVERD2 16
-#define PI_FACTOR 17
-#define MINUS_HALF_OVER_N 18
+#define H 7
+#define R1 8
+#define R2 9
+#define M 10
+#define ALPHA 11
+#define GAMMA 12
+#define PI_FACTOR 13
+#define MINUS_HALF_OVER_N 14
 
 
 void Fitness::initialize_potential(void)
@@ -55,16 +51,31 @@ void Fitness::initialize_potential(void)
     double m = 0.0;
     double alpha = 0.0;
     double gamma = 1.0;
+
     double a = 1.8308e3;
     double b = 471.18; 
     double lambda = 2.4799;
     double mu = 1.7322;
-    double beta = 1.1000e-6;
+    double beta = 0.160284504183184;
     double n = 0.78734;
-    double c = 1.0039e5;
-    double d = 16.217;
+    double c = 0.003802410202575;
     double h = -0.59825;
-    double r1 = 2.7;
+
+//const double solution[] = {2492.05, 314.87, 2.84211, 1.72348, 0.281886, 0.78734, 0.0010018, -0.589237};
+const double solution[] = {2401.17, 165.277, 2.9633, 1.50471, 0.514988, 0.866376, 0.00100076, -0.642522};
+
+
+
+    a = solution[0];
+    b = solution[1];
+    lambda = solution[2];
+    mu = solution[3];
+    beta = solution[4];
+    n = solution[5];
+    c = solution[6];
+    h = solution[7];
+
+    double r1 = 3.0;
     double r2 = 3.0;
     for (int i = 0; i < n_entries; i++)
     {
@@ -75,16 +86,12 @@ void Fitness::initialize_potential(void)
         cpu_ters[i*NUM_PARAMS + BETA] = beta;
         cpu_ters[i*NUM_PARAMS + EN] = n;
         cpu_ters[i*NUM_PARAMS + C] = c;
-        cpu_ters[i*NUM_PARAMS + D] = d;
         cpu_ters[i*NUM_PARAMS + H] = h;
         cpu_ters[i*NUM_PARAMS + R1] = r1;
         cpu_ters[i*NUM_PARAMS + R2] = r2;
         cpu_ters[i*NUM_PARAMS + M] = m;
         cpu_ters[i*NUM_PARAMS + ALPHA] = alpha;
         cpu_ters[i*NUM_PARAMS + GAMMA] = gamma;
-        cpu_ters[i*NUM_PARAMS + C2] = c * c;
-        cpu_ters[i*NUM_PARAMS + D2] = d * d;
-        cpu_ters[i*NUM_PARAMS + ONE_PLUS_C2OVERD2] = 1.0 + (c * c) / (d * d);
         cpu_ters[i*NUM_PARAMS + PI_FACTOR] = PI / (r2 - r1);
         cpu_ters[i*NUM_PARAMS + MINUS_HALF_OVER_N] = - 0.5 / n;
     }
@@ -106,9 +113,8 @@ void Fitness::update_potential(double* potential_parameters)
     double beta = potential_parameters[4];
     double n = potential_parameters[5];
     double c = potential_parameters[6];
-    double d = potential_parameters[7];
-    double h = potential_parameters[8];
-    double r1 = 2.7;
+    double h = potential_parameters[7];
+    double r1 = 3.0;
     double r2 = 3.0;
     for (int i = 0; i < n_entries; i++)
     {
@@ -119,16 +125,12 @@ void Fitness::update_potential(double* potential_parameters)
         cpu_ters[i*NUM_PARAMS + BETA] = beta;
         cpu_ters[i*NUM_PARAMS + EN] = n;
         cpu_ters[i*NUM_PARAMS + C] = c;
-        cpu_ters[i*NUM_PARAMS + D] = d;
         cpu_ters[i*NUM_PARAMS + H] = h;
         cpu_ters[i*NUM_PARAMS + R1] = r1;
         cpu_ters[i*NUM_PARAMS + R2] = r2;
         cpu_ters[i*NUM_PARAMS + M] = m;
         cpu_ters[i*NUM_PARAMS + ALPHA] = alpha;
         cpu_ters[i*NUM_PARAMS + GAMMA] = gamma;
-        cpu_ters[i*NUM_PARAMS + C2] = c * c;
-        cpu_ters[i*NUM_PARAMS + D2] = d * d;
-        cpu_ters[i*NUM_PARAMS + ONE_PLUS_C2OVERD2] = 1.0 + (c * c) / (d * d);
         cpu_ters[i*NUM_PARAMS + PI_FACTOR] = PI / (r2 - r1);
         cpu_ters[i*NUM_PARAMS + MINUS_HALF_OVER_N] = - 0.5 / n;
     }
@@ -191,22 +193,19 @@ static __device__ void find_fc
 static __device__ void find_g_and_gp
 (int i, const double* __restrict__ ters, double cos, double &g, double &gp)
 {
-    double temp = LDG(ters, i + D2) + (cos - LDG(ters, i + H)) *
-        (cos - LDG(ters, i + H));
-    g  = LDG(ters, i + GAMMA) *
-        (LDG(ters, i + ONE_PLUS_C2OVERD2) - LDG(ters, i + C2) / temp);
-    gp = LDG(ters, i + GAMMA) *
-        (2.0 * LDG(ters, i + C2) * (cos - LDG(ters, i + H)) / (temp * temp));
+    double temp = cos - LDG(ters, i + H);
+    g  = LDG(ters, i + GAMMA) * temp*temp / (1 +  LDG(ters, i + C) * temp*temp);
+    double temp2 = (1 +  LDG(ters, i + C) * temp*temp);
+    gp = 2.0 * temp * (temp2 - LDG(ters, i + C) * temp * temp);
+    gp /= temp2 * temp2;
 }
 
 
 static __device__ void find_g
 (int i, const double* __restrict__ ters, double cos, double &g)
 {
-    double temp = LDG(ters, i + D2) + (cos - LDG(ters, i + H)) *
-        (cos - LDG(ters, i + H));
-    g  = LDG(ters, i + GAMMA) *
-        (LDG(ters, i + ONE_PLUS_C2OVERD2) - LDG(ters, i + C2) / temp);
+    double temp = (cos - LDG(ters, i + H)) * (cos - LDG(ters, i + H));
+    g  = LDG(ters, i + GAMMA) * temp / (1 +  LDG(ters, i + C) * temp);
 }
 
 

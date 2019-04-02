@@ -25,6 +25,7 @@ Get the fitness
 #include "read_file.cuh"
 #include "common.cuh"
 #define BLOCK_SIZE 128
+#define DELTA 1.0
 
 
 Fitness::Fitness(char* input_dir)
@@ -35,19 +36,19 @@ Fitness::Fitness(char* input_dir)
     
 // test the force
 initialize_potential(); // set up potential parameters
-for (int n = 0; n < 20000; n++) find_force();
+find_force();
 double *cpu_fx;
 MY_MALLOC(cpu_fx, double, N);
 cudaMemcpy(cpu_fx, fx, sizeof(double)*N, cudaMemcpyDeviceToHost);
 FILE* fid = my_fopen("f.out", "w");
 for (int n = 0; n < N; ++n)
 {
-    fprintf(fid, "%20.10f\n", cpu_fx[n]);
+    fprintf(fid, "%25.15e\n", cpu_fx[n]);
 }
 cudaMemcpy(cpu_fx, fx_ref, sizeof(double)*N, cudaMemcpyDeviceToHost);
 for (int n = 0; n < N; ++n)
 {
-    fprintf(fid, "%20.10f\n", cpu_fx[n]);
+    fprintf(fid, "%25.15e\n", cpu_fx[n]);
 }
 fclose(fid);
 MY_FREE(cpu_fx);
@@ -151,7 +152,6 @@ void Fitness::read_xyz(FILE* fid)
     MY_MALLOC(cpu_fy_ref, double, N);
     MY_MALLOC(cpu_fz_ref, double, N);
     num_types = 0;
-    force_ref_square_sum = 0.0;
     for (int n = 0; n < N; n++)
     {
         int count = fscanf(fid, "%d%lf%lf%lf%lf%lf%lf", 
@@ -159,9 +159,6 @@ void Fitness::read_xyz(FILE* fid)
             &(cpu_fx_ref[n]), &(cpu_fy_ref[n]), &(cpu_fz_ref[n]));
         if (count != 7) { print_error("reading error for xyz.in.\n"); }
         if (cpu_type[n] > num_types) { num_types = cpu_type[n]; }
-        force_ref_square_sum += cpu_fx_ref[n] * cpu_fx_ref[n]
-                              + cpu_fy_ref[n] * cpu_fy_ref[n]
-                              + cpu_fz_ref[n] * cpu_fz_ref[n];
     }
     num_types++;
     int m1 = sizeof(int) * N;
@@ -239,8 +236,8 @@ void Fitness::compute
         }
         update_potential(parameters);
         find_force();
-        fitness[n] = 0.9 * get_fitness_force(error_cpu, error_gpu);
-        fitness[n] += 0.1 * get_fitness_energy(error_cpu, error_gpu);
+        fitness[n] = get_fitness_force(error_cpu, error_gpu);
+        //fitness[n] += get_fitness_energy(error_cpu, error_gpu);
     }
     MY_FREE(parameters);
     MY_FREE(error_cpu);
@@ -271,10 +268,10 @@ static __global__ void gpu_sum_force_error
         int n = tid + patch * 1024;
         if (n < N) 
         {
-            double dx = g_fx[n] - g_fx_ref[n];
-            double dy = g_fy[n] - g_fy_ref[n];
-            double dz = g_fz[n] - g_fz_ref[n];
-            s_error[tid] += dx * dx + dy * dy + dz * dz;
+            double dx = abs(g_fx[n] - g_fx_ref[n]) / (abs(g_fx_ref[n]) + DELTA);
+            double dy = abs(g_fy[n] - g_fy_ref[n]) / (abs(g_fy_ref[n]) + DELTA);
+            double dz = abs(g_fz[n] - g_fz_ref[n]) / (abs(g_fz_ref[n]) + DELTA);
+            s_error[tid] += dx + dy + dz;
         }
     }
     __syncthreads();
@@ -293,8 +290,8 @@ double Fitness::get_fitness_force(double *error_cpu, double *error_gpu)
         fx_ref, fy_ref, fz_ref, error_gpu);
     CHECK(cudaMemcpy(error_cpu, error_gpu, sizeof(double), 
         cudaMemcpyDeviceToHost));
-    error_cpu[0] /= force_ref_square_sum;
-    return sqrt(error_cpu[0]);
+    error_cpu[0] /= (N * 3.0);
+    return error_cpu[0];
 }
 
 
@@ -318,8 +315,8 @@ static __global__ void gpu_sum_pe_error
     if (tid <  32) { warp_reduce(s_pe, tid);       }
     if (tid ==  0) 
     {
-        double diff = s_pe[0] - g_pe_ref[bid];
-        error_gpu[bid] = diff * diff;
+        double diff = abs(s_pe[0] - g_pe_ref[bid]) / Na;
+        error_gpu[bid] = diff;
     }
 }
 
@@ -329,11 +326,11 @@ double Fitness::get_fitness_energy(double* error_cpu, double* error_gpu)
     gpu_sum_pe_error<<<Nc, 256>>>(Na, Na_sum, pe, box.pe_ref, error_gpu);
     int mem = sizeof(double) * Nc;
     CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
-    for (int n = 0; n < Nc; ++n)
+    for (int n = 1; n < Nc; ++n)
     {
         error_cpu[0] += error_cpu[n];
     }
-    return sqrt(error_cpu[0] / box.pe_ref_square_sum);
+    return 100.0 * error_cpu[0] / Nc;
 }
 
 

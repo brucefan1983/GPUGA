@@ -17,6 +17,6 @@
 #pragma once
 #define MN              20
 #define MAX_ATOM_NUMBER 224
-#define NUM_PARAMS      19
+#define NUM_PARAMS      15
 
 

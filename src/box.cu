@@ -36,7 +36,6 @@ void Box::read_file(char* input_dir, int Nc)
     MY_MALLOC(cpu_triclinic, int, Nc);
     MY_MALLOC(cpu_pe_ref, double, Nc);
     MY_MALLOC(cpu_h, double, 18 * Nc);
-    pe_ref_square_sum = 0.0;
     for (int n = 0; n < Nc; ++n)
     {
         double *h_local = cpu_h + n * 18; // define a local pointer
@@ -46,8 +45,6 @@ void Box::read_file(char* input_dir, int Nc)
         if (cpu_triclinic[n] == 0) printf("orthogonal %g\n", cpu_pe_ref[n]);
         else if (cpu_triclinic[n] == 1) printf("triclinic %g\n", cpu_pe_ref[n]);
         else print_error("Invalid box type.\n");
-
-        pe_ref_square_sum += cpu_pe_ref[n] * cpu_pe_ref[n];
 
         if (cpu_triclinic[n] == 1)
         {
