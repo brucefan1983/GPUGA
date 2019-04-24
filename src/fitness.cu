@@ -275,21 +275,36 @@ void Fitness::predict
     MY_FREE(cpu_fz_ref);
 */
 
-    double *cpu_pe; MY_MALLOC(cpu_pe, double, N);
-    cudaMemcpy(cpu_pe, sxx, sizeof(double)*N, cudaMemcpyDeviceToHost);
-    FILE* fid_pe = my_fopen("pe.out", "w");
+    FILE* fid_prediction = my_fopen("prediction.out", "w");
+    double *cpu_prediction; MY_MALLOC(cpu_prediction, double, N);
+    // energy
+    cudaMemcpy(cpu_prediction, pe, sizeof(double)*N, cudaMemcpyDeviceToHost);
     for (int nc = 0; nc < Nc; ++nc)
     {
         int offset = nc * MAX_ATOM_NUMBER;
-        double cpu_pe_nc = 0.0;
+        double cpu_prediction_nc = 0.0;
         for (int m = 0; m < MAX_ATOM_NUMBER; ++m)
         {
-            cpu_pe_nc += cpu_pe[offset + m];
+            cpu_prediction_nc += cpu_prediction[offset + m];
         }
-        fprintf(fid_pe, "%25.15e%25.15e\n", cpu_pe_nc, box.cpu_pressure_ref[nc]);
+        fprintf(fid_prediction, "%25.15e%25.15e\n", 
+            cpu_prediction_nc, box.cpu_pe_ref[nc]);
     }
-    fclose(fid_pe);
-    MY_FREE(cpu_pe);
+    // stress
+    cudaMemcpy(cpu_prediction, sxx, sizeof(double)*N, cudaMemcpyDeviceToHost);
+    for (int nc = 0; nc < Nc; ++nc)
+    {
+        int offset = nc * MAX_ATOM_NUMBER;
+        double cpu_prediction_nc = 0.0;
+        for (int m = 0; m < MAX_ATOM_NUMBER; ++m)
+        {
+            cpu_prediction_nc += cpu_prediction[offset + m];
+        }
+        fprintf(fid_prediction, "%25.15e%25.15e\n", 
+            cpu_prediction_nc, box.cpu_pressure_ref[nc]);
+    }
+    fclose(fid_prediction);
+    MY_FREE(cpu_prediction);
 }
 
 
@@ -358,9 +373,6 @@ static __global__ void gpu_sum_pe_error
         s_pe[tid] += g_pe[n];
     }
     __syncthreads();
-    //if (tid < 256) { s_pe[tid] += s_pe[tid + 256]; }  __syncthreads();
-    //if (tid < 128) { s_pe[tid] += s_pe[tid + 128]; }  __syncthreads();
-    //if (tid <  64) { s_pe[tid] += s_pe[tid + 64];  }  __syncthreads();
     if (tid <  32) { warp_reduce(s_pe, tid);       }
     if (tid ==  0) 
     {
