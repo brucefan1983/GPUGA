@@ -217,9 +217,9 @@ void Fitness::compute
         }
         update_potential(parameters);
         find_force();
-        //fitness[n] = get_fitness_force(error_cpu, error_gpu);
-        fitness[n] = 0.9*get_fitness_energy(error_cpu, error_gpu);
-        fitness[n] += 0.1*get_fitness_pressure(error_cpu, error_gpu);
+        fitness[n]  = WEIGHT_FORCE  * get_fitness_force(error_cpu, error_gpu);
+        fitness[n] += WEIGHT_ENERGY * get_fitness_energy(error_cpu, error_gpu);
+        fitness[n] += WEIGHT_STRESS * get_fitness_stress(error_cpu, error_gpu);
     }
     MY_FREE(parameters);
     MY_FREE(error_cpu);
@@ -338,7 +338,7 @@ double Fitness::get_fitness_force(double *error_cpu, double *error_gpu)
         fx_ref, fy_ref, fz_ref, error_gpu);
     CHECK(cudaMemcpy(error_cpu, error_gpu, sizeof(double), 
         cudaMemcpyDeviceToHost));
-    error_cpu[0] /= (N * 3.0); // to be generalized
+    error_cpu[0] /= (N * 3.0);
     return error_cpu[0];
 }
 
@@ -370,8 +370,7 @@ static __global__ void gpu_sum_pe_error
 
 
 double Fitness::get_fitness_energy(double* error_cpu, double* error_gpu)
-{ 
-    // energy
+{
     gpu_sum_pe_error<<<Nc, 64>>>(Na, Na_sum, pe, box.pe_ref, error_gpu);
     int mem = sizeof(double) * Nc;
     CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
@@ -383,7 +382,7 @@ double Fitness::get_fitness_energy(double* error_cpu, double* error_gpu)
 }
 
 
-double Fitness::get_fitness_pressure(double* error_cpu, double* error_gpu)
+double Fitness::get_fitness_stress(double* error_cpu, double* error_gpu)
 { 
     gpu_sum_pe_error<<<Nc, 64>>>(Na, Na_sum, sxx, box.pressure_ref, error_gpu);
     int mem = sizeof(double) * Nc;

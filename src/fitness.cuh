@@ -38,7 +38,7 @@ protected:
     // functions related to fitness evaluation
     double get_fitness_force(double*, double*);
     double get_fitness_energy(double*, double*);
-    double get_fitness_pressure(double*, double*);
+    double get_fitness_stress(double*, double*);
     void initialize_potential(void); 
     void update_potential(double*);
     void find_force(void);

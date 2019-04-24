@@ -24,7 +24,6 @@ find the neighbor list
 #include "mic.cuh"
 #include "error.cuh"
 #include "common.cuh"
-#define BLOCK_SIZE 512
 
 
 Neighbor::~Neighbor(void)
@@ -73,7 +72,7 @@ void Neighbor::compute
     int m1 = sizeof(int) * N;
     CHECK(cudaMalloc((void**)&NN, m1));
     CHECK(cudaMalloc((void**)&NL, m1 * MN));
-    double rc2 = cutoff * cutoff;
+    double rc2 = NEIGHBOR_CUTOFF * NEIGHBOR_CUTOFF;
     gpu_find_neighbor<<<Nc, MAX_ATOM_NUMBER>>>
     (box->triclinic, N, Na, Na_sum, rc2, box->h, NN, NL, x, y, z);
     CUDA_CHECK_KERNEL

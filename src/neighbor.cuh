@@ -25,7 +25,7 @@ public:
     ~Neighbor(void);
     void compute(int, int, int*, int*, double*, double*, double*, Box*);
 protected:
-    double cutoff = 3.6;
+    //double cutoff = 3.6;
 };
 
 

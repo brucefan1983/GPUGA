@@ -107,14 +107,6 @@ static __device__ void find_fa_and_fap
 }
 
 
-static __device__ void find_fa
-(int i, const double* __restrict__ ters, double d12, double &fa)
-{
-    fa = LDG(ters, i + B) * exp(- LDG(ters, i + MU) * d12);
-    fa += LDG(ters, i + B2) * exp(- LDG(ters, i + MU2) * d12);
-}
-
-
 static __device__ void find_fc_and_fcp
 (int i, const double* __restrict__ ters, double d12, double &fc, double &fcp)
 {
@@ -131,6 +123,15 @@ static __device__ void find_fc_and_fcp
                 * LDG(ters, i + PI_FACTOR) * 9.0 / 16.0;
     }
     else {fc  = 0.0; fcp = 0.0;}
+}
+
+
+#ifndef TWOBODY
+static __device__ void find_fa
+(int i, const double* __restrict__ ters, double d12, double &fa)
+{
+    fa = LDG(ters, i + B) * exp(- LDG(ters, i + MU) * d12);
+    fa += LDG(ters, i + B2) * exp(- LDG(ters, i + MU2) * d12);
 }
 
 
@@ -189,6 +190,7 @@ static __device__ void find_e_and_ep
     }
 }
 
+
 static __device__ void find_e
 (int i, const double* __restrict__ ters, double d12, double d13, double &e)
 {
@@ -200,6 +202,7 @@ static __device__ void find_e
         else{e = exp(LDG(ters, i + ALPHA) * r);}
     }
 }
+#endif
 
 
 #ifndef TWOBODY
