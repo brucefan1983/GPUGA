@@ -104,9 +104,11 @@ void GA::compute(char* input_dir, Fitness* fitness_function)
             parameters_min, parameters_max, population, fitness);
         sort_population(n);
         output(n, fid);
-        fitness_function->predict(number_of_variables, parameters_min, 
-            parameters_max, population);
-        if (fitness[0] < minimum_cost) { break; }
+        if (0 == (n + 1) % 100)
+        {
+            fitness_function->predict(input_dir, number_of_variables, 
+                parameters_min, parameters_max, population);
+        }
         crossover();
         mutation(n);
     }
@@ -166,10 +168,7 @@ void GA::sort_population(int generation)
 
 void GA::output(int generation, FILE* fid)
 {
-    if (0 == (generation + 1) % 10)
-    {
-        printf("generation = %d, fitness = %g\n", generation + 1, fitness[0]);
-    }
+    //to file
     fprintf(fid, "%d %g ", generation, fitness[0]);
     for (int m = 0; m < number_of_variables; ++m)
     {
@@ -179,6 +178,19 @@ void GA::output(int generation, FILE* fid)
     }
     fprintf(fid, "\n");
     fflush(fid);
+    // to screen
+    if (0 == (generation + 1) % 100)
+    {
+        printf("%d %g ", 
+            generation + 1, fitness[0]);
+        for (int m = 0; m < number_of_variables; ++m)
+        {
+            double a = parameters_min[m];
+            double b = parameters_max[m] - a;
+            printf("%g ", a + b * population[m]);
+        }
+        printf("\n"); 
+    }
 }
 
 

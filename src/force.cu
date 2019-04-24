@@ -500,8 +500,7 @@ static __global__ void find_force_tersoff_step0
     const double* __restrict__ y, 
     const double* __restrict__ z, 
     const double* __restrict__ box, 
-    double * g_potential,
-    double * g_pressure
+    double* g_potential, double* g_sxx, double* g_syy, double* g_szz
 )
 {
     int N1 = Na_sum[blockIdx.x];
@@ -511,7 +510,9 @@ static __global__ void find_force_tersoff_step0
     {
         int num_types2 = num_types * num_types;
         double s_pe = 0.0; // potential energy
-        double s_pressure = 0.0; // pressure
+        double s_sxx = 0.0; // stress
+        double s_syy = 0.0;
+        double s_szz = 0.0;
 
         const double* __restrict__ h = box + 18 * blockIdx.x;
         int triclinic = LDG(g_triclinic, blockIdx.x);
@@ -542,11 +543,16 @@ static __global__ void find_force_tersoff_step0
             s_pe += fc_ijj_12 * (fr_ijj_12 - fa_ijj_12) * 0.5;
             double f2 = fcp_ijj_12 * (fr_ijj_12 - fa_ijj_12)
                       + fc_ijj_12 * (frp_ijj_12 - fap_ijj_12);
-            s_pressure -= f2 * d12 * 0.166666666666667;
-            
+            // per-atom virial
+            double tmp = f2 / d12 * 0.5;
+            s_sxx -= x12 * tmp * x12;
+            s_syy -= y12 * tmp * y12;
+            s_szz -= z12 * tmp * z12;
         }
         g_potential[n1] = s_pe;
-        g_pressure[n1] = s_pressure;
+        g_sxx[n1] = s_sxx;
+        g_syy[n1] = s_syy;
+        g_szz[n1] = s_szz;
     }
 }
 #endif
@@ -558,7 +564,7 @@ void Fitness::find_force(void)
     find_force_tersoff_step0<<<Nc, MAX_ATOM_NUMBER>>>
     (
         N, Na, Na_sum, box.triclinic, num_types, neighbor.NN, neighbor.NL, 
-        type, ters, x, y, z, box.h, pe, sxx
+        type, ters, x, y, z, box.h, pe, sxx, syy, szz
     );
 #else
     find_force_tersoff_step1<<<Nc, MAX_ATOM_NUMBER>>>

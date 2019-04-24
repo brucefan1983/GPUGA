@@ -26,7 +26,7 @@ public:
     Fitness(char*);
     ~Fitness(void);
     void compute(int, int, double*, double*, double*, double*);
-    void predict(int, double*, double*, double*);
+    void predict(char*, int, double*, double*, double*);
 protected:
     // functions related to initialization
     void read_xyz_in(char*);
