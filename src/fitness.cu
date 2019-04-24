@@ -395,15 +395,23 @@ double Fitness::get_fitness_energy(double* error_cpu, double* error_gpu)
 
 
 double Fitness::get_fitness_stress(double* error_cpu, double* error_gpu)
-{ 
-    gpu_sum_pe_error<<<Nc, 64>>>(Na, Na_sum, sxx, box.sxx_ref, error_gpu);
+{
+    double error_ave = 0.0;
     int mem = sizeof(double) * Nc;
+
+    gpu_sum_pe_error<<<Nc, 64>>>(Na, Na_sum, sxx, box.sxx_ref, error_gpu);
     CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
-    for (int n = 1; n < Nc; ++n)
-    {
-        error_cpu[0] += error_cpu[n];
-    }
-    return error_cpu[0] / Nc;
+    for (int n = 0; n < Nc; ++n) {error_ave += error_cpu[n];}
+
+    gpu_sum_pe_error<<<Nc, 64>>>(Na, Na_sum, syy, box.syy_ref, error_gpu);
+    CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
+    for (int n = 0; n < Nc; ++n) {error_ave += error_cpu[n];}
+
+    gpu_sum_pe_error<<<Nc, 64>>>(Na, Na_sum, szz, box.szz_ref, error_gpu);
+    CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
+    for (int n = 0; n < Nc; ++n) {error_ave += error_cpu[n];}
+
+    return error_ave / (Nc * 3.0);
 }
 
 
