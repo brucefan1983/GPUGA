@@ -26,6 +26,7 @@ public:
     Fitness(char*);
     ~Fitness(void);
     void compute(int, int, double*, double*, double*, double*);
+    void predict(int, double*, double*, double*);
 protected:
     // functions related to initialization
     void read_xyz_in(char*);
@@ -37,6 +38,7 @@ protected:
     // functions related to fitness evaluation
     double get_fitness_force(double*, double*);
     double get_fitness_energy(double*, double*);
+    double get_fitness_pressure(double*, double*);
     void initialize_potential(void); 
     void update_potential(double*);
     void find_force(void);

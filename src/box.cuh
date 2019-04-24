@@ -27,6 +27,7 @@ public:
     double* cpu_h;         // CPU box data
     // energy for the whole box 
     double *pe_ref, *cpu_pe_ref;
+    double *pressure_ref, *cpu_pressure_ref;
     // functions
     double get_volume(int, double*); // get the volume of the box
     void get_inverse(int, double*);  // get the inverse box matrix

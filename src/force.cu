@@ -23,102 +23,63 @@ Calculate force, energy, and stress
 #include "mic.cuh"
 #include "error.cuh"
 #include "common.cuh"
-#define LDG(a, n) __ldg(a + n)
 #define EPSILON 1.0e-15
 #define PI 3.141592653589793
+
+#define TWOBODY
 
 //Easy labels for indexing
 #define A 0
 #define B 1
-#define LAMBDA 2
-#define MU 3
-#define BETA 4
-#define EN 5 //special name for n to avoid conflict
-#define C 6
-#define H 7
-#define R1 8
-#define R2 9
-#define M 10
-#define ALPHA 11
-#define GAMMA 12
-#define PI_FACTOR 13
-#define MINUS_HALF_OVER_N 14
-
-
-void Fitness::initialize_potential(void)
-{
-    int n_entries = num_types * num_types * num_types;
-    double m = 0.0;
-    double alpha = 0.0;
-    double gamma = 1.0;
-
-//const double solution[]={1.8308e3, 471.18, 2.4799, 1.7322, 0.160287693252816, 0.78734, -0.59825};
-const double solution[] = {1985.89, 211.534, 2.77617, 1.54689, 0.3191, 0.829941, -0.609744};
-
-    double a = solution[0];
-    double b = solution[1];
-    double lambda = solution[2];
-    double mu = solution[3];
-    double beta = solution[4];
-    double n = solution[5];
-    double h = solution[6];
-
-    double r1 = 3.0;
-    double r2 = 3.0;
-    for (int i = 0; i < n_entries; i++)
-    {
-        cpu_ters[i*NUM_PARAMS + A] = a;
-        cpu_ters[i*NUM_PARAMS + B] = b;
-        cpu_ters[i*NUM_PARAMS + LAMBDA] = lambda;
-        cpu_ters[i*NUM_PARAMS + MU] = mu;
-        cpu_ters[i*NUM_PARAMS + BETA] = beta;
-        cpu_ters[i*NUM_PARAMS + EN] = n;
-        cpu_ters[i*NUM_PARAMS + H] = h;
-        cpu_ters[i*NUM_PARAMS + R1] = r1;
-        cpu_ters[i*NUM_PARAMS + R2] = r2;
-        cpu_ters[i*NUM_PARAMS + M] = m;
-        cpu_ters[i*NUM_PARAMS + ALPHA] = alpha;
-        cpu_ters[i*NUM_PARAMS + GAMMA] = gamma;
-        cpu_ters[i*NUM_PARAMS + PI_FACTOR] = PI / (r2 - r1);
-        cpu_ters[i*NUM_PARAMS + MINUS_HALF_OVER_N] = - 0.5 / n;
-    }
-    int mem = sizeof(double) * n_entries * NUM_PARAMS;
-    CHECK(cudaMemcpy(ters, cpu_ters, mem, cudaMemcpyHostToDevice));
-}
+#define Q 2
+#define LAMBDA 3
+#define MU 4
+#define BETA 5
+#define EN 6 //special name for n to avoid conflict
+#define C 7
+#define H 8
+#define R1 9
+#define R2 10
+#define M 11
+#define ALPHA 12
+#define B2 13
+#define MU2 14
+#define PI_FACTOR 15
+#define MINUS_HALF_OVER_N 16
 
 
 void Fitness::update_potential(double* potential_parameters)
 {
     int n_entries = num_types * num_types * num_types;
-    double m = 0.0;
-    double alpha = 0.0;
-    double gamma = 1.0;
-
     double a= potential_parameters[0];
     double b= potential_parameters[1];
-    double lambda= potential_parameters[2];
-    double mu= potential_parameters[3];
-    double beta = potential_parameters[4];
-    double n = potential_parameters[5];
-    double h = potential_parameters[6];
-    double r1 = 3.0;
-    double r2 = 3.0;
+    double b2= potential_parameters[2];
+    double lambda= potential_parameters[3];
+    double mu= potential_parameters[4];
+    double mu2= potential_parameters[5];
+    double q = potential_parameters[6];
+    double r1 = potential_parameters[7];
+    double r2 = 3.6;
+
     for (int i = 0; i < n_entries; i++)
     {
         cpu_ters[i*NUM_PARAMS + A] = a;
         cpu_ters[i*NUM_PARAMS + B] = b;
+        cpu_ters[i*NUM_PARAMS + C] = 0;
         cpu_ters[i*NUM_PARAMS + LAMBDA] = lambda;
         cpu_ters[i*NUM_PARAMS + MU] = mu;
-        cpu_ters[i*NUM_PARAMS + BETA] = beta;
-        cpu_ters[i*NUM_PARAMS + EN] = n;
-        cpu_ters[i*NUM_PARAMS + H] = h;
+        cpu_ters[i*NUM_PARAMS + BETA] = 1.0;
+        cpu_ters[i*NUM_PARAMS + EN] = 1;
+        cpu_ters[i*NUM_PARAMS + H] = -0.333333333333;
         cpu_ters[i*NUM_PARAMS + R1] = r1;
         cpu_ters[i*NUM_PARAMS + R2] = r2;
-        cpu_ters[i*NUM_PARAMS + M] = m;
-        cpu_ters[i*NUM_PARAMS + ALPHA] = alpha;
-        cpu_ters[i*NUM_PARAMS + GAMMA] = gamma;
+        cpu_ters[i*NUM_PARAMS + M] = 3.0;
+        cpu_ters[i*NUM_PARAMS + ALPHA] = 0.0;
+        cpu_ters[i*NUM_PARAMS + B2] = b2;
+        cpu_ters[i*NUM_PARAMS + MU2] = mu2;
+        cpu_ters[i*NUM_PARAMS + Q] = q;
         cpu_ters[i*NUM_PARAMS + PI_FACTOR] = PI / (r2 - r1);
-        cpu_ters[i*NUM_PARAMS + MINUS_HALF_OVER_N] = - 0.5 / n;
+        cpu_ters[i*NUM_PARAMS + MINUS_HALF_OVER_N] = - 0.5;
     }
     int mem = sizeof(double) * n_entries * NUM_PARAMS;
     CHECK(cudaMemcpy(ters, cpu_ters, mem, cudaMemcpyHostToDevice));
@@ -128,8 +89,10 @@ void Fitness::update_potential(double* potential_parameters)
 static __device__ void find_fr_and_frp
 (int i, const double* __restrict__ ters, double d12, double &fr, double &frp)
 {
-    fr  = LDG(ters,i + A) * exp(- LDG(ters,i + LAMBDA) * d12);
-    frp = - LDG(ters,i + LAMBDA) * fr;
+    double exp_factor = LDG(ters,i + A) * exp(- LDG(ters,i + LAMBDA) * d12);
+    double d_inv = 1.0 / d12;
+    fr = (1.0 + LDG(ters,i + Q) * d_inv) * exp_factor;
+    frp = - LDG(ters, i + LAMBDA)*fr - LDG(ters, i + Q)*d_inv*d_inv*exp_factor;
 }
 
 
@@ -138,6 +101,9 @@ static __device__ void find_fa_and_fap
 {
     fa  = LDG(ters, i + B) * exp(- LDG(ters, i + MU) * d12);
     fap = - LDG(ters, i + MU) * fa;
+    double tmp =  LDG(ters, i + B2) * exp(- LDG(ters, i + MU2) * d12);
+    fa += tmp;
+    fap -= LDG(ters, i + MU2) * tmp;
 }
 
 
@@ -145,6 +111,7 @@ static __device__ void find_fa
 (int i, const double* __restrict__ ters, double d12, double &fa)
 {
     fa = LDG(ters, i + B) * exp(- LDG(ters, i + MU) * d12);
+    fa += LDG(ters, i + B2) * exp(- LDG(ters, i + MU2) * d12);
 }
 
 
@@ -154,10 +121,14 @@ static __device__ void find_fc_and_fcp
     if (d12 < LDG(ters, i + R1)){fc = 1.0; fcp = 0.0;}
     else if (d12 < LDG(ters, i + R2))
     {
-        fc  =  cos(LDG(ters, i + PI_FACTOR) *
-            (d12 - LDG(ters, i + R1))) * 0.5 + 0.5;
-        fcp = -sin(LDG(ters, i + PI_FACTOR) *
-            (d12 - LDG(ters, i + R1)))*LDG(ters, i + PI_FACTOR)*0.5;
+        fc = 9.0/16.0 * cos(LDG(ters, i + PI_FACTOR) * (d12 - LDG(ters, i + R1)))
+           - 1.0/16 * cos(LDG(ters, i + PI_FACTOR) * (d12 - LDG(ters, i + R1)) * 3.0)
+           + 0.5;
+
+        fcp = sin(LDG(ters, i + PI_FACTOR) * (d12 - LDG(ters, i + R1)) * 3.0) 
+                * LDG(ters, i + PI_FACTOR) * 3.0/ 16.0
+                - sin(LDG(ters, i + PI_FACTOR) * (d12 - LDG(ters, i + R1))) 
+                * LDG(ters, i + PI_FACTOR) * 9.0 / 16.0;
     }
     else {fc  = 0.0; fcp = 0.0;}
 }
@@ -169,8 +140,9 @@ static __device__ void find_fc
     if (d12 < LDG(ters, i + R1)) {fc  = 1.0;}
     else if (d12 < LDG(ters, i + R2))
     {
-        fc = cos(LDG(ters, i + PI_FACTOR) *
-            (d12 - LDG(ters, i + R1))) * 0.5 + 0.5;
+        fc = 9.0/16.0 * cos(LDG(ters, i + PI_FACTOR) * (d12 - LDG(ters, i + R1)))
+           - 1.0/16 * cos(LDG(ters, i + PI_FACTOR) * (d12 - LDG(ters, i + R1)) * 3.0)
+           + 0.5;
     }
     else {fc  = 0.0;}
 }
@@ -180,8 +152,8 @@ static __device__ void find_g_and_gp
 (int i, const double* __restrict__ ters, double cos, double &g, double &gp)
 {
     double temp = cos - LDG(ters, i + H);
-    g  = LDG(ters, i + GAMMA) * temp * temp;
-    gp = 2.0 * LDG(ters, i + GAMMA) * temp;
+    g  = (temp * temp ) + LDG(ters, i + C);
+    gp = 2.0 * temp;
 }
 
 
@@ -189,7 +161,8 @@ static __device__ void find_g
 (int i, const double* __restrict__ ters, double cos, double &g)
 {
     double temp = (cos - LDG(ters, i + H)) * (cos - LDG(ters, i + H));
-    g  = LDG(ters, i + GAMMA) * temp;
+    g  =  temp + LDG(ters, i + C);
+
 }
 
 
@@ -229,6 +202,7 @@ static __device__ void find_e
 }
 
 
+#ifndef TWOBODY
 // step 1: pre-compute all the bond-order functions and their derivatives
 static __global__ void find_force_tersoff_step1
 (
@@ -426,7 +400,7 @@ static __global__ void find_force_tersoff_step2
             g_f12x[index] = f12x; g_f12y[index] = f12y; g_f12z[index] = f12z;
         }
         // save potential
-        g_potential[n1] += pot_energy;
+        g_potential[n1] = pot_energy;
     }
 }
 
@@ -501,45 +475,89 @@ static __global__ void find_force_tersoff_step3
             s_sz -= z12 * (f12z - f21z) * 0.5;
         }
         // save force
-        g_fx[n1] += s_fx;
-        g_fy[n1] += s_fy;
-        g_fz[n1] += s_fz;
+        g_fx[n1] = s_fx;
+        g_fy[n1] = s_fy;
+        g_fz[n1] = s_fz;
         // save virial
-        g_sx[n1] += s_sx;
-        g_sy[n1] += s_sy;
-        g_sz[n1] += s_sz;
+        g_sx[n1] = s_sx;
+        g_sy[n1] = s_sy;
+        g_sz[n1] = s_sz;
     }
 }
+#endif
 
 
-static __global__ void initialize_properties
+#ifdef TWOBODY
+static __global__ void find_force_tersoff_step0
 (
-    int N, double *g_fx, double *g_fy, double *g_fz, double *g_pe,
-    double *g_sx, double *g_sy, double *g_sz
+    int N, int *Na, int *Na_sum, const int* __restrict__ g_triclinic,
+    int num_types, int *g_neighbor_number, int *g_neighbor_list,
+    int* g_type, const double* __restrict__ ters, 
+    const double* __restrict__ x, 
+    const double* __restrict__ y, 
+    const double* __restrict__ z, 
+    const double* __restrict__ box, 
+    double * g_potential,
+    double * g_pressure
 )
 {
-    int n1 = blockIdx.x * blockDim.x + threadIdx.x;
-    if (n1 < N)
+    int N1 = Na_sum[blockIdx.x];
+    int N2 = N1 + Na[blockIdx.x];
+    int n1 = N1 + threadIdx.x;
+    if (n1 < N2)
     {
-        g_fx[n1] = 0.0;
-        g_fy[n1] = 0.0;
-        g_fz[n1] = 0.0;
-        g_sx[n1] = 0.0;
-        g_sy[n1] = 0.0;
-        g_sz[n1] = 0.0;
-        g_pe[n1] = 0.0;
+        int num_types2 = num_types * num_types;
+        double s_pe = 0.0; // potential energy
+        double s_pressure = 0.0; // pressure
+
+        const double* __restrict__ h = box + 18 * blockIdx.x;
+        int triclinic = LDG(g_triclinic, blockIdx.x);
+        int neighbor_number = g_neighbor_number[n1];
+        double x1 = LDG(x, n1);
+        double y1 = LDG(y, n1);
+        double z1 = LDG(z, n1);
+        int type1 = g_type[n1];
+
+        for (int i1 = 0; i1 < neighbor_number; ++i1)
+        {
+            int index = i1 * N + n1;
+            int n2 = g_neighbor_list[index];
+            int type2 = g_type[n2];
+            int ijj = type1 * num_types2 + type2 * num_types + type2;
+            double x12 = LDG(x, n2)-x1; 
+            double y12 = LDG(y, n2)-y1; 
+            double z12 = LDG(z, n2)-z1;
+            dev_apply_mic(triclinic, h, x12, y12, z12);
+            double d12 = sqrt(x12 * x12 + y12 * y12 + z12 * z12);
+            if (d12 > LDG(ters, ijj*NUM_PARAMS + R2)) { continue; }
+            double fa_ijj_12, fap_ijj_12, fr_ijj_12, frp_ijj_12;
+            double fc_ijj_12, fcp_ijj_12;
+            find_fc_and_fcp(ijj*NUM_PARAMS, ters, d12, fc_ijj_12, fcp_ijj_12);
+            find_fa_and_fap(ijj*NUM_PARAMS, ters, d12, fa_ijj_12, fap_ijj_12);
+            find_fr_and_frp(ijj*NUM_PARAMS, ters, d12, fr_ijj_12, frp_ijj_12);
+            // accumulate potential energy and virial
+            s_pe += fc_ijj_12 * (fr_ijj_12 - fa_ijj_12) * 0.5;
+            double f2 = fcp_ijj_12 * (fr_ijj_12 - fa_ijj_12)
+                      + fc_ijj_12 * (frp_ijj_12 - fap_ijj_12);
+            s_pressure -= f2 * d12 * 0.166666666666667;
+            
+        }
+        g_potential[n1] = s_pe;
+        g_pressure[n1] = s_pressure;
     }
 }
+#endif
 
 
 void Fitness::find_force(void)
 {
-    int grid_size = (N - 1) / MAX_ATOM_NUMBER + 1;
-
-    initialize_properties<<<grid_size, MAX_ATOM_NUMBER>>>
-    (N, fx, fy, fz, pe, sxx, syy, szz);
-    CUDA_CHECK_KERNEL
-
+#ifdef TWOBODY
+    find_force_tersoff_step0<<<Nc, MAX_ATOM_NUMBER>>>
+    (
+        N, Na, Na_sum, box.triclinic, num_types, neighbor.NN, neighbor.NL, 
+        type, ters, x, y, z, box.h, pe, sxx
+    );
+#else
     find_force_tersoff_step1<<<Nc, MAX_ATOM_NUMBER>>>
     (
         N, Na, Na_sum, box.triclinic, num_types,
@@ -558,6 +576,7 @@ void Fitness::find_force(void)
         f12x, f12y, f12z, x, y, z, box.h, fx, fy, fz, sxx, syy, szz
     );
     CUDA_CHECK_KERNEL
+#endif
 }
 
 

@@ -19,7 +19,8 @@ mininum image convention
 ------------------------------------------------------------------------------*/
 
 
-#define LDG(a, n) __ldg(a + n)
+#define LDG(a, n) __ldg(a + n) // sm_35
+//#define LDG(a, n) a[n] // sm_20
 
 
 static __device__ void dev_apply_mic

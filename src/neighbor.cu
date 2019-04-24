@@ -24,7 +24,7 @@ find the neighbor list
 #include "mic.cuh"
 #include "error.cuh"
 #include "common.cuh"
-#define BLOCK_SIZE 256
+#define BLOCK_SIZE 512
 
 
 Neighbor::~Neighbor(void)

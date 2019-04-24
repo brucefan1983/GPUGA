@@ -104,6 +104,8 @@ void GA::compute(char* input_dir, Fitness* fitness_function)
             parameters_min, parameters_max, population, fitness);
         sort_population(n);
         output(n, fid);
+        fitness_function->predict(number_of_variables, parameters_min, 
+            parameters_max, population);
         if (fitness[0] < minimum_cost) { break; }
         crossover();
         mutation(n);

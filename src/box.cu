@@ -35,15 +35,19 @@ void Box::read_file(char* input_dir, int Nc)
 
     MY_MALLOC(cpu_triclinic, int, Nc);
     MY_MALLOC(cpu_pe_ref, double, Nc);
+    MY_MALLOC(cpu_pressure_ref, double, Nc);
     MY_MALLOC(cpu_h, double, 18 * Nc);
     for (int n = 0; n < Nc; ++n)
     {
         double *h_local = cpu_h + n * 18; // define a local pointer
 
-        int count = fscanf(fid_box, "%d%lf", &cpu_triclinic[n], &cpu_pe_ref[n]);
-        if (count != 2) print_error("Reading error for box.in.\n");
-        if (cpu_triclinic[n] == 0) printf("orthogonal %g\n", cpu_pe_ref[n]);
-        else if (cpu_triclinic[n] == 1) printf("triclinic %g\n", cpu_pe_ref[n]);
+        int count = fscanf(fid_box, "%d%lf%lf", 
+            &cpu_triclinic[n], &cpu_pe_ref[n], &cpu_pressure_ref[n]);
+        if (count != 3) print_error("Reading error for box.in.\n");
+        if (cpu_triclinic[n] == 0) printf("orthogonal %g %g\n", 
+            cpu_pe_ref[n], cpu_pressure_ref[n]);
+        else if (cpu_triclinic[n] == 1) printf("triclinic %g %g\n", 
+            cpu_pe_ref[n], cpu_pressure_ref[n]);
         else print_error("Invalid box type.\n");
 
         if (cpu_triclinic[n] == 1)
@@ -75,7 +79,9 @@ void Box::read_file(char* input_dir, int Nc)
     CHECK(cudaMemcpy(h, cpu_h, memory, cudaMemcpyHostToDevice));
     memory = sizeof(double) * Nc;
     CHECK(cudaMalloc((void**)&pe_ref, memory));
+    CHECK(cudaMalloc((void**)&pressure_ref, memory));
     CHECK(cudaMemcpy(pe_ref, cpu_pe_ref, memory, cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(pressure_ref, cpu_pressure_ref, memory, cudaMemcpyHostToDevice));
     memory = sizeof(int) * Nc;
     CHECK(cudaMalloc((void**)&triclinic, memory));
     CHECK(cudaMemcpy(triclinic, cpu_triclinic, memory, cudaMemcpyHostToDevice));
@@ -89,7 +95,9 @@ Box::~Box(void)
     MY_FREE(cpu_h);
     CHECK(cudaFree(h));
     MY_FREE(cpu_pe_ref);
+    MY_FREE(cpu_pressure_ref);
     CHECK(cudaFree(pe_ref)); 
+    CHECK(cudaFree(pressure_ref));
 }
 
 

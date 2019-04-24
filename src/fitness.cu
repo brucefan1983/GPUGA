@@ -33,25 +33,6 @@ Fitness::Fitness(char* input_dir)
     read_xyz_in(input_dir);
     box.read_file(input_dir, Nc);
     neighbor.compute(Nc, N, Na, Na_sum, x, y, z, &box);
-    
-// test the force
-initialize_potential(); // set up potential parameters
-find_force();
-double *cpu_fx;
-MY_MALLOC(cpu_fx, double, N);
-cudaMemcpy(cpu_fx, fx, sizeof(double)*N, cudaMemcpyDeviceToHost);
-FILE* fid = my_fopen("f.out", "w");
-for (int n = 0; n < N; ++n)
-{
-    fprintf(fid, "%25.15e\n", cpu_fx[n]);
-}
-cudaMemcpy(cpu_fx, fx_ref, sizeof(double)*N, cudaMemcpyDeviceToHost);
-for (int n = 0; n < N; ++n)
-{
-    fprintf(fid, "%25.15e\n", cpu_fx[n]);
-}
-fclose(fid);
-MY_FREE(cpu_fx);
 }
 
 
@@ -236,12 +217,79 @@ void Fitness::compute
         }
         update_potential(parameters);
         find_force();
-        fitness[n] = 0.9*get_fitness_force(error_cpu, error_gpu);
-        fitness[n] += 0.1*get_fitness_energy(error_cpu, error_gpu);
+        //fitness[n] = get_fitness_force(error_cpu, error_gpu);
+        fitness[n] = 0.9*get_fitness_energy(error_cpu, error_gpu);
+        fitness[n] += 0.1*get_fitness_pressure(error_cpu, error_gpu);
     }
     MY_FREE(parameters);
     MY_FREE(error_cpu);
     CHECK(cudaFree(error_gpu));
+}
+
+
+void Fitness::predict
+(
+    int number_of_variables, double *parameters_min, double *parameters_max,
+    double* elite
+)
+{
+    double *parameters;
+    MY_MALLOC(parameters, double, number_of_variables);
+    for (int m = 0; m < number_of_variables; ++m)
+    {
+        double a = parameters_min[m];
+        double b = parameters_max[m] - a;
+        parameters[m] = a + b * elite[m];
+    }
+    update_potential(parameters);
+    find_force();
+    MY_FREE(parameters);
+    
+/*
+    double *cpu_fx; MY_MALLOC(cpu_fx, double, N);
+    double *cpu_fy; MY_MALLOC(cpu_fy, double, N);
+    double *cpu_fz; MY_MALLOC(cpu_fz, double, N);
+    double *cpu_fx_ref; MY_MALLOC(cpu_fx_ref, double, N);
+    double *cpu_fy_ref; MY_MALLOC(cpu_fy_ref, double, N);
+    double *cpu_fz_ref; MY_MALLOC(cpu_fz_ref, double, N);
+    cudaMemcpy(cpu_fx, fx, sizeof(double)*N, cudaMemcpyDeviceToHost);
+    cudaMemcpy(cpu_fy, fy, sizeof(double)*N, cudaMemcpyDeviceToHost);
+    cudaMemcpy(cpu_fz, fz, sizeof(double)*N, cudaMemcpyDeviceToHost);
+    cudaMemcpy(cpu_fx_ref, fx_ref, sizeof(double)*N, cudaMemcpyDeviceToHost);
+    cudaMemcpy(cpu_fy_ref, fy_ref, sizeof(double)*N, cudaMemcpyDeviceToHost);
+    cudaMemcpy(cpu_fz_ref, fz_ref, sizeof(double)*N, cudaMemcpyDeviceToHost);
+
+    FILE* fid_force = my_fopen("force.out", "w");
+    for (int n = 0; n < N; ++n)
+    {
+        fprintf(fid_force, "%25.15e%25.15e%25.15e%25.15e%25.15e%25.15e\n", 
+            cpu_fx[n], cpu_fy[n], cpu_fz[n], 
+            cpu_fx_ref[n], cpu_fy_ref[n], cpu_fz_ref[n]);
+    }
+    fclose(fid_force);
+    MY_FREE(cpu_fx);
+    MY_FREE(cpu_fy);
+    MY_FREE(cpu_fz);
+    MY_FREE(cpu_fx_ref);
+    MY_FREE(cpu_fy_ref);
+    MY_FREE(cpu_fz_ref);
+*/
+
+    double *cpu_pe; MY_MALLOC(cpu_pe, double, N);
+    cudaMemcpy(cpu_pe, sxx, sizeof(double)*N, cudaMemcpyDeviceToHost);
+    FILE* fid_pe = my_fopen("pe.out", "w");
+    for (int nc = 0; nc < Nc; ++nc)
+    {
+        int offset = nc * MAX_ATOM_NUMBER;
+        double cpu_pe_nc = 0.0;
+        for (int m = 0; m < MAX_ATOM_NUMBER; ++m)
+        {
+            cpu_pe_nc += cpu_pe[offset + m];
+        }
+        fprintf(fid_pe, "%25.15e%25.15e\n", cpu_pe_nc, box.cpu_pressure_ref[nc]);
+    }
+    fclose(fid_pe);
+    MY_FREE(cpu_pe);
 }
 
 
@@ -286,11 +334,11 @@ static __global__ void gpu_sum_force_error
 
 double Fitness::get_fitness_force(double *error_cpu, double *error_gpu)
 {
-    gpu_sum_force_error<<<1, 1024>>>(N-18*216, fx, fy, fz, 
+    gpu_sum_force_error<<<1, 1024>>>(N, fx, fy, fz, 
         fx_ref, fy_ref, fz_ref, error_gpu);
     CHECK(cudaMemcpy(error_cpu, error_gpu, sizeof(double), 
         cudaMemcpyDeviceToHost));
-    error_cpu[0] /= ((N-18*216) * 3.0); // to be generalized
+    error_cpu[0] /= (N * 3.0); // to be generalized
     return error_cpu[0];
 }
 
@@ -302,7 +350,7 @@ static __global__ void gpu_sum_pe_error
     int bid = blockIdx.x;
     int Na = g_Na[bid];
     int offset = g_Na_sum[bid];
-    __shared__ double s_pe[256];
+    __shared__ double s_pe[64];
     s_pe[tid] = 0.0;
     if (tid < Na)
     {
@@ -310,8 +358,9 @@ static __global__ void gpu_sum_pe_error
         s_pe[tid] += g_pe[n];
     }
     __syncthreads();
-    if (tid < 128) { s_pe[tid] += s_pe[tid + 128]; }  __syncthreads();
-    if (tid <  64) { s_pe[tid] += s_pe[tid + 64];  }  __syncthreads();
+    //if (tid < 256) { s_pe[tid] += s_pe[tid + 256]; }  __syncthreads();
+    //if (tid < 128) { s_pe[tid] += s_pe[tid + 128]; }  __syncthreads();
+    //if (tid <  64) { s_pe[tid] += s_pe[tid + 64];  }  __syncthreads();
     if (tid <  32) { warp_reduce(s_pe, tid);       }
     if (tid ==  0) 
     {
@@ -322,7 +371,21 @@ static __global__ void gpu_sum_pe_error
 
 double Fitness::get_fitness_energy(double* error_cpu, double* error_gpu)
 { 
-    gpu_sum_pe_error<<<Nc, 256>>>(Na, Na_sum, pe, box.pe_ref, error_gpu);
+    // energy
+    gpu_sum_pe_error<<<Nc, 64>>>(Na, Na_sum, pe, box.pe_ref, error_gpu);
+    int mem = sizeof(double) * Nc;
+    CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
+    for (int n = 1; n < Nc; ++n)
+    {
+        error_cpu[0] += error_cpu[n];
+    }
+    return error_cpu[0] / Nc;
+}
+
+
+double Fitness::get_fitness_pressure(double* error_cpu, double* error_gpu)
+{ 
+    gpu_sum_pe_error<<<Nc, 64>>>(Na, Na_sum, sxx, box.pressure_ref, error_gpu);
     int mem = sizeof(double) * Nc;
     CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
     for (int n = 1; n < Nc; ++n)
