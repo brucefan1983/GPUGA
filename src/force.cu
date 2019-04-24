@@ -26,8 +26,6 @@ Calculate force, energy, and stress
 #define EPSILON 1.0e-15
 #define PI 3.141592653589793
 
-#define TWOBODY
-
 //Easy labels for indexing
 #define A 0
 #define B 1
