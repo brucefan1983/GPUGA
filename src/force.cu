@@ -23,24 +23,22 @@ Calculate force, energy, and stress
 #include "mic.cuh"
 #include "error.cuh"
 #include "common.cuh"
-#define EPSILON 1.0e-15
-#define PI 3.141592653589793
 
 //Easy labels for indexing
-#define A 0
-#define B 1
-#define Q 2
-#define LAMBDA 3
-#define MU 4
-#define BETA 5
-#define EN 6 // special name for n to avoid conflict
-#define H 8
-#define R1 9
-#define R2 10
-#define B2 13
-#define MU2 14
-#define PI_FACTOR 15
-#define MINUS_HALF_OVER_N 16
+#define A      0
+#define Q      1
+#define LAMBDA 2
+#define B      3
+#define MU     4
+#define B2     5
+#define MU2    6
+#define BETA   7
+#define EN     8 // special name for n to avoid conflict
+#define H      9
+#define R1     10
+#define R2     11
+#define PI_FACTOR 12
+#define MINUS_HALF_OVER_N 13
 
 
 void Fitness::update_potential(double* potential_parameters)

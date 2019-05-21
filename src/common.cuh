@@ -17,10 +17,12 @@
 #pragma once
 #define MN              64
 #define MAX_ATOM_NUMBER 64
-#define NUM_PARAMS      19
+#define NUM_PARAMS      14
+#define NC_FORCE        5
 #define NEIGHBOR_CUTOFF 3.65
-#define WEIGHT_FORCE    0.2
-#define WEIGHT_ENERGY   0.5
-#define WEIGHT_STRESS   0.3
+#define WEIGHT_FORCE    0.1
+#define WEIGHT_ENERGY   0.6
+#define WEIGHT_STRESS   0.4
+#define PI              3.141592653589793
 
 

@@ -24,8 +24,6 @@ Get the fitness
 #include "error.cuh"
 #include "read_file.cuh"
 #include "common.cuh"
-#define NC_FORCE 5
-#define DELTA 1.0
 
 
 Fitness::Fitness(char* input_dir)
