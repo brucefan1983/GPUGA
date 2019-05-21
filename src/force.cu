@@ -34,12 +34,9 @@ Calculate force, energy, and stress
 #define MU 4
 #define BETA 5
 #define EN 6 // special name for n to avoid conflict
-#define C 7
 #define H 8
 #define R1 9
 #define R2 10
-#define M 11
-#define ALPHA 12
 #define B2 13
 #define MU2 14
 #define PI_FACTOR 15
@@ -64,7 +61,6 @@ void Fitness::update_potential(double* potential_parameters)
     {
         cpu_ters[i*NUM_PARAMS + A] = a;
         cpu_ters[i*NUM_PARAMS + B] = b;
-        cpu_ters[i*NUM_PARAMS + C] = 0; // should be zero
         cpu_ters[i*NUM_PARAMS + LAMBDA] = lambda;
         cpu_ters[i*NUM_PARAMS + MU] = mu;
         cpu_ters[i*NUM_PARAMS + BETA] = beta;
@@ -72,8 +68,6 @@ void Fitness::update_potential(double* potential_parameters)
         cpu_ters[i*NUM_PARAMS + H] = -1.0/3.0; // shold be -1/3
         cpu_ters[i*NUM_PARAMS + R1] = r1;
         cpu_ters[i*NUM_PARAMS + R2] = r2;
-        cpu_ters[i*NUM_PARAMS + M] = 3.0; // not used
-        cpu_ters[i*NUM_PARAMS + ALPHA] = 0.0; // should be zero
         cpu_ters[i*NUM_PARAMS + B2] = b2;
         cpu_ters[i*NUM_PARAMS + MU2] = mu2;
         cpu_ters[i*NUM_PARAMS + Q] = q;
@@ -151,7 +145,7 @@ static __device__ void find_g_and_gp
 (int i, const double* __restrict__ ters, double cos, double &g, double &gp)
 {
     double temp = cos - LDG(ters, i + H);
-    g  = (temp * temp ) + LDG(ters, i + C);
+    g  = temp * temp;
     gp = 2.0 * temp;
 }
 
@@ -159,46 +153,8 @@ static __device__ void find_g_and_gp
 static __device__ void find_g
 (int i, const double* __restrict__ ters, double cos, double &g)
 {
-    double temp = (cos - LDG(ters, i + H)) * (cos - LDG(ters, i + H));
-    g  =  temp + LDG(ters, i + C);
-
-}
-
-
-static __device__ void find_e_and_ep
-(
-    int i, const double* __restrict__ ters, 
-    double d12, double d13, double &e, double &ep
-)
-{
-    if (LDG(ters, i + ALPHA) < EPSILON){ e = 1.0; ep = 0.0;}
-    else
-    {
-        double r = d12 - d13;
-        if (LDG(ters, i + M) > 2.0) //if m == 3.0
-        {
-            e = exp(LDG(ters, i + ALPHA) * r * r * r);
-            ep = LDG(ters, i + ALPHA) * 3.0 * r * r * e;
-        }
-        else
-        {
-            e = exp(LDG(ters, i + ALPHA) * r);
-            ep = LDG(ters, i + ALPHA) * e;
-        }
-    }
-}
-
-
-static __device__ void find_e
-(int i, const double* __restrict__ ters, double d12, double d13, double &e)
-{
-    if (LDG(ters, i + ALPHA) < EPSILON){ e = 1.0;}
-    else
-    {
-        double r = d12 - d13;
-        if (LDG(ters, i + M) > 2.0){ e = exp(LDG(ters, i + ALPHA) * r * r * r);}
-        else{e = exp(LDG(ters, i + ALPHA) * r);}
-    }
+    double temp = cos - LDG(ters, i + H);
+    g  = temp * temp;
 }
 
 
@@ -250,13 +206,12 @@ static __global__ void find_force_tersoff_step1
                 dev_apply_mic(triclinic, h, x13, y13, z13);
                 double d13 = sqrt(x13 * x13 + y13 * y13 + z13 * z13);
                 double cos123 = (x12 * x13 + y12 * y13 + z12 * z13) / (d12*d13);
-                double fc_ijk_13, g_ijk, e_ijk_12_13;
+                double fc_ijk_13, g_ijk;
                 int ijk = type1 * num_types2 + type2 * num_types + type3;
                 if (d13 > LDG(ters, ijk*NUM_PARAMS + R2)) {continue;}
                 find_fc(ijk*NUM_PARAMS, ters, d13, fc_ijk_13);
                 find_g(ijk*NUM_PARAMS, ters, cos123, g_ijk);
-                find_e(ijk*NUM_PARAMS, ters, d12, d13, e_ijk_12_13);
-                zeta += fc_ijk_13 * g_ijk * e_ijk_12_13;
+                zeta += fc_ijk_13 * g_ijk;
             }
             double bzn, b_ijj;
             int ijj = type1 * num_types2 + type2 * num_types + type2;
@@ -372,23 +327,13 @@ static __global__ void find_force_tersoff_step2
                 double g_ikj, gp_ikj;
                 find_g_and_gp(ikj*NUM_PARAMS, ters, cos123, g_ikj, gp_ikj);
 
-                // exp with d12 - d13
-                double e_ijk_12_13, ep_ijk_12_13;
-                find_e_and_ep(ijk*NUM_PARAMS, ters, d12, d13,
-                    e_ijk_12_13, ep_ijk_12_13);
-
-                // exp with d13 - d12
-                double e_ikj_13_12, ep_ikj_13_12;
-                find_e_and_ep(ikj*NUM_PARAMS, ters, d13, d12,
-                    e_ikj_13_12, ep_ikj_13_12);
-
                 // derivatives with cosine
-                double dc=-fc_ijj_12*bp12*fa_ijj_12*fc_ijk_13*gp_ijk*e_ijk_12_13+
-                        -fc_ikj_12*bp13*fa_ikk_13*fc_ikk_13*gp_ikj*e_ikj_13_12;
+                double dc=-fc_ijj_12*bp12*fa_ijj_12*fc_ijk_13*gp_ijk+
+                        -fc_ikj_12*bp13*fa_ikk_13*fc_ikk_13*gp_ikj;
                 // derivatives with rij
-                double dr=(-fc_ijj_12*bp12*fa_ijj_12*fc_ijk_13*g_ijk*ep_ijk_12_13 +
-                  (-fcp_ikj_12*bp13*fa_ikk_13*g_ikj*e_ikj_13_12 +
-                  fc_ikj_12*bp13*fa_ikk_13*g_ikj*ep_ikj_13_12)*fc_ikk_13)*d12inv;
+                double dr=(-fc_ijj_12*bp12*fa_ijj_12*fc_ijk_13*g_ijk +
+                  (-fcp_ikj_12*bp13*fa_ikk_13*g_ikj +
+                  fc_ikj_12*bp13*fa_ikk_13*g_ikj)*fc_ikk_13)*d12inv;
                 double cos_d = x13 * one_over_d12d13 - x12 * cos123_over_d12d12;
                 f12x += (x12 * dr + dc * cos_d)*0.5;
                 cos_d = y13 * one_over_d12d13 - y12 * cos123_over_d12d12;
