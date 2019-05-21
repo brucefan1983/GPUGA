@@ -13,9 +13,7 @@ Graphics Processing Units Genetic Algorithm
 * go to the `src` directory and type `make`. When the compilation finishes, an executable named `gpuga` will be generated in the `src` directory. 
 
 ## Run GPUGA
-* Go to the directory where you can see `src`.
-* Type `src/gpuga < examples/input.txt` to run the examples in `examples/`.
-* Go to the example directories and run the prepared `Matlab` script to analyze the resutls.
+* Not ready. I will prepare an example after submitting a paper.
 
 ## Author:
 * Zheyong Fan (Bohai University and Aalto University)
