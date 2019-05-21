@@ -33,7 +33,7 @@ Calculate force, energy, and stress
 #define LAMBDA 3
 #define MU 4
 #define BETA 5
-#define EN 6 //special name for n to avoid conflict
+#define EN 6 // special name for n to avoid conflict
 #define C 7
 #define H 8
 #define R1 9
@@ -49,30 +49,31 @@ Calculate force, energy, and stress
 void Fitness::update_potential(double* potential_parameters)
 {
     int n_entries = num_types * num_types * num_types;
-    double a= potential_parameters[0];
-    double b= potential_parameters[1];
-    double b2= potential_parameters[2];
-    double lambda= potential_parameters[3];
-    double mu= potential_parameters[4];
-    double mu2= potential_parameters[5];
-    double q = potential_parameters[6];
-    double r1 = potential_parameters[7];
-    double r2 = 3.6;
+    double a = potential_parameters[0];
+    double q = potential_parameters[1];
+    double lambda = potential_parameters[2];
+    double b = potential_parameters[3];
+    double mu = potential_parameters[4];
+    double b2 = potential_parameters[5];
+    double mu2 = potential_parameters[6];
+    double beta = potential_parameters[7];
+    double r1 = potential_parameters[8];
+    double r2 = potential_parameters[9];
 
     for (int i = 0; i < n_entries; i++)
     {
         cpu_ters[i*NUM_PARAMS + A] = a;
         cpu_ters[i*NUM_PARAMS + B] = b;
-        cpu_ters[i*NUM_PARAMS + C] = 0;
+        cpu_ters[i*NUM_PARAMS + C] = 0; // should be zero
         cpu_ters[i*NUM_PARAMS + LAMBDA] = lambda;
         cpu_ters[i*NUM_PARAMS + MU] = mu;
-        cpu_ters[i*NUM_PARAMS + BETA] = 1.0;
-        cpu_ters[i*NUM_PARAMS + EN] = 1;
-        cpu_ters[i*NUM_PARAMS + H] = -0.333333333333;
+        cpu_ters[i*NUM_PARAMS + BETA] = beta;
+        cpu_ters[i*NUM_PARAMS + EN] = 1.0; // should be one
+        cpu_ters[i*NUM_PARAMS + H] = -1.0/3.0; // shold be -1/3
         cpu_ters[i*NUM_PARAMS + R1] = r1;
         cpu_ters[i*NUM_PARAMS + R2] = r2;
-        cpu_ters[i*NUM_PARAMS + M] = 3.0;
-        cpu_ters[i*NUM_PARAMS + ALPHA] = 0.0;
+        cpu_ters[i*NUM_PARAMS + M] = 3.0; // not used
+        cpu_ters[i*NUM_PARAMS + ALPHA] = 0.0; // should be zero
         cpu_ters[i*NUM_PARAMS + B2] = b2;
         cpu_ters[i*NUM_PARAMS + MU2] = mu2;
         cpu_ters[i*NUM_PARAMS + Q] = q;

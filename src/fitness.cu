@@ -24,7 +24,7 @@ Get the fitness
 #include "error.cuh"
 #include "read_file.cuh"
 #include "common.cuh"
-#define BLOCK_SIZE 128
+#define NC_FORCE 5
 #define DELTA 1.0
 
 
@@ -217,9 +217,9 @@ void Fitness::compute
         }
         update_potential(parameters);
         find_force();
-        fitness[n]  = WEIGHT_FORCE  * get_fitness_force(error_cpu, error_gpu);
-        fitness[n] += WEIGHT_ENERGY * get_fitness_energy(error_cpu, error_gpu);
+        fitness[n] = WEIGHT_ENERGY * get_fitness_energy(error_cpu, error_gpu);
         fitness[n] += WEIGHT_STRESS * get_fitness_stress(error_cpu, error_gpu);
+        fitness[n] += WEIGHT_FORCE * get_fitness_force(error_cpu, error_gpu);
     }
     MY_FREE(parameters);
     MY_FREE(error_cpu);
@@ -231,7 +231,7 @@ static void predict_energy_or_stress
 (FILE* fid, double* cpu_data, double* data, double* ref, int N, int Nc)
 {
     cudaMemcpy(cpu_data, data, sizeof(double)*N, cudaMemcpyDeviceToHost);
-    for (int nc = 0; nc < Nc; ++nc)
+    for (int nc = NC_FORCE; nc < Nc; ++nc)
     {
         int offset = nc * MAX_ATOM_NUMBER;
         double cpu_data_nc = 0.0;
@@ -262,7 +262,6 @@ void Fitness::predict
     find_force();
     MY_FREE(parameters);
     
-/*
     double *cpu_fx; MY_MALLOC(cpu_fx, double, N);
     double *cpu_fy; MY_MALLOC(cpu_fy, double, N);
     double *cpu_fz; MY_MALLOC(cpu_fz, double, N);
@@ -276,8 +275,11 @@ void Fitness::predict
     cudaMemcpy(cpu_fy_ref, fy_ref, sizeof(double)*N, cudaMemcpyDeviceToHost);
     cudaMemcpy(cpu_fz_ref, fz_ref, sizeof(double)*N, cudaMemcpyDeviceToHost);
 
-    FILE* fid_force = my_fopen("force.out", "w");
-    for (int n = 0; n < N; ++n)
+    char file_force[200];
+    strcpy(file_force, input_dir);
+    strcat(file_force, "/force.out");
+    FILE* fid_force = my_fopen(file_force, "w");
+    for (int n = 0; n < NC_FORCE*64; ++n)
     {
         fprintf(fid_force, "%25.15e%25.15e%25.15e%25.15e%25.15e%25.15e\n", 
             cpu_fx[n], cpu_fy[n], cpu_fz[n], 
@@ -290,7 +292,6 @@ void Fitness::predict
     MY_FREE(cpu_fx_ref);
     MY_FREE(cpu_fy_ref);
     MY_FREE(cpu_fz_ref);
-*/
 
     char file[200];
     strcpy(file, input_dir);
@@ -300,9 +301,15 @@ void Fitness::predict
     // energy
     predict_energy_or_stress
     (fid_prediction, cpu_prediction, pe, box.cpu_pe_ref, N, Nc);
-    // stress
+    // sxx
     predict_energy_or_stress
     (fid_prediction, cpu_prediction, sxx, box.cpu_sxx_ref, N, Nc);
+    // syy
+    predict_energy_or_stress
+    (fid_prediction, cpu_prediction, syy, box.cpu_syy_ref, N, Nc);
+    // szz
+    predict_energy_or_stress
+    (fid_prediction, cpu_prediction, szz, box.cpu_szz_ref, N, Nc);
     fclose(fid_prediction);
     MY_FREE(cpu_prediction);
 }
@@ -322,39 +329,38 @@ static __global__ void gpu_sum_force_error
 )
 {
     int tid = threadIdx.x;
-    int bid = blockIdx.x;
-    int number_of_patches = (N - 1) / 1024 + 1; 
-    __shared__ double s_error[1024];
+    int number_of_patches = (N - 1) / 512 + 1; 
+    __shared__ double s_error[512];
     s_error[tid] = 0.0;
     for (int patch = 0; patch < number_of_patches; ++patch)
     {
-        int n = tid + patch * 1024;
-        if (n < N) 
+        int n = tid + patch * 512;
+        if (n < N)
         {
-            double dx = abs(g_fx[n] - g_fx_ref[n]) / (abs(g_fx_ref[n]) + DELTA);
-            double dy = abs(g_fy[n] - g_fy_ref[n]) / (abs(g_fy_ref[n]) + DELTA);
-            double dz = abs(g_fz[n] - g_fz_ref[n]) / (abs(g_fz_ref[n]) + DELTA);
+            double dx = abs(g_fx[n] - g_fx_ref[n]);
+            double dy = abs(g_fy[n] - g_fy_ref[n]);
+            double dz = abs(g_fz[n] - g_fz_ref[n]);
             s_error[tid] += (dx + dy + dz);
         }
     }
     __syncthreads();
-    if (tid < 512) s_error[tid] += s_error[tid + 512]; __syncthreads();
+    //if (tid < 512) s_error[tid] += s_error[tid + 512]; __syncthreads();
     if (tid < 256) s_error[tid] += s_error[tid + 256]; __syncthreads();
     if (tid < 128) s_error[tid] += s_error[tid + 128]; __syncthreads();
     if (tid <  64) s_error[tid] += s_error[tid + 64];  __syncthreads();
     if (tid <  32) warp_reduce(s_error, tid);
-    if (tid ==  0) { g_error[bid] = s_error[0]; }
+    if (tid ==  0) { g_error[0] = s_error[0]; }
 }
 
 
 double Fitness::get_fitness_force(double *error_cpu, double *error_gpu)
 {
-    gpu_sum_force_error<<<1, 1024>>>(N, fx, fy, fz, 
+    int M = NC_FORCE * 64;
+    gpu_sum_force_error<<<1, 512>>>(M, fx, fy, fz, 
         fx_ref, fy_ref, fz_ref, error_gpu);
     CHECK(cudaMemcpy(error_cpu, error_gpu, sizeof(double), 
         cudaMemcpyDeviceToHost));
-    error_cpu[0] /= (N * 3.0);
-    return error_cpu[0];
+    return error_cpu[0] / (M * 3.0);
 }
 
 
@@ -386,11 +392,12 @@ double Fitness::get_fitness_energy(double* error_cpu, double* error_gpu)
     gpu_sum_pe_error<<<Nc, 64>>>(Na, Na_sum, pe, box.pe_ref, error_gpu);
     int mem = sizeof(double) * Nc;
     CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
-    for (int n = 1; n < Nc; ++n)
+    double error_ave = 0.0;
+    for (int n = NC_FORCE; n < Nc; ++n)
     {
-        error_cpu[0] += error_cpu[n];
+        error_ave += error_cpu[n];
     }
-    return error_cpu[0] / Nc;
+    return error_ave / (Nc - NC_FORCE);
 }
 
 
@@ -401,17 +408,17 @@ double Fitness::get_fitness_stress(double* error_cpu, double* error_gpu)
 
     gpu_sum_pe_error<<<Nc, 64>>>(Na, Na_sum, sxx, box.sxx_ref, error_gpu);
     CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
-    for (int n = 0; n < Nc; ++n) {error_ave += error_cpu[n];}
+    for (int n = NC_FORCE; n < Nc; ++n) {error_ave += error_cpu[n];}
 
     gpu_sum_pe_error<<<Nc, 64>>>(Na, Na_sum, syy, box.syy_ref, error_gpu);
     CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
-    for (int n = 0; n < Nc; ++n) {error_ave += error_cpu[n];}
+    for (int n = NC_FORCE; n < Nc; ++n) {error_ave += error_cpu[n];}
 
     gpu_sum_pe_error<<<Nc, 64>>>(Na, Na_sum, szz, box.szz_ref, error_gpu);
     CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
-    for (int n = 0; n < Nc; ++n) {error_ave += error_cpu[n];}
+    for (int n = NC_FORCE; n < Nc; ++n) {error_ave += error_cpu[n];}
 
-    return error_ave / (Nc * 3.0);
+    return error_ave / ((Nc - NC_FORCE) * 3.0);
 }
 
 

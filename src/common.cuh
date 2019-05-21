@@ -18,9 +18,9 @@
 #define MN              64
 #define MAX_ATOM_NUMBER 64
 #define NUM_PARAMS      19
-#define NEIGHBOR_CUTOFF 3.6
-#define WEIGHT_FORCE    0.0
+#define NEIGHBOR_CUTOFF 3.65
+#define WEIGHT_FORCE    0.2
 #define WEIGHT_ENERGY   0.5
-#define WEIGHT_STRESS   0.5
+#define WEIGHT_STRESS   0.3
 
 
