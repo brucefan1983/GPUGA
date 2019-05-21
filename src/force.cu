@@ -125,7 +125,6 @@ static __device__ void find_fc_and_fcp
 }
 
 
-#ifndef TWOBODY
 static __device__ void find_fa
 (int i, const double* __restrict__ ters, double d12, double &fa)
 {
@@ -201,10 +200,8 @@ static __device__ void find_e
         else{e = exp(LDG(ters, i + ALPHA) * r);}
     }
 }
-#endif
 
 
-#ifndef TWOBODY
 // step 1: pre-compute all the bond-order functions and their derivatives
 static __global__ void find_force_tersoff_step1
 (
@@ -486,86 +483,10 @@ static __global__ void find_force_tersoff_step3
         g_sz[n1] = s_sz;
     }
 }
-#endif
-
-
-#ifdef TWOBODY
-static __global__ void find_force_tersoff_step0
-(
-    int N, int *Na, int *Na_sum, const int* __restrict__ g_triclinic,
-    int num_types, int *g_neighbor_number, int *g_neighbor_list,
-    int* g_type, const double* __restrict__ ters, 
-    const double* __restrict__ x, 
-    const double* __restrict__ y, 
-    const double* __restrict__ z, 
-    const double* __restrict__ box, 
-    double* g_potential, double* g_sxx, double* g_syy, double* g_szz
-)
-{
-    int N1 = Na_sum[blockIdx.x];
-    int N2 = N1 + Na[blockIdx.x];
-    int n1 = N1 + threadIdx.x;
-    if (n1 < N2)
-    {
-        int num_types2 = num_types * num_types;
-        double s_pe = 0.0; // potential energy
-        double s_sxx = 0.0; // stress
-        double s_syy = 0.0;
-        double s_szz = 0.0;
-
-        const double* __restrict__ h = box + 18 * blockIdx.x;
-        int triclinic = LDG(g_triclinic, blockIdx.x);
-        int neighbor_number = g_neighbor_number[n1];
-        double x1 = LDG(x, n1);
-        double y1 = LDG(y, n1);
-        double z1 = LDG(z, n1);
-        int type1 = g_type[n1];
-
-        for (int i1 = 0; i1 < neighbor_number; ++i1)
-        {
-            int index = i1 * N + n1;
-            int n2 = g_neighbor_list[index];
-            int type2 = g_type[n2];
-            int ijj = type1 * num_types2 + type2 * num_types + type2;
-            double x12 = LDG(x, n2)-x1; 
-            double y12 = LDG(y, n2)-y1; 
-            double z12 = LDG(z, n2)-z1;
-            dev_apply_mic(triclinic, h, x12, y12, z12);
-            double d12 = sqrt(x12 * x12 + y12 * y12 + z12 * z12);
-            if (d12 > LDG(ters, ijj*NUM_PARAMS + R2)) { continue; }
-            double fa_ijj_12, fap_ijj_12, fr_ijj_12, frp_ijj_12;
-            double fc_ijj_12, fcp_ijj_12;
-            find_fc_and_fcp(ijj*NUM_PARAMS, ters, d12, fc_ijj_12, fcp_ijj_12);
-            find_fa_and_fap(ijj*NUM_PARAMS, ters, d12, fa_ijj_12, fap_ijj_12);
-            find_fr_and_frp(ijj*NUM_PARAMS, ters, d12, fr_ijj_12, frp_ijj_12);
-            // accumulate potential energy and virial
-            s_pe += fc_ijj_12 * (fr_ijj_12 - fa_ijj_12) * 0.5;
-            double f2 = fcp_ijj_12 * (fr_ijj_12 - fa_ijj_12)
-                      + fc_ijj_12 * (frp_ijj_12 - fap_ijj_12);
-            // per-atom virial
-            double tmp = f2 / d12 * 0.5;
-            s_sxx -= x12 * tmp * x12;
-            s_syy -= y12 * tmp * y12;
-            s_szz -= z12 * tmp * z12;
-        }
-        g_potential[n1] = s_pe;
-        g_sxx[n1] = s_sxx;
-        g_syy[n1] = s_syy;
-        g_szz[n1] = s_szz;
-    }
-}
-#endif
 
 
 void Fitness::find_force(void)
 {
-#ifdef TWOBODY
-    find_force_tersoff_step0<<<Nc, MAX_ATOM_NUMBER>>>
-    (
-        N, Na, Na_sum, box.triclinic, num_types, neighbor.NN, neighbor.NL, 
-        type, ters, x, y, z, box.h, pe, sxx, syy, szz
-    );
-#else
     find_force_tersoff_step1<<<Nc, MAX_ATOM_NUMBER>>>
     (
         N, Na, Na_sum, box.triclinic, num_types,
@@ -584,7 +505,6 @@ void Fitness::find_force(void)
         f12x, f12y, f12z, x, y, z, box.h, fx, fy, fz, sxx, syy, szz
     );
     CUDA_CHECK_KERNEL
-#endif
 }
 
 
