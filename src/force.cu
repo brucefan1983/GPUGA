@@ -52,10 +52,10 @@ void Fitness::update_potential(double* potential_parameters)
     double b2 = potential_parameters[5];
     double mu2 = potential_parameters[6];
     double beta = potential_parameters[7];
-    double n = potential_parameters[8];
-    double h = potential_parameters[9];
-    double r1 = potential_parameters[10];
-    double r2 = potential_parameters[11];
+    double r1 = potential_parameters[8];
+    double r2 = potential_parameters[9];
+    double n = 1.0;
+    double h = -1.0/3.0;
 
 
     for (int i = 0; i < n_entries; i++)
