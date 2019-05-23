@@ -52,8 +52,11 @@ void Fitness::update_potential(double* potential_parameters)
     double b2 = potential_parameters[5];
     double mu2 = potential_parameters[6];
     double beta = potential_parameters[7];
-    double r1 = potential_parameters[8];
-    double r2 = potential_parameters[9];
+    double n = potential_parameters[8];
+    double h = potential_parameters[9];
+    double r1 = potential_parameters[10];
+    double r2 = potential_parameters[11];
+
 
     for (int i = 0; i < n_entries; i++)
     {
@@ -62,15 +65,15 @@ void Fitness::update_potential(double* potential_parameters)
         cpu_ters[i*NUM_PARAMS + LAMBDA] = lambda;
         cpu_ters[i*NUM_PARAMS + MU] = mu;
         cpu_ters[i*NUM_PARAMS + BETA] = beta;
-        cpu_ters[i*NUM_PARAMS + EN] = 1.0; // should be one
-        cpu_ters[i*NUM_PARAMS + H] = -1.0/3.0; // shold be -1/3
+        cpu_ters[i*NUM_PARAMS + EN] = n;
+        cpu_ters[i*NUM_PARAMS + H] = h;
         cpu_ters[i*NUM_PARAMS + R1] = r1;
         cpu_ters[i*NUM_PARAMS + R2] = r2;
         cpu_ters[i*NUM_PARAMS + B2] = b2;
         cpu_ters[i*NUM_PARAMS + MU2] = mu2;
         cpu_ters[i*NUM_PARAMS + Q] = q;
         cpu_ters[i*NUM_PARAMS + PI_FACTOR] = PI / (r2 - r1);
-        cpu_ters[i*NUM_PARAMS + MINUS_HALF_OVER_N] = - 0.5;
+        cpu_ters[i*NUM_PARAMS + MINUS_HALF_OVER_N] = - 0.5 / n;
     }
     int mem = sizeof(double) * n_entries * NUM_PARAMS;
     CHECK(cudaMemcpy(ters, cpu_ters, mem, cudaMemcpyHostToDevice));

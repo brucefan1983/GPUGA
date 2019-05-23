@@ -53,7 +53,9 @@ protected:
     double *ters, *cpu_ters, *b, *bp, *f12x, *f12y, *f12z;
     double *x, *y, *z, *fx, *fy, *fz, *pe, *sxx, *syy, *szz;
     double *fx_ref, *fy_ref, *fz_ref; 
-    //double force_ref_square_sum;
+    double *cpu_fx, *cpu_fy, *cpu_fz;
+    double *cpu_fx_ref, *cpu_fy_ref, *cpu_fz_ref;
+    double force_square_sum;
     // other classes
     Box box;
     Neighbor neighbor;

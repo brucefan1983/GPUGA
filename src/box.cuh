@@ -28,6 +28,8 @@ public:
     // energy for the whole box 
     double *pe_ref, *sxx_ref, *syy_ref, *szz_ref;
     double *cpu_pe_ref, *cpu_sxx_ref, *cpu_syy_ref, *cpu_szz_ref;
+    double potential_square_sum;
+    double virial_square_sum;
     // functions
     double get_volume(int, double*); // get the volume of the box
     void get_inverse(int, double*);  // get the inverse box matrix

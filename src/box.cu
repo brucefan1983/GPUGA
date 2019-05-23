@@ -21,6 +21,7 @@ The class defining the simulation box.
 
 #include "box.cuh"
 #include "error.cuh"
+#include "common.cuh"
 
 
 void Box::read_file(char* input_dir, int Nc)
@@ -39,6 +40,9 @@ void Box::read_file(char* input_dir, int Nc)
     MY_MALLOC(cpu_syy_ref, double, Nc);
     MY_MALLOC(cpu_szz_ref, double, Nc);
     MY_MALLOC(cpu_h, double, 18 * Nc);
+    
+    potential_square_sum = 0.0;
+    virial_square_sum = 0.0;
     for (int n = 0; n < Nc; ++n)
     {
         double *h_local = cpu_h + n * 18; // define a local pointer
@@ -46,6 +50,16 @@ void Box::read_file(char* input_dir, int Nc)
         int count = fscanf(fid_box, "%d%lf%lf%lf%lf", 
             &cpu_triclinic[n], &cpu_pe_ref[n], &cpu_sxx_ref[n],
             &cpu_syy_ref[n], &cpu_szz_ref[n]);
+
+        if (n >= NC_FORCE)
+        {
+            double energy = cpu_pe_ref[n] + 4.63 * MAX_ATOM_NUMBER;
+            potential_square_sum += energy * energy;
+            virial_square_sum += cpu_sxx_ref[n] * cpu_sxx_ref[n]
+                               + cpu_syy_ref[n] * cpu_syy_ref[n]
+                               + cpu_szz_ref[n] * cpu_szz_ref[n];
+        }
+
         if (count != 5) print_error("Reading error for box.in.\n");
         if (cpu_triclinic[n] == 0) printf("orthogonal %g %g %g %g\n", 
             cpu_pe_ref[n], cpu_sxx_ref[n], cpu_syy_ref[n], cpu_szz_ref[n]);
