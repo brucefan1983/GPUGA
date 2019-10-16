@@ -14,8 +14,12 @@ Graphics Processing Units Genetic Algorithm
 ## Run GPUGA
 * Not ready. I will prepare an example after submitting a paper.
 
+## Citation
+* Zheyong Fan, Yanzhou Wang, Xiaokun Gu, Ping Qian, Yanjing Su, Tapio Ala-Nissila, A minimal Tersoff potential for diamond silicon with improved descriptions of elastic and phonon transport properties, https://arxiv.org/abs/1909.11474
+
 ## Author:
 * Zheyong Fan (Bohai University and Aalto University)
   * brucenju(at)gmail.com
   * zheyong.fan(at)aalto.fi
   * zheyongfan(at)163.com
+  
