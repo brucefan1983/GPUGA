@@ -25,53 +25,55 @@ Calculate force, energy, and stress
 #include "common.cuh"
 
 //Easy labels for indexing
-#define A      0
-#define Q      1
-#define LAMBDA 2
-#define B      3
-#define MU     4
-#define B2     5
-#define MU2    6
-#define BETA   7
-#define EN     8 // special name for n to avoid conflict
-#define H      9
-#define R1     10
-#define R2     11
-#define PI_FACTOR 12
-#define MINUS_HALF_OVER_N 13
+#define D0     0
+#define A      1
+#define R0     2
+#define BETA   4
+#define EN     5 // special name for n to avoid conflict
+#define H      6
+#define R1     7
+#define R2     8
+#define PI_FACTOR 9
+#define MINUS_HALF_OVER_N 10
+#define C1     11
+#define C2     12
+#define C3     13
+#define S      14
+#define C0     15
 
 
 void Fitness::update_potential(double* potential_parameters)
 {
     int n_entries = num_types * num_types * num_types;
-    double a = potential_parameters[0];
-    double q = potential_parameters[1];
-    double lambda = potential_parameters[2];
-    double b = potential_parameters[3];
-    double mu = potential_parameters[4];
-    double b2 = potential_parameters[5];
-    double mu2 = potential_parameters[6];
-    double beta = potential_parameters[7];
-    double r1 = potential_parameters[8];
-    double r2 = potential_parameters[9];
-    double n = 1.0;
-    double h = -1.0/3.0;
+    double d0 = potential_parameters[0];
+    double a = potential_parameters[1];
+    double r0 = potential_parameters[2];
+    double s = potential_parameters[3];
+    double n = potential_parameters[4];
+    double h = potential_parameters[5];
+    double c1 = potential_parameters[6];
+    double c2 = potential_parameters[7];
+    double c3 = potential_parameters[8];
 
+
+    double r1 = 2.8;
+    double r2 = 3.2;
+    double beta = 1.0;
 
     for (int i = 0; i < n_entries; i++)
     {
+        cpu_ters[i*NUM_PARAMS + D0] = d0;
         cpu_ters[i*NUM_PARAMS + A] = a;
-        cpu_ters[i*NUM_PARAMS + B] = b;
-        cpu_ters[i*NUM_PARAMS + LAMBDA] = lambda;
-        cpu_ters[i*NUM_PARAMS + MU] = mu;
+        cpu_ters[i*NUM_PARAMS + R0] = r0;
+        cpu_ters[i*NUM_PARAMS + S] = s;
         cpu_ters[i*NUM_PARAMS + BETA] = beta;
         cpu_ters[i*NUM_PARAMS + EN] = n;
         cpu_ters[i*NUM_PARAMS + H] = h;
+        cpu_ters[i*NUM_PARAMS + C1] = c1;
+        cpu_ters[i*NUM_PARAMS + C2] = c2;
+        cpu_ters[i*NUM_PARAMS + C3] = c3;
         cpu_ters[i*NUM_PARAMS + R1] = r1;
         cpu_ters[i*NUM_PARAMS + R2] = r2;
-        cpu_ters[i*NUM_PARAMS + B2] = b2;
-        cpu_ters[i*NUM_PARAMS + MU2] = mu2;
-        cpu_ters[i*NUM_PARAMS + Q] = q;
         cpu_ters[i*NUM_PARAMS + PI_FACTOR] = PI / (r2 - r1);
         cpu_ters[i*NUM_PARAMS + MINUS_HALF_OVER_N] = - 0.5 / n;
     }
@@ -83,21 +85,24 @@ void Fitness::update_potential(double* potential_parameters)
 static __device__ void find_fr_and_frp
 (int i, const double* __restrict__ ters, double d12, double &fr, double &frp)
 {
-    double exp_factor = LDG(ters,i + A) * exp(- LDG(ters,i + LAMBDA) * d12);
-    double d_inv = 1.0 / d12;
-    fr = (1.0 + LDG(ters,i + Q) * d_inv) * exp_factor;
-    frp = - LDG(ters, i + LAMBDA)*fr - LDG(ters, i + Q)*d_inv*d_inv*exp_factor;
+    double d0 = LDG(ters, i + D0);
+    double a = LDG(ters, i + A);
+    double r0 = LDG(ters, i + R0);
+    double s = LDG(ters, i + S);
+    fr = d0 / (s-1) * exp(-sqrt(2.0*s)*a*(d12-r0));
+    frp = -2.0*a*fr;
 }
 
 
 static __device__ void find_fa_and_fap
 (int i, const double* __restrict__ ters, double d12, double &fa, double &fap)
 {
-    fa  = LDG(ters, i + B) * exp(- LDG(ters, i + MU) * d12);
-    fap = - LDG(ters, i + MU) * fa;
-    double tmp =  LDG(ters, i + B2) * exp(- LDG(ters, i + MU2) * d12);
-    fa += tmp;
-    fap -= LDG(ters, i + MU2) * tmp;
+    double d0 = LDG(ters, i + D0);
+    double a = LDG(ters, i + A);
+    double r0 = LDG(ters, i + R0);
+    double s = LDG(ters, i + S);
+    fa = s* d0 / (s-1) * exp(-sqrt(2.0/s)*a*(d12-r0));
+    fap = -a*fa;
 }
 
 
@@ -123,8 +128,11 @@ static __device__ void find_fc_and_fcp
 static __device__ void find_fa
 (int i, const double* __restrict__ ters, double d12, double &fa)
 {
-    fa = LDG(ters, i + B) * exp(- LDG(ters, i + MU) * d12);
-    fa += LDG(ters, i + B2) * exp(- LDG(ters, i + MU2) * d12);
+    double d0 = LDG(ters, i + D0);
+    double a = LDG(ters, i + A);
+    double r0 = LDG(ters, i + R0);
+    double s = LDG(ters, i + S);
+    fa = s* d0 / (s-1) * exp(-sqrt(2.0/s)*a*(d12-r0));
 }
 
 
@@ -145,17 +153,23 @@ static __device__ void find_fc
 static __device__ void find_g_and_gp
 (int i, const double* __restrict__ ters, double cos, double &g, double &gp)
 {
-    double temp = cos - LDG(ters, i + H);
-    g  = temp * temp;
-    gp = 2.0 * temp;
+    double x = cos - LDG(ters, i + H);
+    g = LDG(ters, C3) * x;
+    g = (g + LDG(ters, C2)) * x;
+    g = (g + LDG(ters, C1)) * x;
+    gp = LDG(ters, C3) * 3.0 * x;
+    gp = (gp + LDG(ters, C2) * 2.0) * x;
+    gp = gp + LDG(ters, C1);
 }
 
 
 static __device__ void find_g
 (int i, const double* __restrict__ ters, double cos, double &g)
 {
-    double temp = cos - LDG(ters, i + H);
-    g  = temp * temp;
+    double x = cos - LDG(ters, i + H);
+    g = LDG(ters, C3) * x;
+    g = (g + LDG(ters, C2)) * x;
+    g = (g + LDG(ters, C1)) * x;
 }
 
 
@@ -294,7 +308,7 @@ static __global__ void find_force_tersoff_step2
             double f12z = z12 * factor3 * 0.5;
 
             // accumulate potential energy
-            pot_energy += fc_ijj_12 * (fr_ijj_12 - b12 * fa_ijj_12) * 0.5;
+            pot_energy += fc_ijj_12*(fr_ijj_12-b12*fa_ijj_12)*0.5;
 
             // (i,j,k) part
             double bp12 = LDG(g_bp, index);
@@ -332,9 +346,8 @@ static __global__ void find_force_tersoff_step2
                 double dc=-fc_ijj_12*bp12*fa_ijj_12*fc_ijk_13*gp_ijk+
                         -fc_ikj_12*bp13*fa_ikk_13*fc_ikk_13*gp_ikj;
                 // derivatives with rij
-                double dr=(-fc_ijj_12*bp12*fa_ijj_12*fc_ijk_13*g_ijk +
-                  (-fcp_ikj_12*bp13*fa_ikk_13*g_ikj +
-                  fc_ikj_12*bp13*fa_ikk_13*g_ikj)*fc_ikk_13)*d12inv;
+                double dr=-fcp_ikj_12*bp13*fa_ikk_13*g_ikj*fc_ikk_13*d12inv;
+
                 double cos_d = x13 * one_over_d12d13 - x12 * cos123_over_d12d12;
                 f12x += (x12 * dr + dc * cos_d)*0.5;
                 cos_d = y13 * one_over_d12d13 - y12 * cos123_over_d12d12;
@@ -342,7 +355,9 @@ static __global__ void find_force_tersoff_step2
                 cos_d = z13 * one_over_d12d13 - z12 * cos123_over_d12d12;
                 f12z += (z12 * dr + dc * cos_d)*0.5;
             }
-            g_f12x[index] = f12x; g_f12y[index] = f12y; g_f12z[index] = f12z;
+            g_f12x[index] = f12x; 
+            g_f12y[index] = f12y; 
+            g_f12z[index] = f12z;
         }
         // save potential
         g_potential[n1] = pot_energy;
