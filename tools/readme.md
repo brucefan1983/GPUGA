@@ -1,6 +1,5 @@
 # Some tools used to develop and apply `GPUGA`
 
-* In each folder, there are three files:
 
 | folder          | description                                   |
 |---------------- |-----------------------------------------------|
