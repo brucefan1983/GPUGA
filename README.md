@@ -12,8 +12,9 @@ Graphics Processing Units Genetic Algorithm
 * go to the `src` directory and type `make`. When the compilation finishes, an executable named `gpuga` will be generated in the `src` directory. 
 
 ## Run GPUGA
-* src/gpuga < examples/input.txt
-This run the example corresponding to the preprint below.
+To run the provided example, go to the directory where you can see `src` and type
+* `src/gpuga < examples/input.txt`
+The example corresponds to the case study for diamond silicon in the preprint below.
 
 ## Citation
 * Zheyong Fan, Yanzhou Wang, Xiaokun Gu, Ping Qian, Yanjing Su, Tapio Ala-Nissila, A minimal Tersoff potential for diamond silicon with improved descriptions of elastic and phonon transport properties, https://arxiv.org/abs/1909.11474
