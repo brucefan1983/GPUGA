@@ -189,11 +189,11 @@ void Fitness::allocate_memory_gpu(void)
     CHECK(cudaMalloc((void**)&fx, m2));
     CHECK(cudaMalloc((void**)&fy, m2));
     CHECK(cudaMalloc((void**)&fz, m2));
-    CHECK(cudaMalloc((void**)&b, m2 * MN));
-    CHECK(cudaMalloc((void**)&bp, m2 * MN));
-    CHECK(cudaMalloc((void**)&f12x, m2 * MN));
-    CHECK(cudaMalloc((void**)&f12y, m2 * MN));
-    CHECK(cudaMalloc((void**)&f12z, m2 * MN));
+    CHECK(cudaMalloc((void**)&b, m2 * MAX_ATOM_NUMBER));
+    CHECK(cudaMalloc((void**)&bp, m2 * MAX_ATOM_NUMBER));
+    CHECK(cudaMalloc((void**)&f12x, m2 * MAX_ATOM_NUMBER));
+    CHECK(cudaMalloc((void**)&f12y, m2 * MAX_ATOM_NUMBER));
+    CHECK(cudaMalloc((void**)&f12z, m2 * MAX_ATOM_NUMBER));
 }
 
 

@@ -15,13 +15,13 @@
 
 
 #pragma once
-#define MN              64
-#define MAX_ATOM_NUMBER 64
-#define NC_FORCE        5
-#define NEIGHBOR_CUTOFF 3
-#define WEIGHT_FORCE    0.05
-#define WEIGHT_ENERGY   0.15
-#define WEIGHT_STRESS   0.8
-#define PI              3.141592653589793
+
+const int MAX_ATOM_NUMBER    = 64;
+const int NC_FORCE           = 5;
+const double NEIGHBOR_CUTOFF = 3.0;
+const double WEIGHT_FORCE    = 0.05;
+const double WEIGHT_ENERGY   = 0.15;
+const double WEIGHT_STRESS   = 0.8;
+const double PI              = 3.141592653589793;
 
 
