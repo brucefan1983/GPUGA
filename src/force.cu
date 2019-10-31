@@ -80,7 +80,7 @@ void Fitness::update_potential(double* potential_parameters)
 
 
 static __device__ void find_fr_and_frp
-(int i, Pot_Para pot_para, double d12, double &fr, double &frp)
+(Pot_Para pot_para, double d12, double &fr, double &frp)
 {
     double d0 = pot_para.ters[D0];
     double a = pot_para.ters[A];
@@ -92,7 +92,7 @@ static __device__ void find_fr_and_frp
 
 
 static __device__ void find_fa_and_fap
-(int i, Pot_Para pot_para, double d12, double &fa, double &fap)
+(Pot_Para pot_para, double d12, double &fa, double &fap)
 {
     double d0 = pot_para.ters[D0];
     double a = pot_para.ters[A];
@@ -104,7 +104,7 @@ static __device__ void find_fa_and_fap
 
 
 static __device__ void find_fc_and_fcp
-(int i, Pot_Para pot_para, double d12, double &fc, double &fcp)
+(Pot_Para pot_para, double d12, double &fc, double &fcp)
 {
     if (d12 < pot_para.ters[R1]){fc = 1.0; fcp = 0.0;}
     else if (d12 < pot_para.ters[R2])
@@ -123,7 +123,7 @@ static __device__ void find_fc_and_fcp
 
 
 static __device__ void find_fa
-(int i, Pot_Para pot_para, double d12, double &fa)
+(Pot_Para pot_para, double d12, double &fa)
 {
     double d0 = pot_para.ters[D0];
     double a = pot_para.ters[A];
@@ -134,7 +134,7 @@ static __device__ void find_fa
 
 
 static __device__ void find_fc
-(int i, Pot_Para pot_para, double d12, double &fc)
+(Pot_Para pot_para, double d12, double &fc)
 {
     if (d12 < pot_para.ters[R1]) {fc  = 1.0;}
     else if (d12 < pot_para.ters[R2])
@@ -148,7 +148,7 @@ static __device__ void find_fc
 
 
 static __device__ void find_g_and_gp
-(int i, Pot_Para pot_para, double cos, double &g, double &gp)
+(Pot_Para pot_para, double cos, double &g, double &gp)
 {
     double x = cos - pot_para.ters[H];
     g = pot_para.ters[C3] * x;
@@ -161,7 +161,7 @@ static __device__ void find_g_and_gp
 
 
 static __device__ void find_g
-(int i, Pot_Para pot_para, double cos, double &g)
+(Pot_Para pot_para, double cos, double &g)
 {
     double x = cos - pot_para.ters[H];
     g = pot_para.ters[C3] * x;
@@ -189,18 +189,17 @@ static __global__ void find_force_tersoff_step1
     int n1 = N1 + threadIdx.x;
     if (n1 < N2)
     {
-        int num_types2 = num_types * num_types;
         const double* __restrict__ h = g_box + 18 * blockIdx.x;
         int triclinic = LDG(g_triclinic, blockIdx.x);
         int neighbor_number = g_neighbor_number[n1];
-        int type1 = g_type[n1];
+        //int type1 = g_type[n1];
         double x1 = LDG(g_x, n1); 
         double y1 = LDG(g_y, n1); 
         double z1 = LDG(g_z, n1);
         for (int i1 = 0; i1 < neighbor_number; ++i1)
         {
             int n2 = g_neighbor_list[n1 + number_of_particles * i1];
-            int type2 = g_type[n2];
+            //int type2 = g_type[n2];
             double x12  = LDG(g_x, n2) - x1;
             double y12  = LDG(g_y, n2) - y1;
             double z12  = LDG(g_z, n2) - z1;
@@ -211,7 +210,7 @@ static __global__ void find_force_tersoff_step1
             {
                 int n3 = g_neighbor_list[n1 + number_of_particles * i2];
                 if (n3 == n2) { continue; } // ensure that n3 != n2
-                int type3 = g_type[n3];
+                //int type3 = g_type[n3];
                 double x13 = LDG(g_x, n3) - x1;
                 double y13 = LDG(g_y, n3) - y1;
                 double z13 = LDG(g_z, n3) - z1;
@@ -219,10 +218,10 @@ static __global__ void find_force_tersoff_step1
                 double d13 = sqrt(x13 * x13 + y13 * y13 + z13 * z13);
                 double cos123 = (x12 * x13 + y12 * y13 + z12 * z13) / (d12*d13);
                 double fc_ijk_13, g_ijk;
-                int ijk = type1 * num_types2 + type2 * num_types + type3;
+
                 if (d13 > pot_para.ters[R2]) {continue;}
-                find_fc(ijk, pot_para, d13, fc_ijk_13);
-                find_g(ijk, pot_para, cos123, g_ijk);
+                find_fc(pot_para, d13, fc_ijk_13);
+                find_g(pot_para, cos123, g_ijk);
                 zeta += fc_ijk_13 * g_ijk;
             }
             double bzn, b_ijj;
@@ -265,11 +264,10 @@ static __global__ void find_force_tersoff_step2
     int n1 = N1 + threadIdx.x;
     if (n1 < N2)
     {
-        int num_types2 = num_types * num_types;
         const double* __restrict__ h = g_box + 18 * blockIdx.x;
         int triclinic = LDG(g_triclinic, blockIdx.x);
         int neighbor_number = g_neighbor_number[n1];
-        int type1 = g_type[n1];
+        //int type1 = g_type[n1];
         double x1 = LDG(g_x, n1); 
         double y1 = LDG(g_y, n1); 
         double z1 = LDG(g_z, n1);
@@ -278,7 +276,7 @@ static __global__ void find_force_tersoff_step2
         {
             int index = i1 * number_of_particles + n1;
             int n2 = g_neighbor_list[index];
-            int type2 = g_type[n2];
+            //int type2 = g_type[n2];
 
             double x12  = LDG(g_x, n2) - x1;
             double y12  = LDG(g_y, n2) - y1;
@@ -288,10 +286,10 @@ static __global__ void find_force_tersoff_step2
             double d12inv = 1.0 / d12;
             double fc_ijj_12, fcp_ijj_12;
             double fa_ijj_12, fap_ijj_12, fr_ijj_12, frp_ijj_12;
-            int ijj = type1 * num_types2 + type2 * num_types + type2;
-            find_fc_and_fcp(ijj, pot_para, d12, fc_ijj_12, fcp_ijj_12);
-            find_fa_and_fap(ijj, pot_para, d12, fa_ijj_12, fap_ijj_12);
-            find_fr_and_frp(ijj, pot_para, d12, fr_ijj_12, frp_ijj_12);
+
+            find_fc_and_fcp(pot_para, d12, fc_ijj_12, fcp_ijj_12);
+            find_fa_and_fap(pot_para, d12, fa_ijj_12, fap_ijj_12);
+            find_fr_and_frp(pot_para, d12, fr_ijj_12, frp_ijj_12);
 
             // (i,j) part
             double b12 = LDG(g_b, index);
@@ -311,29 +309,26 @@ static __global__ void find_force_tersoff_step2
                 int index_2 = n1 + number_of_particles * i2;
                 int n3 = g_neighbor_list[index_2];
                 if (n3 == n2) { continue; }
-                int type3 = g_type[n3];
+                //int type3 = g_type[n3];
                 double x13 = LDG(g_x, n3) - x1;
                 double y13 = LDG(g_y, n3) - y1;
                 double z13 = LDG(g_z, n3) - z1;
                 dev_apply_mic(triclinic, h, x13, y13, z13);
                 double d13 = sqrt(x13 * x13 + y13 * y13 + z13 * z13);
                 double fc_ikk_13, fc_ijk_13, fa_ikk_13, fc_ikj_12, fcp_ikj_12;
-                int ikj = type1 * num_types2 + type3 * num_types + type2;
-                int ikk = type1 * num_types2 + type3 * num_types + type3;
-                int ijk = type1 * num_types2 + type2 * num_types + type3;
-                find_fc(ikk, pot_para, d13, fc_ikk_13);
-                find_fc(ijk, pot_para, d13, fc_ijk_13);
-                find_fa(ikk, pot_para, d13, fa_ikk_13);
-                find_fc_and_fcp(ikj, pot_para, d12, fc_ikj_12, fcp_ikj_12);
+                find_fc(pot_para, d13, fc_ikk_13);
+                find_fc(pot_para, d13, fc_ijk_13);
+                find_fa(pot_para, d13, fa_ikk_13);
+                find_fc_and_fcp(pot_para, d12, fc_ikj_12, fcp_ikj_12);
                 double bp13 = LDG(g_bp, index_2);
                 double one_over_d12d13 = 1.0 / (d12 * d13);
                 double cos123 = (x12*x13 + y12*y13 + z12*z13)*one_over_d12d13;
                 double cos123_over_d12d12 = cos123*d12inv*d12inv;
                 double g_ijk, gp_ijk;
-                find_g_and_gp(ijk, pot_para, cos123, g_ijk, gp_ijk);
+                find_g_and_gp(pot_para, cos123, g_ijk, gp_ijk);
 
                 double g_ikj, gp_ikj;
-                find_g_and_gp(ikj, pot_para, cos123, g_ikj, gp_ikj);
+                find_g_and_gp(pot_para, cos123, g_ikj, gp_ikj);
 
                 // derivatives with cosine
                 double dc=-fc_ijj_12*bp12*fa_ijj_12*fc_ijk_13*gp_ijk+
