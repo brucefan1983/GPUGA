@@ -29,16 +29,15 @@ Calculate force, energy, and stress
 #define A      1
 #define R0     2
 #define S      3
-#define BETA   4
-#define EN     5 // special name for n to avoid conflict
-#define H      6
-#define R1     7
-#define R2     8
-#define PI_FACTOR 9
-#define MINUS_HALF_OVER_N 10
-#define C1     11
-#define C2     12
-#define C3     13
+#define EN     4 // special name for n to avoid conflict
+#define H      5
+#define R1     6
+#define R2     7
+#define PI_FACTOR 8
+#define MINUS_HALF_OVER_N 9
+#define C1     10
+#define C2     11
+#define C3     12
 
 
 
@@ -57,7 +56,6 @@ void Fitness::update_potential(double* potential_parameters)
 
     double r1 = 2.8;
     double r2 = 3.2;
-    double beta = 1.0;
 
     for (int i = 0; i < n_entries; i++)
     {
@@ -65,7 +63,6 @@ void Fitness::update_potential(double* potential_parameters)
         pot_para.ters[A] = a;
         pot_para.ters[R0] = r0;
         pot_para.ters[S] = s;
-        pot_para.ters[BETA] = beta;
         pot_para.ters[EN] = n;
         pot_para.ters[H] = h;
         pot_para.ters[C1] = c1;
