@@ -265,8 +265,7 @@ static __global__ void find_force_tersoff_step2
             dev_apply_mic(triclinic, h, x12, y12, z12);
             double d12 = sqrt(x12 * x12 + y12 * y12 + z12 * z12);
             double d12inv = 1.0 / d12;
-            double fc12, fcp12;
-            double fa12, fap12, fr12, frp12;
+            double fc12, fcp12, fa12, fap12, fr12, frp12;
 
             find_fc_and_fcp(pot_para, d12, fc12, fcp12);
             find_fa_and_fap(pot_para, d12, fa12, fap12);
@@ -301,7 +300,7 @@ static __global__ void find_force_tersoff_step2
                 double bp13 = LDG(g_bp, index_2);
                 double one_over_d12d13 = 1.0 / (d12 * d13);
                 double cos123 = (x12*x13 + y12*y13 + z12*z13) * one_over_d12d13;
-                double cos123_over_d12d12 = cos123*d12inv*d12inv;
+                double cos123_over_d12d12 = cos123 * d12inv * d12inv;
                 double g123, gp123;
                 find_g_and_gp(pot_para, cos123, g123, gp123);
 
@@ -352,9 +351,9 @@ static __global__ void find_force_tersoff_step3
         double s_fx = 0.0; // force_x
         double s_fy = 0.0; // force_y
         double s_fz = 0.0; // force_z
-        double s_sx = 0.0; // virial_stress_x
-        double s_sy = 0.0; // virial_stress_y
-        double s_sz = 0.0; // virial_stress_z
+        double s_sx = 0.0; // virial_x
+        double s_sy = 0.0; // virial_y
+        double s_sz = 0.0; // virial_z
         const double* __restrict__ h = g_box + 18 * blockIdx.x;
         int triclinic = LDG(g_triclinic, blockIdx.x);
         int neighbor_number = g_neighbor_number[n1];
