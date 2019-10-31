@@ -29,6 +29,7 @@ int main(int argc, char *argv[])
 {
     print_welcome_information();
     int number_of_inputs = get_number_of_input_directories();
+
     for (int n = 0; n < number_of_inputs; ++n)
     {
         char input_directory[200];
@@ -37,20 +38,26 @@ int main(int argc, char *argv[])
         {
             print_error("reading error for input directory.\n");
         }
+
         print_line_1();
         printf("Run simulation for '%s'.\n", input_directory);
         print_line_2();
+
         clock_t time_begin = clock();
         GPUGA gpuga(input_directory);
         clock_t time_finish = clock();
+
         double time_used = (time_finish - time_begin) / double(CLOCKS_PER_SEC);
+
         print_line_1();
         printf("Time used for '%s' = %f s.\n", input_directory, time_used);
         print_line_2();
     }
+
     print_line_1();
     printf("Finished running gpuga.\n");
     print_line_2();
+
     return EXIT_SUCCESS;
 }
 

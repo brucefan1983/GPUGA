@@ -27,7 +27,7 @@ Use the genetic algorithm to fit potential parameters.
 #include <chrono>
 
 
-GA::GA(char* input_dir)
+GA::GA(char* input_dir, Fitness* fitness_function)
 {
     // parameters
     read_potential(input_dir);
@@ -60,6 +60,9 @@ GA::GA(char* input_dir)
     {
         population[n] = r1(rng);
     }
+
+    // run the GA
+    compute(input_dir, fitness_function);
 }
 
 

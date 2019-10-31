@@ -22,9 +22,9 @@ class Fitness;
 class GA
 {
 public:
-    GA(char*);
+    GA(char*, Fitness*);
     ~GA(void);
-    void compute(char*, Fitness*);
+
 protected:
     // parameters
     std::mt19937 rng;
@@ -44,6 +44,7 @@ protected:
     double* parameters_min;
     double* parameters_max;
     // for evolution
+    void compute(char*, Fitness*);
     void sort_population(int);
     void output(int, FILE*);
     void crossover(void);
