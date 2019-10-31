@@ -225,7 +225,7 @@ static __global__ void find_force_tersoff_step1
                 zeta += fc_ijk_13 * g_ijk;
             }
             double bzn, b_ijj;
-            bzn = pow(pot_para.ters[BETA] * zeta, pot_para.ters[EN]);
+            bzn = pow(zeta, pot_para.ters[EN]);
             b_ijj = pow(1.0 + bzn, pot_para.ters[MINUS_HALF_OVER_N]);
             if (zeta < 1.0e-16) // avoid division by 0
             {
