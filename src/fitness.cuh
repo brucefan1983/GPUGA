@@ -20,6 +20,12 @@
 #include <stdio.h>
 
 
+struct Pot_Para
+{
+    double ters[14];
+};
+
+
 class Fitness
 {
 public:
@@ -59,6 +65,7 @@ protected:
     // other classes
     Box box;
     Neighbor neighbor;
+    Pot_Para pot_para;
 };
 
 

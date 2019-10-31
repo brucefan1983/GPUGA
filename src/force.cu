@@ -28,6 +28,7 @@ Calculate force, energy, and stress
 #define D0     0
 #define A      1
 #define R0     2
+#define S      3
 #define BETA   4
 #define EN     5 // special name for n to avoid conflict
 #define H      6
@@ -38,8 +39,7 @@ Calculate force, energy, and stress
 #define C1     11
 #define C2     12
 #define C3     13
-#define S      14
-#define C0     15
+
 
 
 void Fitness::update_potential(double* potential_parameters)
@@ -55,95 +55,92 @@ void Fitness::update_potential(double* potential_parameters)
     double c2 = potential_parameters[7];
     double c3 = potential_parameters[8];
 
-
     double r1 = 2.8;
     double r2 = 3.2;
     double beta = 1.0;
 
     for (int i = 0; i < n_entries; i++)
     {
-        cpu_ters[i*NUM_PARAMS + D0] = d0;
-        cpu_ters[i*NUM_PARAMS + A] = a;
-        cpu_ters[i*NUM_PARAMS + R0] = r0;
-        cpu_ters[i*NUM_PARAMS + S] = s;
-        cpu_ters[i*NUM_PARAMS + BETA] = beta;
-        cpu_ters[i*NUM_PARAMS + EN] = n;
-        cpu_ters[i*NUM_PARAMS + H] = h;
-        cpu_ters[i*NUM_PARAMS + C1] = c1;
-        cpu_ters[i*NUM_PARAMS + C2] = c2;
-        cpu_ters[i*NUM_PARAMS + C3] = c3;
-        cpu_ters[i*NUM_PARAMS + R1] = r1;
-        cpu_ters[i*NUM_PARAMS + R2] = r2;
-        cpu_ters[i*NUM_PARAMS + PI_FACTOR] = PI / (r2 - r1);
-        cpu_ters[i*NUM_PARAMS + MINUS_HALF_OVER_N] = - 0.5 / n;
+        pot_para.ters[D0] = d0;
+        pot_para.ters[A] = a;
+        pot_para.ters[R0] = r0;
+        pot_para.ters[S] = s;
+        pot_para.ters[BETA] = beta;
+        pot_para.ters[EN] = n;
+        pot_para.ters[H] = h;
+        pot_para.ters[C1] = c1;
+        pot_para.ters[C2] = c2;
+        pot_para.ters[C3] = c3;
+        pot_para.ters[R1] = r1;
+        pot_para.ters[R2] = r2;
+        pot_para.ters[PI_FACTOR] = PI / (r2 - r1);
+        pot_para.ters[MINUS_HALF_OVER_N] = - 0.5 / n;
     }
-    int mem = sizeof(double) * n_entries * NUM_PARAMS;
-    CHECK(cudaMemcpy(ters, cpu_ters, mem, cudaMemcpyHostToDevice));
 }
 
 
 static __device__ void find_fr_and_frp
-(int i, const double* __restrict__ ters, double d12, double &fr, double &frp)
+(int i, Pot_Para pot_para, double d12, double &fr, double &frp)
 {
-    double d0 = LDG(ters, i + D0);
-    double a = LDG(ters, i + A);
-    double r0 = LDG(ters, i + R0);
-    double s = LDG(ters, i + S);
+    double d0 = pot_para.ters[D0];
+    double a = pot_para.ters[A];
+    double r0 = pot_para.ters[R0];
+    double s = pot_para.ters[S];
     fr = d0 / (s-1) * exp(-sqrt(2.0*s)*a*(d12-r0));
     frp = -2.0*a*fr;
 }
 
 
 static __device__ void find_fa_and_fap
-(int i, const double* __restrict__ ters, double d12, double &fa, double &fap)
+(int i, Pot_Para pot_para, double d12, double &fa, double &fap)
 {
-    double d0 = LDG(ters, i + D0);
-    double a = LDG(ters, i + A);
-    double r0 = LDG(ters, i + R0);
-    double s = LDG(ters, i + S);
+    double d0 = pot_para.ters[D0];
+    double a = pot_para.ters[A];
+    double r0 = pot_para.ters[R0];
+    double s = pot_para.ters[S];
     fa = s* d0 / (s-1) * exp(-sqrt(2.0/s)*a*(d12-r0));
     fap = -a*fa;
 }
 
 
 static __device__ void find_fc_and_fcp
-(int i, const double* __restrict__ ters, double d12, double &fc, double &fcp)
+(int i, Pot_Para pot_para, double d12, double &fc, double &fcp)
 {
-    if (d12 < LDG(ters, i + R1)){fc = 1.0; fcp = 0.0;}
-    else if (d12 < LDG(ters, i + R2))
+    if (d12 < pot_para.ters[R1]){fc = 1.0; fcp = 0.0;}
+    else if (d12 < pot_para.ters[R2])
     {
-        fc = 9.0/16.0 * cos(LDG(ters, i + PI_FACTOR) * (d12 - LDG(ters, i + R1)))
-           - 1.0/16 * cos(LDG(ters, i + PI_FACTOR) * (d12 - LDG(ters, i + R1)) * 3.0)
+        fc = 9.0/16.0 * cos(pot_para.ters[PI_FACTOR] * (d12 - pot_para.ters[R1]))
+           - 1.0/16 * cos(pot_para.ters[PI_FACTOR] * (d12 - pot_para.ters[R1]) * 3.0)
            + 0.5;
 
-        fcp = sin(LDG(ters, i + PI_FACTOR) * (d12 - LDG(ters, i + R1)) * 3.0) 
-                * LDG(ters, i + PI_FACTOR) * 3.0/ 16.0
-                - sin(LDG(ters, i + PI_FACTOR) * (d12 - LDG(ters, i + R1))) 
-                * LDG(ters, i + PI_FACTOR) * 9.0 / 16.0;
+        fcp = sin(pot_para.ters[PI_FACTOR] * (d12 - pot_para.ters[R1]) * 3.0) 
+                * pot_para.ters[PI_FACTOR] * 3.0/ 16.0
+                - sin(pot_para.ters[PI_FACTOR] * (d12 - pot_para.ters[R1])) 
+                * pot_para.ters[PI_FACTOR] * 9.0 / 16.0;
     }
     else {fc  = 0.0; fcp = 0.0;}
 }
 
 
 static __device__ void find_fa
-(int i, const double* __restrict__ ters, double d12, double &fa)
+(int i, Pot_Para pot_para, double d12, double &fa)
 {
-    double d0 = LDG(ters, i + D0);
-    double a = LDG(ters, i + A);
-    double r0 = LDG(ters, i + R0);
-    double s = LDG(ters, i + S);
+    double d0 = pot_para.ters[D0];
+    double a = pot_para.ters[A];
+    double r0 = pot_para.ters[R0];
+    double s = pot_para.ters[S];
     fa = s* d0 / (s-1) * exp(-sqrt(2.0/s)*a*(d12-r0));
 }
 
 
 static __device__ void find_fc
-(int i, const double* __restrict__ ters, double d12, double &fc)
+(int i, Pot_Para pot_para, double d12, double &fc)
 {
-    if (d12 < LDG(ters, i + R1)) {fc  = 1.0;}
-    else if (d12 < LDG(ters, i + R2))
+    if (d12 < pot_para.ters[R1]) {fc  = 1.0;}
+    else if (d12 < pot_para.ters[R2])
     {
-        fc = 9.0/16.0 * cos(LDG(ters, i + PI_FACTOR) * (d12 - LDG(ters, i + R1)))
-           - 1.0/16 * cos(LDG(ters, i + PI_FACTOR) * (d12 - LDG(ters, i + R1)) * 3.0)
+        fc = 9.0/16.0 * cos(pot_para.ters[PI_FACTOR] * (d12 - pot_para.ters[R1]))
+           - 1.0/16 * cos(pot_para.ters[PI_FACTOR] * (d12 - pot_para.ters[R1]) * 3.0)
            + 0.5;
     }
     else {fc  = 0.0;}
@@ -151,25 +148,25 @@ static __device__ void find_fc
 
 
 static __device__ void find_g_and_gp
-(int i, const double* __restrict__ ters, double cos, double &g, double &gp)
+(int i, Pot_Para pot_para, double cos, double &g, double &gp)
 {
-    double x = cos - LDG(ters, i + H);
-    g = LDG(ters, C3) * x;
-    g = (g + LDG(ters, C2)) * x;
-    g = (g + LDG(ters, C1)) * x;
-    gp = LDG(ters, C3) * 3.0 * x;
-    gp = (gp + LDG(ters, C2) * 2.0) * x;
-    gp = gp + LDG(ters, C1);
+    double x = cos - pot_para.ters[H];
+    g = pot_para.ters[C3] * x;
+    g = (g + pot_para.ters[C2]) * x;
+    g = (g + pot_para.ters[C1]) * x;
+    gp = pot_para.ters[C3] * 3.0 * x;
+    gp = (gp + pot_para.ters[C2] * 2.0) * x;
+    gp = gp + pot_para.ters[C1];
 }
 
 
 static __device__ void find_g
-(int i, const double* __restrict__ ters, double cos, double &g)
+(int i, Pot_Para pot_para, double cos, double &g)
 {
-    double x = cos - LDG(ters, i + H);
-    g = LDG(ters, C3) * x;
-    g = (g + LDG(ters, C2)) * x;
-    g = (g + LDG(ters, C1)) * x;
+    double x = cos - pot_para.ters[H];
+    g = pot_para.ters[C3] * x;
+    g = (g + pot_para.ters[C2]) * x;
+    g = (g + pot_para.ters[C1]) * x;
 }
 
 
@@ -179,7 +176,7 @@ static __global__ void find_force_tersoff_step1
     int number_of_particles, int *Na, int *Na_sum,
     const int* __restrict__ g_triclinic, 
     int num_types, int* g_neighbor_number, int* g_neighbor_list, int* g_type,
-    const double* __restrict__ ters,
+    Pot_Para pot_para,
     const double* __restrict__ g_x,
     const double* __restrict__ g_y,
     const double* __restrict__ g_z,
@@ -223,17 +220,14 @@ static __global__ void find_force_tersoff_step1
                 double cos123 = (x12 * x13 + y12 * y13 + z12 * z13) / (d12*d13);
                 double fc_ijk_13, g_ijk;
                 int ijk = type1 * num_types2 + type2 * num_types + type3;
-                if (d13 > LDG(ters, ijk*NUM_PARAMS + R2)) {continue;}
-                find_fc(ijk*NUM_PARAMS, ters, d13, fc_ijk_13);
-                find_g(ijk*NUM_PARAMS, ters, cos123, g_ijk);
+                if (d13 > pot_para.ters[R2]) {continue;}
+                find_fc(ijk, pot_para, d13, fc_ijk_13);
+                find_g(ijk, pot_para, cos123, g_ijk);
                 zeta += fc_ijk_13 * g_ijk;
             }
             double bzn, b_ijj;
-            int ijj = type1 * num_types2 + type2 * num_types + type2;
-            bzn = pow(LDG(ters, ijj*NUM_PARAMS + BETA) *
-                zeta, LDG(ters, ijj*NUM_PARAMS + EN));
-            b_ijj = 
-                pow(1.0 + bzn, LDG(ters, ijj*NUM_PARAMS + MINUS_HALF_OVER_N));
+            bzn = pow(pot_para.ters[BETA] * zeta, pot_para.ters[EN]);
+            b_ijj = pow(1.0 + bzn, pot_para.ters[MINUS_HALF_OVER_N]);
             if (zeta < 1.0e-16) // avoid division by 0
             {
                 g_b[i1 * number_of_particles + n1]  = 1.0;
@@ -256,7 +250,7 @@ static __global__ void find_force_tersoff_step2
     int number_of_particles, int *Na, int *Na_sum,
     const int* __restrict__ g_triclinic, 
     int num_types, int *g_neighbor_number, int *g_neighbor_list, int *g_type,
-    const double* __restrict__ ters,
+    Pot_Para pot_para,
     const double* __restrict__ g_b,
     const double* __restrict__ g_bp,
     const double* __restrict__ g_x,
@@ -295,9 +289,9 @@ static __global__ void find_force_tersoff_step2
             double fc_ijj_12, fcp_ijj_12;
             double fa_ijj_12, fap_ijj_12, fr_ijj_12, frp_ijj_12;
             int ijj = type1 * num_types2 + type2 * num_types + type2;
-            find_fc_and_fcp(ijj*NUM_PARAMS, ters, d12, fc_ijj_12, fcp_ijj_12);
-            find_fa_and_fap(ijj*NUM_PARAMS, ters, d12, fa_ijj_12, fap_ijj_12);
-            find_fr_and_frp(ijj*NUM_PARAMS, ters, d12, fr_ijj_12, frp_ijj_12);
+            find_fc_and_fcp(ijj, pot_para, d12, fc_ijj_12, fcp_ijj_12);
+            find_fa_and_fap(ijj, pot_para, d12, fa_ijj_12, fap_ijj_12);
+            find_fr_and_frp(ijj, pot_para, d12, fr_ijj_12, frp_ijj_12);
 
             // (i,j) part
             double b12 = LDG(g_b, index);
@@ -327,20 +321,19 @@ static __global__ void find_force_tersoff_step2
                 int ikj = type1 * num_types2 + type3 * num_types + type2;
                 int ikk = type1 * num_types2 + type3 * num_types + type3;
                 int ijk = type1 * num_types2 + type2 * num_types + type3;
-                find_fc(ikk*NUM_PARAMS, ters, d13, fc_ikk_13);
-                find_fc(ijk*NUM_PARAMS, ters, d13, fc_ijk_13);
-                find_fa(ikk*NUM_PARAMS, ters, d13, fa_ikk_13);
-                find_fc_and_fcp(ikj*NUM_PARAMS, ters, d12,
-                                	fc_ikj_12, fcp_ikj_12);
+                find_fc(ikk, pot_para, d13, fc_ikk_13);
+                find_fc(ijk, pot_para, d13, fc_ijk_13);
+                find_fa(ikk, pot_para, d13, fa_ikk_13);
+                find_fc_and_fcp(ikj, pot_para, d12, fc_ikj_12, fcp_ikj_12);
                 double bp13 = LDG(g_bp, index_2);
                 double one_over_d12d13 = 1.0 / (d12 * d13);
                 double cos123 = (x12*x13 + y12*y13 + z12*z13)*one_over_d12d13;
                 double cos123_over_d12d12 = cos123*d12inv*d12inv;
                 double g_ijk, gp_ijk;
-                find_g_and_gp(ijk*NUM_PARAMS, ters, cos123, g_ijk, gp_ijk);
+                find_g_and_gp(ijk, pot_para, cos123, g_ijk, gp_ijk);
 
                 double g_ikj, gp_ikj;
-                find_g_and_gp(ikj*NUM_PARAMS, ters, cos123, g_ikj, gp_ikj);
+                find_g_and_gp(ikj, pot_para, cos123, g_ikj, gp_ikj);
 
                 // derivatives with cosine
                 double dc=-fc_ijj_12*bp12*fa_ijj_12*fc_ijk_13*gp_ijk+
@@ -451,13 +444,13 @@ void Fitness::find_force(void)
     find_force_tersoff_step1<<<Nc, MAX_ATOM_NUMBER>>>
     (
         N, Na, Na_sum, box.triclinic, num_types,
-        neighbor.NN, neighbor.NL, type, ters, x, y, z, box.h, b, bp
+        neighbor.NN, neighbor.NL, type, pot_para, x, y, z, box.h, b, bp
     );
     CUDA_CHECK_KERNEL
     find_force_tersoff_step2<<<Nc, MAX_ATOM_NUMBER>>>
     (
         N, Na, Na_sum, box.triclinic, num_types, neighbor.NN, neighbor.NL, type, 
-        ters, b, bp, x, y, z, box.h, pe, f12x, f12y, f12z
+        pot_para, b, bp, x, y, z, box.h, pe, f12x, f12y, f12z
     );
     CUDA_CHECK_KERNEL
     find_force_tersoff_step3<<<Nc, MAX_ATOM_NUMBER>>>
