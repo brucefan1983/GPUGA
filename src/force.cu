@@ -227,17 +227,9 @@ static __global__ void find_force_tersoff_step1
             double bzn, b_ijj;
             bzn = pow(zeta, pot_para.ters[EN]);
             b_ijj = pow(1.0 + bzn, pot_para.ters[MINUS_HALF_OVER_N]);
-            if (zeta < 1.0e-16) // avoid division by 0
-            {
-                g_b[i1 * number_of_particles + n1]  = 1.0;
-                g_bp[i1 * number_of_particles + n1] = 0.0;
-            }
-            else
-            {
-                g_b[i1 * number_of_particles + n1]  = b_ijj;
-                g_bp[i1 * number_of_particles + n1]
-                    = - b_ijj * bzn * 0.5 / ((1.0 + bzn) * zeta);
-            }
+            g_b[i1 * number_of_particles + n1]  = b_ijj;
+            g_bp[i1 * number_of_particles + n1]
+                = - b_ijj * bzn * 0.5 / ((1.0 + bzn) * zeta);
         }
     }
 }
