@@ -109,14 +109,11 @@ static __device__ void find_fc_and_fcp
     if (d12 < pot_para.ters[R1]){fc = 1.0; fcp = 0.0;}
     else if (d12 < pot_para.ters[R2])
     {
-        fc = 9.0/16.0 * cos(pot_para.ters[PI_FACTOR] * (d12 - pot_para.ters[R1]))
-           - 1.0/16 * cos(pot_para.ters[PI_FACTOR] * (d12 - pot_para.ters[R1]) * 3.0)
+        fc = 0.5 * cos(pot_para.ters[PI_FACTOR] * (d12 - pot_para.ters[R1]))
            + 0.5;
 
-        fcp = sin(pot_para.ters[PI_FACTOR] * (d12 - pot_para.ters[R1]) * 3.0) 
-                * pot_para.ters[PI_FACTOR] * 3.0/ 16.0
-                - sin(pot_para.ters[PI_FACTOR] * (d12 - pot_para.ters[R1])) 
-                * pot_para.ters[PI_FACTOR] * 9.0 / 16.0;
+        fcp = - sin(pot_para.ters[PI_FACTOR] * (d12 - pot_para.ters[R1])) 
+                * pot_para.ters[PI_FACTOR] * 0.5;
     }
     else {fc  = 0.0; fcp = 0.0;}
 }
@@ -139,8 +136,7 @@ static __device__ void find_fc
     if (d12 < pot_para.ters[R1]) {fc  = 1.0;}
     else if (d12 < pot_para.ters[R2])
     {
-        fc = 9.0/16.0 * cos(pot_para.ters[PI_FACTOR] * (d12 - pot_para.ters[R1]))
-           - 1.0/16 * cos(pot_para.ters[PI_FACTOR] * (d12 - pot_para.ters[R1]) * 3.0)
+        fc = 0.5 * cos(pot_para.ters[PI_FACTOR] * (d12 - pot_para.ters[R1]))
            + 0.5;
     }
     else {fc  = 0.0;}
