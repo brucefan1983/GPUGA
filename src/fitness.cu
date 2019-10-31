@@ -96,32 +96,42 @@ void Fitness::read_Nc(FILE* fid)
 
 
 void Fitness::read_Na(FILE* fid)
-{
-    int *cpu_Na;
-    int *cpu_Na_sum; 
-    MY_MALLOC(cpu_Na, int, Nc);
-    MY_MALLOC(cpu_Na_sum, int, Nc);
+{ 
+    CHECK(cudaMallocManaged((void**)&Na, sizeof(int) * Nc));
+    CHECK(cudaMallocManaged((void**)&Na_sum, sizeof(int) * Nc));
+
     N = 0;
-    for (int nc = 0; nc < Nc; ++nc) { cpu_Na_sum[nc] = 0; }
+
     for (int nc = 0; nc < Nc; ++nc)
     {
-        int count = fscanf(fid, "%d", &cpu_Na[nc]);
-        if (count != 1) print_error("Reading error for xyz.in.\n");
-        N += cpu_Na[nc];
-        if (cpu_Na[nc] < 1)
-            print_error("Number of atoms %d should >= 1\n");
-        else
-            printf("N[%d] = %d.\n", nc, cpu_Na[nc]);
+        Na_sum[nc] = 0;
     }
-    for (int nc = 1; nc < Nc; ++nc) 
-        cpu_Na_sum[nc] = cpu_Na_sum[nc-1] + cpu_Na[nc-1];
-    int mem = sizeof(int) * Nc;
-    CHECK(cudaMalloc((void**)&Na, mem));
-    CHECK(cudaMalloc((void**)&Na_sum, mem));
-    CHECK(cudaMemcpy(Na, cpu_Na, mem, cudaMemcpyHostToDevice));
-    CHECK(cudaMemcpy(Na_sum, cpu_Na_sum, mem, cudaMemcpyHostToDevice));
-    MY_FREE(cpu_Na);
-    MY_FREE(cpu_Na_sum);
+
+    for (int nc = 0; nc < Nc; ++nc)
+    {
+        int count = fscanf(fid, "%d", &Na[nc]);
+
+        if (count != 1)
+        {
+            print_error("Reading error for xyz.in.\n");
+        }
+
+        N += Na[nc];
+
+        if (Na[nc] < 1)
+        {
+            print_error("Number of atoms %d should >= 1\n");
+        }
+        else
+        {
+            printf("N[%d] = %d.\n", nc, Na[nc]);
+        }
+    }
+
+    for (int nc = 1; nc < Nc; ++nc)
+    {
+        Na_sum[nc] = Na_sum[nc-1] + Na[nc-1];
+    }
 } 
 
 
