@@ -29,11 +29,14 @@ struct Pot_Para
 class Fitness
 {
 public:
+
     Fitness(char*);
     ~Fitness(void);
     void compute(int, int, double*, double*, double*, double*);
     void predict(char*, int, double*, double*, double*);
+
 protected:
+
     // functions related to initialization
     void read_xyz_in(char*);
     void read_Nc(FILE*);
@@ -41,6 +44,7 @@ protected:
     void read_xyz(FILE*);
     void read_box(char*);
     void allocate_memory_gpu(void);
+
     // functions related to fitness evaluation
     double get_fitness_force(double*, double*);
     double get_fitness_energy(double*, double*);
@@ -48,6 +52,7 @@ protected:
     void initialize_potential(void); 
     void update_potential(double*);
     void find_force(void);
+
     // integer variables
     int Nc;      // number of configurations
     int N;       // total number of atoms (sum of Na)
@@ -55,6 +60,7 @@ protected:
     int *Na;     // number of atoms in each configuration
     int *Na_sum; // prefix sum of Na
     int *type;
+
     // real variables
     double *b, *bp, *f12x, *f12y, *f12z;
     double *x, *y, *z, *fx, *fy, *fz, *pe, *sxx, *syy, *szz;
@@ -62,6 +68,7 @@ protected:
     double *cpu_fx, *cpu_fy, *cpu_fz;
     double *cpu_fx_ref, *cpu_fy_ref, *cpu_fz_ref;
     double force_square_sum;
+
     // other classes
     Box box;
     Neighbor neighbor;
