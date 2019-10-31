@@ -217,12 +217,11 @@ static __global__ void find_force_tersoff_step1
                 dev_apply_mic(triclinic, h, x13, y13, z13);
                 double d13 = sqrt(x13 * x13 + y13 * y13 + z13 * z13);
                 double cos123 = (x12 * x13 + y12 * y13 + z12 * z13) / (d12*d13);
-                double fc_ijk_13, g_ijk;
+                double fc13, g123;
 
-                if (d13 > pot_para.ters[R2]) {continue;}
-                find_fc(pot_para, d13, fc_ijk_13);
-                find_g(pot_para, cos123, g_ijk);
-                zeta += fc_ijk_13 * g_ijk;
+                find_fc(pot_para, d13, fc13);
+                find_g(pot_para, cos123, g123);
+                zeta += fc13 * g123;
             }
             double bzn, b_ijj;
             bzn = pow(zeta, pot_para.ters[EN]);
@@ -276,23 +275,23 @@ static __global__ void find_force_tersoff_step2
             dev_apply_mic(triclinic, h, x12, y12, z12);
             double d12 = sqrt(x12 * x12 + y12 * y12 + z12 * z12);
             double d12inv = 1.0 / d12;
-            double fc_ijj_12, fcp_ijj_12;
-            double fa_ijj_12, fap_ijj_12, fr_ijj_12, frp_ijj_12;
+            double fc12, fcp12;
+            double fa12, fap12, fr12, frp12;
 
-            find_fc_and_fcp(pot_para, d12, fc_ijj_12, fcp_ijj_12);
-            find_fa_and_fap(pot_para, d12, fa_ijj_12, fap_ijj_12);
-            find_fr_and_frp(pot_para, d12, fr_ijj_12, frp_ijj_12);
+            find_fc_and_fcp(pot_para, d12, fc12, fcp12);
+            find_fa_and_fap(pot_para, d12, fa12, fap12);
+            find_fr_and_frp(pot_para, d12, fr12, frp12);
 
             // (i,j) part
             double b12 = LDG(g_b, index);
-            double factor3=(fcp_ijj_12*(fr_ijj_12-b12*fa_ijj_12)+
-                            fc_ijj_12*(frp_ijj_12-b12*fap_ijj_12))*d12inv;
+            double factor3=(fcp12*(fr12-b12*fa12)+
+                            fc12*(frp12-b12*fap12))*d12inv;
             double f12x = x12 * factor3 * 0.5;
             double f12y = y12 * factor3 * 0.5;
             double f12z = z12 * factor3 * 0.5;
 
             // accumulate potential energy
-            pot_energy += fc_ijj_12*(fr_ijj_12-b12*fa_ijj_12)*0.5;
+            pot_energy += fc12*(fr12-b12*fa12)*0.5;
 
             // (i,j,k) part
             double bp12 = LDG(g_bp, index);
@@ -307,26 +306,21 @@ static __global__ void find_force_tersoff_step2
                 double z13 = LDG(g_z, n3) - z1;
                 dev_apply_mic(triclinic, h, x13, y13, z13);
                 double d13 = sqrt(x13 * x13 + y13 * y13 + z13 * z13);
-                double fc_ikk_13, fc_ijk_13, fa_ikk_13, fc_ikj_12, fcp_ikj_12;
-                find_fc(pot_para, d13, fc_ikk_13);
-                find_fc(pot_para, d13, fc_ijk_13);
-                find_fa(pot_para, d13, fa_ikk_13);
-                find_fc_and_fcp(pot_para, d12, fc_ikj_12, fcp_ikj_12);
+                double fc13, fa13;
+                find_fc(pot_para, d13, fc13);
+                find_fa(pot_para, d13, fa13);
                 double bp13 = LDG(g_bp, index_2);
                 double one_over_d12d13 = 1.0 / (d12 * d13);
                 double cos123 = (x12*x13 + y12*y13 + z12*z13)*one_over_d12d13;
                 double cos123_over_d12d12 = cos123*d12inv*d12inv;
-                double g_ijk, gp_ijk;
-                find_g_and_gp(pot_para, cos123, g_ijk, gp_ijk);
-
-                double g_ikj, gp_ikj;
-                find_g_and_gp(pot_para, cos123, g_ikj, gp_ikj);
+                double g123, gp123;
+                find_g_and_gp(pot_para, cos123, g123, gp123);
 
                 // derivatives with cosine
-                double dc=-fc_ijj_12*bp12*fa_ijj_12*fc_ijk_13*gp_ijk+
-                        -fc_ikj_12*bp13*fa_ikk_13*fc_ikk_13*gp_ikj;
+                double dc = -fc12 * bp12 * fa12 * fc13 * gp123
+                            -fc12 * bp13 * fa13 * fc13 * gp123;
                 // derivatives with rij
-                double dr=-fcp_ikj_12*bp13*fa_ikk_13*g_ikj*fc_ikk_13*d12inv;
+                double dr = -fcp12 * bp13 * fa13 * g123 * fc13 * d12inv;
 
                 double cos_d = x13 * one_over_d12d13 - x12 * cos123_over_d12d12;
                 f12x += (x12 * dr + dc * cos_d)*0.5;
