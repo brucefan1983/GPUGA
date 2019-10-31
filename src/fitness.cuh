@@ -56,7 +56,7 @@ protected:
     int *Na_sum; // prefix sum of Na
     int *type;
     // real variables
-    double *ters, *cpu_ters, *b, *bp, *f12x, *f12y, *f12z;
+    double *b, *bp, *f12x, *f12y, *f12z;
     double *x, *y, *z, *fx, *fy, *fz, *pe, *sxx, *syy, *szz;
     double *fx_ref, *fy_ref, *fz_ref; 
     double *cpu_fx, *cpu_fy, *cpu_fz;

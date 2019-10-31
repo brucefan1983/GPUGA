@@ -17,7 +17,6 @@
 #pragma once
 #define MN              64
 #define MAX_ATOM_NUMBER 64
-#define NUM_PARAMS      17
 #define NC_FORCE        5
 #define NEIGHBOR_CUTOFF 3
 #define WEIGHT_FORCE    0.05

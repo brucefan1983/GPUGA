@@ -42,8 +42,6 @@ Fitness::~Fitness(void)
     MY_FREE(cpu_fx);
     MY_FREE(cpu_fy);
     MY_FREE(cpu_fz);
-    MY_FREE(cpu_ters);
-    cudaFree(ters);
     cudaFree(Na);
     cudaFree(Na_sum);
     cudaFree(type);
@@ -173,10 +171,6 @@ void Fitness::read_xyz(FILE* fid)
     CHECK(cudaMemcpy(fx_ref, cpu_fx_ref, m2, cudaMemcpyHostToDevice));
     CHECK(cudaMemcpy(fy_ref, cpu_fy_ref, m2, cudaMemcpyHostToDevice));
     CHECK(cudaMemcpy(fz_ref, cpu_fz_ref, m2, cudaMemcpyHostToDevice));
-
-    int n_entries = num_types * num_types * num_types;
-    MY_MALLOC(cpu_ters, double, n_entries * NUM_PARAMS);
-    CHECK(cudaMalloc((void**)&ters, sizeof(double) * n_entries * NUM_PARAMS));
 }
 
 
