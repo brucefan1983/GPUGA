@@ -22,9 +22,8 @@ class Box
 public:
     void read_file(char*, int);
     ~Box(void);
-    int *triclinic, *cpu_triclinic; // box type
-    double* h;             // GPU box data
-    double* cpu_h;         // CPU box data
+    int *triclinic;
+    double* h; // GPU box data
     // energy for the whole box 
     double *pe_ref, *sxx_ref, *syy_ref, *szz_ref;
     double *cpu_pe_ref, *cpu_sxx_ref, *cpu_syy_ref, *cpu_szz_ref;
