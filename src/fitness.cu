@@ -137,12 +137,14 @@ void Fitness::read_Na(FILE* fid)
 
 void Fitness::read_xyz(FILE* fid)
 {
-    int *cpu_type;
-    double *cpu_x, *cpu_y, *cpu_z;
-    MY_MALLOC(cpu_type, int, N);
-    MY_MALLOC(cpu_x, double, N);
-    MY_MALLOC(cpu_y, double, N);
-    MY_MALLOC(cpu_z, double, N);
+    int m1 = sizeof(int) * N;
+    int m2 = sizeof(double) * N;
+
+    CHECK(cudaMallocManaged((void**)&type, m1));
+    CHECK(cudaMallocManaged((void**)&x, m2));
+    CHECK(cudaMallocManaged((void**)&y, m2));
+    CHECK(cudaMallocManaged((void**)&z, m2));
+
     MY_MALLOC(cpu_fx_ref, double, N);
     MY_MALLOC(cpu_fy_ref, double, N);
     MY_MALLOC(cpu_fz_ref, double, N);
@@ -154,10 +156,10 @@ void Fitness::read_xyz(FILE* fid)
     for (int n = 0; n < N; n++)
     {
         int count = fscanf(fid, "%d%lf%lf%lf%lf%lf%lf", 
-            &(cpu_type[n]), &(cpu_x[n]), &(cpu_y[n]), &(cpu_z[n]),
+            &(type[n]), &(x[n]), &(y[n]), &(z[n]),
             &(cpu_fx_ref[n]), &(cpu_fy_ref[n]), &(cpu_fz_ref[n]));
         if (count != 7) { print_error("reading error for xyz.in.\n"); }
-        if (cpu_type[n] > num_types) { num_types = cpu_type[n]; }
+        if (type[n] > num_types) { num_types = type[n]; }
         if (n < NC_FORCE * MAX_ATOM_NUMBER)
         {
             force_square_sum += cpu_fx_ref[n] * cpu_fx_ref[n]
@@ -166,20 +168,11 @@ void Fitness::read_xyz(FILE* fid)
         }
     }
     num_types++;
-    int m1 = sizeof(int) * N;
-    int m2 = sizeof(double) * N;
+
     allocate_memory_gpu();
-    CHECK(cudaMemcpy(type, cpu_type, m1, cudaMemcpyHostToDevice));
-    CHECK(cudaMemcpy(x, cpu_x, m2, cudaMemcpyHostToDevice));
-    CHECK(cudaMemcpy(y, cpu_y, m2, cudaMemcpyHostToDevice));
-    CHECK(cudaMemcpy(z, cpu_z, m2, cudaMemcpyHostToDevice));
     CHECK(cudaMemcpy(fx_ref, cpu_fx_ref, m2, cudaMemcpyHostToDevice));
     CHECK(cudaMemcpy(fy_ref, cpu_fy_ref, m2, cudaMemcpyHostToDevice));
     CHECK(cudaMemcpy(fz_ref, cpu_fz_ref, m2, cudaMemcpyHostToDevice));
-    MY_FREE(cpu_type);
-    MY_FREE(cpu_x);
-    MY_FREE(cpu_y);
-    MY_FREE(cpu_z);
 
     int n_entries = num_types * num_types * num_types;
     MY_MALLOC(cpu_ters, double, n_entries * NUM_PARAMS);
@@ -189,13 +182,8 @@ void Fitness::read_xyz(FILE* fid)
 
 void Fitness::allocate_memory_gpu(void)
 {
-    int m1 = sizeof(int) * N;
     int m2 = sizeof(double) * N;
     // read from CPU
-    CHECK(cudaMalloc((void**)&type, m1));
-    CHECK(cudaMalloc((void**)&x, m2));
-    CHECK(cudaMalloc((void**)&y, m2));
-    CHECK(cudaMalloc((void**)&z, m2));
     CHECK(cudaMalloc((void**)&fx_ref, m2));
     CHECK(cudaMalloc((void**)&fy_ref, m2));
     CHECK(cudaMalloc((void**)&fz_ref, m2));
