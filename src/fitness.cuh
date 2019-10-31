@@ -22,7 +22,7 @@
 
 struct Pot_Para
 {
-    double ters[14];
+    double ters[13];
 };
 
 

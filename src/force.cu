@@ -40,7 +40,6 @@ Calculate force, energy, and stress
 #define C3     12
 
 
-
 void Fitness::update_potential(double* potential_parameters)
 {
     int n_entries = num_types * num_types * num_types;
@@ -106,11 +105,8 @@ static __device__ void find_fc_and_fcp
     if (d12 < pot_para.ters[R1]){fc = 1.0; fcp = 0.0;}
     else if (d12 < pot_para.ters[R2])
     {
-        fc = 0.5 * cos(pot_para.ters[PI_FACTOR] * (d12 - pot_para.ters[R1]))
-           + 0.5;
-
-        fcp = - sin(pot_para.ters[PI_FACTOR] * (d12 - pot_para.ters[R1])) 
-                * pot_para.ters[PI_FACTOR] * 0.5;
+        fc = 0.5 * cos(pot_para.ters[PI_FACTOR] * (d12 - pot_para.ters[R1])) + 0.5;
+        fcp = - sin(pot_para.ters[PI_FACTOR] * (d12 - pot_para.ters[R1])) * pot_para.ters[PI_FACTOR] * 0.5;
     }
     else {fc  = 0.0; fcp = 0.0;}
 }
@@ -133,8 +129,7 @@ static __device__ void find_fc
     if (d12 < pot_para.ters[R1]) {fc  = 1.0;}
     else if (d12 < pot_para.ters[R2])
     {
-        fc = 0.5 * cos(pot_para.ters[PI_FACTOR] * (d12 - pot_para.ters[R1]))
-           + 0.5;
+        fc = 0.5 * cos(pot_para.ters[PI_FACTOR] * (d12 - pot_para.ters[R1])) + 0.5;
     }
     else {fc  = 0.0;}
 }
@@ -144,12 +139,15 @@ static __device__ void find_g_and_gp
 (Pot_Para pot_para, double cos, double &g, double &gp)
 {
     double x = cos - pot_para.ters[H];
-    g = pot_para.ters[C3] * x;
-    g = (g + pot_para.ters[C2]) * x;
-    g = (g + pot_para.ters[C1]) * x;
-    gp = pot_para.ters[C3] * 3.0 * x;
-    gp = (gp + pot_para.ters[C2] * 2.0) * x;
-    gp = gp + pot_para.ters[C1];
+    double c1 = pot_para.ters[C1];
+    double c2 = pot_para.ters[C2];
+    double c3 = pot_para.ters[C3];
+    g = c3 * x;
+    g = (g + c2) * x;
+    g = (g + c1) * x;
+    gp = c3 * 3.0 * x;
+    gp = (gp + c2 * 2.0) * x;
+    gp = gp + c1;
 }
 
 
@@ -220,8 +218,7 @@ static __global__ void find_force_tersoff_step1
             bzn = pow(zeta, pot_para.ters[EN]);
             b_ijj = pow(1.0 + bzn, pot_para.ters[MINUS_HALF_OVER_N]);
             g_b[i1 * number_of_particles + n1]  = b_ijj;
-            g_bp[i1 * number_of_particles + n1]
-                = - b_ijj * bzn * 0.5 / ((1.0 + bzn) * zeta);
+            g_bp[i1 * number_of_particles + n1] = - b_ijj * bzn * 0.5 / ((1.0 + bzn) * zeta);
         }
     }
 }
@@ -277,14 +274,13 @@ static __global__ void find_force_tersoff_step2
 
             // (i,j) part
             double b12 = LDG(g_b, index);
-            double factor3=(fcp12*(fr12-b12*fa12)+
-                            fc12*(frp12-b12*fap12))*d12inv;
+            double factor3 = (fcp12 * (fr12 - b12 * fa12) + fc12 * (frp12 - b12 * fap12)) * d12inv;
             double f12x = x12 * factor3 * 0.5;
             double f12y = y12 * factor3 * 0.5;
             double f12z = z12 * factor3 * 0.5;
 
             // accumulate potential energy
-            pot_energy += fc12*(fr12-b12*fa12)*0.5;
+            pot_energy += fc12 * (fr12 - b12 * fa12) * 0.5;
 
             // (i,j,k) part
             double bp12 = LDG(g_bp, index);
@@ -304,7 +300,7 @@ static __global__ void find_force_tersoff_step2
                 find_fa(pot_para, d13, fa13);
                 double bp13 = LDG(g_bp, index_2);
                 double one_over_d12d13 = 1.0 / (d12 * d13);
-                double cos123 = (x12*x13 + y12*y13 + z12*z13)*one_over_d12d13;
+                double cos123 = (x12*x13 + y12*y13 + z12*z13) * one_over_d12d13;
                 double cos123_over_d12d12 = cos123*d12inv*d12inv;
                 double g123, gp123;
                 find_g_and_gp(pot_para, cos123, g123, gp123);
