@@ -20,6 +20,6 @@
 char* get_file_contents(char*);
 char* row_find_param(char*, char**, int*);
 int is_valid_int(const char*, int*);
-int is_valid_real(const char*, double*);
+int is_valid_real(const char*, float*);
 
 

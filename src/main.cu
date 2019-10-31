@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
         GPUGA gpuga(input_directory);
         clock_t time_finish = clock();
 
-        double time_used = (time_finish - time_begin) / double(CLOCKS_PER_SEC);
+        float time_used = (time_finish - time_begin) / float(CLOCKS_PER_SEC);
 
         print_line_1();
         printf("Time used for '%s' = %f s.\n", input_directory, time_used);

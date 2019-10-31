@@ -35,14 +35,14 @@ GA::GA(char* input_dir, Fitness* fitness_function)
     child_number = population_size - parent_number;
 
     // memory
-    MY_MALLOC(fitness, double, population_size);
+    MY_MALLOC(fitness, float, population_size);
     MY_MALLOC(index, int, population_size);
-    MY_MALLOC(cumulative_probabilities, double, parent_number);
-    MY_MALLOC(population, double, population_size * number_of_variables);
-    MY_MALLOC(population_copy, double, population_size * number_of_variables);
+    MY_MALLOC(cumulative_probabilities, float, parent_number);
+    MY_MALLOC(population, float, population_size * number_of_variables);
+    MY_MALLOC(population_copy, float, population_size * number_of_variables);
     // constants used for slecting parents
-    double numerator = 0.0;
-    double denominator = (1.0 + parent_number) * parent_number / 2.0;
+    float numerator = 0.0;
+    float denominator = (1.0 + parent_number) * parent_number / 2.0;
     for (int n = 0; n < parent_number; ++n)
     {
         numerator += parent_number - n;
@@ -55,7 +55,7 @@ GA::GA(char* input_dir, Fitness* fitness_function)
     (std::chrono::system_clock::now().time_since_epoch().count());
 #endif
     // initial population
-    std::uniform_real_distribution<double> r1(0, 1);
+    std::uniform_real_distribution<float> r1(0, 1);
     for (int n = 0; n < population_size * number_of_variables; ++n)
     {
         population[n] = r1(rng);
@@ -78,13 +78,13 @@ void GA::read_potential(char* input_dir)
     int count = fscanf(fid, "%d", &number_of_variables);
     if (count != 1) { print_error("reading error for potential.in."); }
     printf("number of variables = %d\n", number_of_variables);
-    MY_MALLOC(parameters_min, double, number_of_variables);
-    MY_MALLOC(parameters_max, double, number_of_variables);
+    MY_MALLOC(parameters_min, float, number_of_variables);
+    MY_MALLOC(parameters_max, float, number_of_variables);
     char name[20];
     for (int n = 0; n <  number_of_variables; ++n)
     {
         count = fscanf
-        (fid, "%s%lf%lf", name, &parameters_min[n], &parameters_max[n]);
+        (fid, "%s%f%f", name, &parameters_min[n], &parameters_max[n]);
         if (count != 3) { print_error("reading error for potential.in."); }
         printf("%s\t%g\t%g\n", name, parameters_min[n], parameters_max[n]);
     }
@@ -131,11 +131,11 @@ GA::~GA(void)
 }
 
 
-static void insertion_sort(double array[], int index[], int n)
+static void insertion_sort(float array[], int index[], int n)
 {
     for (int i = 1; i < n; i++)
     {
-        double key = array[i];
+        float key = array[i];
         int j = i - 1; 
         while (j >= 0 && array[j] > key)
         {
@@ -175,8 +175,8 @@ void GA::output(int generation, FILE* fid)
     fprintf(fid, "%d %g ", generation, fitness[0]);
     for (int m = 0; m < number_of_variables; ++m)
     {
-        double a = parameters_min[m];
-        double b = parameters_max[m] - a;
+        float a = parameters_min[m];
+        float b = parameters_max[m] - a;
         fprintf(fid, "%g ", a + b * population[m]);
     }
     fprintf(fid, "\n");
@@ -188,8 +188,8 @@ void GA::output(int generation, FILE* fid)
             generation + 1, fitness[0]);
         for (int m = 0; m < number_of_variables; ++m)
         {
-            double a = parameters_min[m];
-            double b = parameters_max[m] - a;
+            float a = parameters_min[m];
+            float b = parameters_max[m] - a;
             printf("%g ", a + b * population[m]);
         }
         printf("\n"); 
@@ -228,13 +228,13 @@ void GA::crossover(void)
 
 void GA::mutation(int n)
 {
-    double rate_n = mutation_rate * (1.0 - double(n) / maximum_generation);
+    float rate_n = mutation_rate * (1.0 - float(n) / maximum_generation);
     int m = population_size * number_of_variables;
     int number_of_mutations = round(m * rate_n);
     for (int n = 0; n < number_of_mutations; ++n)
     {
         std::uniform_int_distribution<int> r1(number_of_variables, m - 1);
-        std::uniform_real_distribution<double> r2(0, 1);
+        std::uniform_real_distribution<float> r2(0, 1);
         population[r1(rng)] = r2(rng);
     }
 }
@@ -243,8 +243,8 @@ void GA::mutation(int n)
 int GA::get_a_parent(void)
 {
     int parent = 0;
-    std::uniform_real_distribution<double> r1(0, 1);
-    double reference_value = r1(rng);
+    std::uniform_real_distribution<float> r1(0, 1);
+    float reference_value = r1(rng);
     for (int n = 0; n < parent_number; ++n)
     {
         if (cumulative_probabilities[n] > reference_value)

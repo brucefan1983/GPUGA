@@ -33,16 +33,16 @@ protected:
     int population_size = 100;
     int parent_number = 50;
     int child_number = 50;
-    double mutation_rate = 0.1;
-    double minimum_cost = 1.0e-6;
+    float mutation_rate = 0.1;
+    float minimum_cost = 1.0e-6;
     // data
     int* index;
-    double* fitness;
-    double* cumulative_probabilities;
-    double* population;
-    double* population_copy;
-    double* parameters_min;
-    double* parameters_max;
+    float* fitness;
+    float* cumulative_probabilities;
+    float* population;
+    float* population_copy;
+    float* parameters_min;
+    float* parameters_max;
     // for evolution
     void compute(char*, Fitness*);
     void sort_population(int);

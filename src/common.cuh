@@ -18,10 +18,10 @@
 
 const int MAX_ATOM_NUMBER    = 64;
 const int NC_FORCE           = 5;
-const double NEIGHBOR_CUTOFF = 3.0;
-const double WEIGHT_FORCE    = 0.05;
-const double WEIGHT_ENERGY   = 0.15;
-const double WEIGHT_STRESS   = 0.8;
-const double PI              = 3.141592653589793;
+const float NEIGHBOR_CUTOFF = 3.0;
+const float WEIGHT_FORCE    = 0.05;
+const float WEIGHT_ENERGY   = 0.15;
+const float WEIGHT_STRESS   = 0.8;
+const float PI              = 3.141592653589793;
 
 

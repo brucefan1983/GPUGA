@@ -26,7 +26,7 @@ mininum image convention
 static __device__ void dev_apply_mic
 (
     int triclinic,
-    const double* __restrict__ h, double &x12, double &y12, double &z12
+    const float* __restrict__ h, float &x12, float &y12, float &z12
 )
 {
     if (triclinic == 0) // orthogonal box
@@ -40,9 +40,9 @@ static __device__ void dev_apply_mic
     }
     else // triclinic box
     {
-        double sx12 = LDG(h,9)  * x12 + LDG(h,10) * y12 + LDG(h,11) * z12;
-        double sy12 = LDG(h,12) * x12 + LDG(h,13) * y12 + LDG(h,14) * z12;
-        double sz12 = LDG(h,15) * x12 + LDG(h,16) * y12 + LDG(h,17) * z12;
+        float sx12 = LDG(h,9)  * x12 + LDG(h,10) * y12 + LDG(h,11) * z12;
+        float sy12 = LDG(h,12) * x12 + LDG(h,13) * y12 + LDG(h,14) * z12;
+        float sz12 = LDG(h,15) * x12 + LDG(h,16) * y12 + LDG(h,17) * z12;
         sx12 -= nearbyint(sx12);
         sy12 -= nearbyint(sy12);
         sz12 -= nearbyint(sz12);

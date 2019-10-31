@@ -22,7 +22,7 @@
 
 struct Pot_Para
 {
-    double ters[13];
+    float ters[13];
 };
 
 
@@ -32,8 +32,8 @@ public:
 
     Fitness(char*);
     ~Fitness(void);
-    void compute(int, int, double*, double*, double*, double*);
-    void predict(char*, int, double*, double*, double*);
+    void compute(int, int, float*, float*, float*, float*);
+    void predict(char*, int, float*, float*, float*);
 
 protected:
 
@@ -46,11 +46,11 @@ protected:
     void allocate_memory_gpu(void);
 
     // functions related to fitness evaluation
-    double get_fitness_force(double*, double*);
-    double get_fitness_energy(double*, double*);
-    double get_fitness_stress(double*, double*);
+    float get_fitness_force(float*, float*);
+    float get_fitness_energy(float*, float*);
+    float get_fitness_stress(float*, float*);
     void initialize_potential(void); 
-    void update_potential(double*);
+    void update_potential(float*);
     void find_force(void);
 
     // integer variables
@@ -62,12 +62,12 @@ protected:
     int *type;
 
     // real variables
-    double *b, *bp, *f12x, *f12y, *f12z;
-    double *x, *y, *z, *fx, *fy, *fz, *pe, *sxx, *syy, *szz;
-    double *fx_ref, *fy_ref, *fz_ref; 
-    double *cpu_fx, *cpu_fy, *cpu_fz;
-    double *cpu_fx_ref, *cpu_fy_ref, *cpu_fz_ref;
-    double force_square_sum;
+    float *b, *bp, *f12x, *f12y, *f12z;
+    float *x, *y, *z, *fx, *fy, *fz, *pe, *sxx, *syy, *szz;
+    float *fx_ref, *fy_ref, *fz_ref; 
+    float *cpu_fx, *cpu_fy, *cpu_fz;
+    float *cpu_fx_ref, *cpu_fy_ref, *cpu_fz_ref;
+    float force_square_sum;
 
     // other classes
     Box box;

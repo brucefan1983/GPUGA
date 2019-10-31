@@ -35,25 +35,25 @@ void Box::read_file(char* input_dir, int Nc)
     FILE *fid_box = my_fopen(file_box, "r");
 
     CHECK(cudaMallocManaged((void**)&triclinic, sizeof(int) * Nc));
-    CHECK(cudaMallocManaged((void**)&h, sizeof(double) * Nc * 18));
-    MY_MALLOC(cpu_pe_ref, double, Nc);
-    MY_MALLOC(cpu_sxx_ref, double, Nc);
-    MY_MALLOC(cpu_syy_ref, double, Nc);
-    MY_MALLOC(cpu_szz_ref, double, Nc);
+    CHECK(cudaMallocManaged((void**)&h, sizeof(float) * Nc * 18));
+    MY_MALLOC(cpu_pe_ref, float, Nc);
+    MY_MALLOC(cpu_sxx_ref, float, Nc);
+    MY_MALLOC(cpu_syy_ref, float, Nc);
+    MY_MALLOC(cpu_szz_ref, float, Nc);
     
     potential_square_sum = 0.0;
     virial_square_sum = 0.0;
     for (int n = 0; n < Nc; ++n)
     {
-        double *h_local = h + n * 18; // define a local pointer
+        float *h_local = h + n * 18; // define a local pointer
 
-        int count = fscanf(fid_box, "%d%lf%lf%lf%lf", 
+        int count = fscanf(fid_box, "%d%f%f%f%f", 
             &triclinic[n], &cpu_pe_ref[n], &cpu_sxx_ref[n],
             &cpu_syy_ref[n], &cpu_szz_ref[n]);
 
         if (n >= NC_FORCE)
         {
-            double energy = cpu_pe_ref[n] + 4.63 * MAX_ATOM_NUMBER;
+            float energy = cpu_pe_ref[n] + 4.63 * MAX_ATOM_NUMBER;
             potential_square_sum += energy * energy;
             virial_square_sum += cpu_sxx_ref[n] * cpu_sxx_ref[n]
                                + cpu_syy_ref[n] * cpu_syy_ref[n]
@@ -69,8 +69,8 @@ void Box::read_file(char* input_dir, int Nc)
 
         if (triclinic[n] == 1)
         {
-            double ax, ay, az, bx, by, bz, cx, cy, cz;
-            int count = fscanf(fid_box, "%lf%lf%lf%lf%lf%lf%lf%lf%lf",
+            float ax, ay, az, bx, by, bz, cx, cy, cz;
+            int count = fscanf(fid_box, "%f%f%f%f%f%f%f%f%f",
                 &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
             if (count != 9) print_error("reading error for box.in.\n");
             h_local[0] = ax; h_local[3] = ay; h_local[6] = az;
@@ -82,8 +82,8 @@ void Box::read_file(char* input_dir, int Nc)
         }
         else
         {
-            double lx, ly, lz;
-            int count = fscanf(fid_box, "%lf%lf%lf", &lx, &ly, &lz);
+            float lx, ly, lz;
+            int count = fscanf(fid_box, "%f%f%f", &lx, &ly, &lz);
             if (count != 3) print_error("reading error for box.in.\n");
             h_local[0] = lx; h_local[1] = ly; h_local[2] = lz;
             printf("%g %g %g\n", lx, ly, lz);
@@ -91,7 +91,7 @@ void Box::read_file(char* input_dir, int Nc)
     }
     fclose(fid_box);
 
-    int memory = sizeof(double) * Nc;
+    int memory = sizeof(float) * Nc;
     CHECK(cudaMalloc((void**)&pe_ref, memory));
     CHECK(cudaMalloc((void**)&sxx_ref, memory));
     CHECK(cudaMalloc((void**)&syy_ref, memory));
@@ -118,9 +118,9 @@ Box::~Box(void)
 }
 
 
-double Box::get_volume(int triclinic, double *cpu_h)
+float Box::get_volume(int triclinic, float *cpu_h)
 {
-    double volume;
+    float volume;
     if (triclinic)
     {
         volume = cpu_h[0] * (cpu_h[4]*cpu_h[8] - cpu_h[5]*cpu_h[7])
@@ -135,7 +135,7 @@ double Box::get_volume(int triclinic, double *cpu_h)
 }
 
 
-void Box::get_inverse(int triclinic, double *cpu_h)
+void Box::get_inverse(int triclinic, float *cpu_h)
 {
     cpu_h[9]  = cpu_h[4]*cpu_h[8] - cpu_h[5]*cpu_h[7];
     cpu_h[10] = cpu_h[2]*cpu_h[7] - cpu_h[1]*cpu_h[8];
@@ -146,7 +146,7 @@ void Box::get_inverse(int triclinic, double *cpu_h)
     cpu_h[15] = cpu_h[3]*cpu_h[7] - cpu_h[4]*cpu_h[6];
     cpu_h[16] = cpu_h[1]*cpu_h[6] - cpu_h[0]*cpu_h[7];
     cpu_h[17] = cpu_h[0]*cpu_h[4] - cpu_h[1]*cpu_h[3];
-    double volume = get_volume(triclinic, cpu_h);
+    float volume = get_volume(triclinic, cpu_h);
     for (int n = 9; n < 18; n++)
     {
         cpu_h[n] /= volume;

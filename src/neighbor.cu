@@ -36,8 +36,8 @@ Neighbor::~Neighbor(void)
 static __global__ void gpu_find_neighbor
 (
     const int* __restrict__ g_triclinic, int N, int *Na, int *Na_sum,
-    double cutoff_square, const double* __restrict__ box, 
-    int *NN, int *NL, double *x, double *y, double *z
+    float cutoff_square, const float* __restrict__ box, 
+    int *NN, int *NL, float *x, float *y, float *z
 )
 {
     int N1 = Na_sum[blockIdx.x];
@@ -45,20 +45,20 @@ static __global__ void gpu_find_neighbor
     int n1 = N1 + threadIdx.x;
     if (n1 < N2)
     {
-        const double* __restrict__ h = box + 18 * blockIdx.x;
+        const float* __restrict__ h = box + 18 * blockIdx.x;
         int triclinic = LDG(g_triclinic, blockIdx.x);
-        double x1 = x[n1];  
-        double y1 = y[n1];  
-        double z1 = z[n1];
+        float x1 = x[n1];  
+        float y1 = y[n1];  
+        float z1 = z[n1];
         int count = 0;
         for (int n2 = N1; n2 < N2; ++n2)
         { 
             if (n2 == n1) { continue; }
-            double x12 = x[n2]-x1; 
-            double y12 = y[n2]-y1; 
-            double z12 = z[n2]-z1;
+            float x12 = x[n2]-x1; 
+            float y12 = y[n2]-y1; 
+            float z12 = z[n2]-z1;
             dev_apply_mic(triclinic, h, x12, y12, z12);
-            double distance_square = x12 * x12 + y12 * y12 + z12 * z12;
+            float distance_square = x12 * x12 + y12 * y12 + z12 * z12;
             if (distance_square < cutoff_square) { NL[count++ * N + n1] = n2; }
         }
         NN[n1] = count;
@@ -67,12 +67,12 @@ static __global__ void gpu_find_neighbor
 
 
 void Neighbor::compute
-(int Nc, int N, int *Na, int *Na_sum, double *x, double *y, double *z, Box *box)
+(int Nc, int N, int *Na, int *Na_sum, float *x, float *y, float *z, Box *box)
 {
     int m1 = sizeof(int) * N;
     CHECK(cudaMalloc((void**)&NN, m1));
     CHECK(cudaMalloc((void**)&NL, m1 * MAX_ATOM_NUMBER));
-    double rc2 = NEIGHBOR_CUTOFF * NEIGHBOR_CUTOFF;
+    float rc2 = NEIGHBOR_CUTOFF * NEIGHBOR_CUTOFF;
     gpu_find_neighbor<<<Nc, MAX_ATOM_NUMBER>>>
     (box->triclinic, N, Na, Na_sum, rc2, box->h, NN, NL, x, y, z);
     CUDA_CHECK_KERNEL
