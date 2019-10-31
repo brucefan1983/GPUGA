@@ -15,7 +15,7 @@
 
 
 /*----------------------------------------------------------------------------80
-Calculate force, energy, and stress
+Calculate force, energy, and virial
 ------------------------------------------------------------------------------*/
 
 
@@ -25,30 +25,30 @@ Calculate force, energy, and stress
 #include "common.cuh"
 
 //Easy labels for indexing
-#define D0     0
-#define A      1
-#define R0     2
-#define S      3
-#define EN     4 // special name for n to avoid conflict
-#define H      5
-#define R1     6
-#define R2     7
-#define PI_FACTOR 8
-#define MINUS_HALF_OVER_N 9
-#define C1     10
-#define C2     11
-#define C3     12
+const int D0                = 0;
+const int A                 = 1;
+const int R0                = 2;
+const int S                 = 3;
+const int EN                = 4;
+const int H                 = 5;
+const int R1                = 6;
+const int R2                = 7;
+const int PI_FACTOR         = 8;
+const int MINUS_HALF_OVER_N = 9;
+const int C1                = 10;
+const int C2                = 11;
+const int C3                = 12;
 
 
 void Fitness::update_potential(double* potential_parameters)
 {
     int n_entries = num_types * num_types * num_types;
     double d0 = potential_parameters[0];
-    double a = potential_parameters[1];
+    double a  = potential_parameters[1];
     double r0 = potential_parameters[2];
-    double s = potential_parameters[3];
-    double n = potential_parameters[4];
-    double h = potential_parameters[5];
+    double s  = potential_parameters[3];
+    double n  = potential_parameters[4];
+    double h  = potential_parameters[5];
     double c1 = potential_parameters[6];
     double c2 = potential_parameters[7];
     double c3 = potential_parameters[8];
@@ -59,11 +59,11 @@ void Fitness::update_potential(double* potential_parameters)
     for (int i = 0; i < n_entries; i++)
     {
         pot_para.ters[D0] = d0;
-        pot_para.ters[A] = a;
+        pot_para.ters[A]  = a;
         pot_para.ters[R0] = r0;
-        pot_para.ters[S] = s;
+        pot_para.ters[S]  = s;
         pot_para.ters[EN] = n;
-        pot_para.ters[H] = h;
+        pot_para.ters[H]  = h;
         pot_para.ters[C1] = c1;
         pot_para.ters[C2] = c2;
         pot_para.ters[C3] = c3;
@@ -82,8 +82,8 @@ static __device__ void find_fr_and_frp
     double a = pot_para.ters[A];
     double r0 = pot_para.ters[R0];
     double s = pot_para.ters[S];
-    fr = d0 / (s-1) * exp(-sqrt(2.0*s)*a*(d12-r0));
-    frp = -2.0*a*fr;
+    fr = d0 / (s - 1) * exp(-sqrt(2.0 * s) * a * (d12 - r0));
+    frp = -2.0 * a * fr;
 }
 
 
@@ -94,15 +94,15 @@ static __device__ void find_fa_and_fap
     double a = pot_para.ters[A];
     double r0 = pot_para.ters[R0];
     double s = pot_para.ters[S];
-    fa = s* d0 / (s-1) * exp(-sqrt(2.0/s)*a*(d12-r0));
-    fap = -a*fa;
+    fa = s * d0 / (s - 1) * exp(-sqrt(2.0 / s) * a * (d12 - r0));
+    fap = -a * fa;
 }
 
 
 static __device__ void find_fc_and_fcp
 (Pot_Para pot_para, double d12, double &fc, double &fcp)
 {
-    if (d12 < pot_para.ters[R1]){fc = 1.0; fcp = 0.0;}
+    if (d12 < pot_para.ters[R1]) {fc = 1.0; fcp = 0.0;}
     else if (d12 < pot_para.ters[R2])
     {
         fc = 0.5 * cos(pot_para.ters[PI_FACTOR] * (d12 - pot_para.ters[R1])) + 0.5;
@@ -119,7 +119,7 @@ static __device__ void find_fa
     double a = pot_para.ters[A];
     double r0 = pot_para.ters[R0];
     double s = pot_para.ters[S];
-    fa = s* d0 / (s-1) * exp(-sqrt(2.0/s)*a*(d12-r0));
+    fa = s * d0 / (s - 1) * exp(-sqrt(2.0 / s) * a * (d12 - r0));
 }
 
 
