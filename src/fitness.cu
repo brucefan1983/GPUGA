@@ -103,6 +103,7 @@ void Fitness::read_Na(FILE* fid)
     CHECK(cudaMallocManaged((void**)&Na_sum, sizeof(int) * Nc));
 
     N = 0;
+    MAX_ATOM_NUMBER = 0;
 
     for (int nc = 0; nc < Nc; ++nc)
     {
@@ -119,6 +120,10 @@ void Fitness::read_Na(FILE* fid)
         }
 
         N += Na[nc];
+        if (Na[nc] > MAX_ATOM_NUMBER)
+        {
+            MAX_ATOM_NUMBER = Na[nc];
+        }
 
         if (Na[nc] < 1)
         {

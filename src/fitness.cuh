@@ -50,11 +50,11 @@ protected:
     int Nc;      // number of configurations
     int N;       // total number of atoms (sum of Na)
     int num_types;
+    int MAX_ATOM_NUMBER; 
     int *Na;     // number of atoms in each configuration
     int *Na_sum; // prefix sum of Na
     int *type;
 
-    const int MAX_ATOM_NUMBER    = 64;
     const int NC_FORCE           = 5;
 
 
