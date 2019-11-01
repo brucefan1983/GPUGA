@@ -48,15 +48,13 @@ protected:
 
     // integer variables
     int Nc;      // number of configurations
+    int NC_FORCE;
     int N;       // total number of atoms (sum of Na)
     int num_types;
     int MAX_ATOM_NUMBER; 
     int *Na;     // number of atoms in each configuration
     int *Na_sum; // prefix sum of Na
     int *type;
-
-    const int NC_FORCE           = 5;
-
 
     // real variables
     float *b, *bp, *f12x, *f12y, *f12z;

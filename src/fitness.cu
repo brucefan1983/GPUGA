@@ -88,12 +88,29 @@ void Fitness::read_xyz_in(char* input_dir)
 
 void Fitness::read_Nc(FILE* fid)
 {
-    int count = fscanf(fid, "%d", &Nc);
-    if (count != 1) print_error("Reading error for xyz.in.\n");
-    if (Nc < 1)
-        print_error("Number of configurations should >= 1\n");
+    int count = fscanf(fid, "%d%d", &Nc, &NC_FORCE);
+    if (count != 2) print_error("Reading error for xyz.in.\n");
+    if (Nc < 2)
+    {
+        print_error("Number of configurations should >= 2\n");
+    }
     else
+    {
         printf("Number of configurations = %d.\n", Nc);
+    }
+
+    if (NC_FORCE < 1)
+    {
+        print_error("Number of force configurations should >= 1\n");
+    }
+    else if (NC_FORCE > Nc - 1)
+    {
+        print_error("Number of potential configurations should >= 1\n");
+    }
+    else
+    {
+        printf("Number of force configurations = %d.\n", NC_FORCE);
+    }
 }
 
 
