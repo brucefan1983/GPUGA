@@ -33,6 +33,7 @@ public:
 protected:
 
     // functions related to initialization
+    void read_weight(char*);
     void read_xyz_in(char*);
     void read_Nc(FILE*);
     void read_Na(FILE*);
@@ -55,6 +56,11 @@ protected:
     int *Na;     // number of atoms in each configuration
     int *Na_sum; // prefix sum of Na
     int *type;
+
+    // weighting factors
+    float WEIGHT_FORCE;
+    float WEIGHT_ENERGY;
+    float WEIGHT_STRESS;
 
     // real variables
     float *b, *bp, *f12x, *f12y, *f12z;

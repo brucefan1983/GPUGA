@@ -25,13 +25,9 @@ Get the fitness
 #include "read_file.cuh"
 
 
-const float WEIGHT_FORCE    = 0.05;
-const float WEIGHT_ENERGY   = 0.15;
-const float WEIGHT_STRESS   = 0.8;
-
-
 Fitness::Fitness(char* input_dir)
 {
+    read_weight(input_dir);
     read_xyz_in(input_dir);
     box.read_file(input_dir, Nc);
     neighbor.compute(Nc, N, Na, Na_sum, x, y, z, &box);
@@ -86,10 +82,59 @@ void Fitness::read_xyz_in(char* input_dir)
 }
 
 
+void Fitness::read_weight(char* input_dir)
+{
+    print_line_1();
+    printf("Started reading weight.in.\n");
+    print_line_2();
+
+    char file_weight[200];
+    strcpy(file_weight, input_dir);
+    strcat(file_weight, "/weight.in");
+    FILE *fid = my_fopen(file_weight, "r");
+
+    int count = fscanf
+    (
+        fid, "%f%f%f", &WEIGHT_FORCE, &WEIGHT_ENERGY, &WEIGHT_STRESS
+    );
+    if (count != 3) print_error("Reading error for weight.in.\n");
+
+    fclose(fid);
+
+    if (WEIGHT_FORCE < 0)
+    {
+        print_error("WEIGHT_FORCE should >= 0\n");
+    }
+    else
+    {
+        printf("WEIGHT_FORCE = %g.\n", WEIGHT_FORCE);
+    }
+
+    if (WEIGHT_ENERGY < 0)
+    {
+        print_error("WEIGHT_ENERGY should >= 0\n");
+    }
+    else
+    {
+        printf("WEIGHT_ENERGY = %g.\n", WEIGHT_ENERGY);
+    }
+
+    if (WEIGHT_STRESS < 0)
+    {
+        print_error("WEIGHT_STRESS should >= 0\n");
+    }
+    else
+    {
+        printf("WEIGHT_STRESS = %g.\n", WEIGHT_STRESS);
+    }
+}
+
+
 void Fitness::read_Nc(FILE* fid)
 {
     int count = fscanf(fid, "%d%d", &Nc, &NC_FORCE);
     if (count != 2) print_error("Reading error for xyz.in.\n");
+
     if (Nc < 2)
     {
         print_error("Number of configurations should >= 2\n");
