@@ -45,35 +45,27 @@ const int C3                = 12;
 
 void Potential::update_potential(float* potential_parameters, int num_types)
 {
-    int n_entries = num_types * num_types * num_types;
-    float d0 = potential_parameters[0];
-    float a  = potential_parameters[1];
-    float r0 = potential_parameters[2];
-    float s  = potential_parameters[3];
-    float n  = potential_parameters[4];
-    float h  = potential_parameters[5];
-    float c1 = potential_parameters[6];
-    float c2 = potential_parameters[7];
-    float c3 = potential_parameters[8];
-
-    float r1 = 2.8;
-    float r2 = 3.2;
-
-    for (int i = 0; i < n_entries; i++)
+    float r1 = 2.8; // to be read in
+    float r2 = 3.2; // to be read in
+    if (num_types == 1)
     {
-        pot_para.ters[D0] = d0;
-        pot_para.ters[A]  = a;
-        pot_para.ters[R0] = r0;
-        pot_para.ters[S]  = s;
-        pot_para.ters[EN] = n;
-        pot_para.ters[H]  = h;
-        pot_para.ters[C1] = c1;
-        pot_para.ters[C2] = c2;
-        pot_para.ters[C3] = c3;
+        pot_para.ters[D0] = potential_parameters[0];
+        pot_para.ters[A]  = potential_parameters[1];
+        pot_para.ters[R0] = potential_parameters[2];
+        pot_para.ters[S]  = potential_parameters[3];
+        pot_para.ters[EN] = potential_parameters[4];
+        pot_para.ters[H]  = potential_parameters[5];
+        pot_para.ters[C1] = potential_parameters[6];
+        pot_para.ters[C2] = potential_parameters[7];
+        pot_para.ters[C3] = potential_parameters[8];
         pot_para.ters[R1] = r1;
         pot_para.ters[R2] = r2;
         pot_para.ters[PI_FACTOR] = PI / (r2 - r1);
-        pot_para.ters[MINUS_HALF_OVER_N] = - 0.5 / n;
+        pot_para.ters[MINUS_HALF_OVER_N] = - 0.5 / pot_para.ters[EN];
+    }
+    else
+    {
+        print_error("GPUGA only supports one atom type now.\n");
     }
 }
 
