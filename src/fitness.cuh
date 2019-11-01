@@ -46,6 +46,7 @@ protected:
     void allocate_memory_gpu(void);
 
     // functions related to fitness evaluation
+    void predict_energy_or_stress(FILE*, float*, float*, float*, int, int);
     float get_fitness_force(float*, float*);
     float get_fitness_energy(float*, float*);
     float get_fitness_stress(float*, float*);
@@ -60,6 +61,10 @@ protected:
     int *Na;     // number of atoms in each configuration
     int *Na_sum; // prefix sum of Na
     int *type;
+
+    const int MAX_ATOM_NUMBER    = 64;
+    const int NC_FORCE           = 5;
+
 
     // real variables
     float *b, *bp, *f12x, *f12y, *f12z;

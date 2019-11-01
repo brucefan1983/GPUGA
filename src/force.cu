@@ -22,7 +22,8 @@ Calculate force, energy, and virial
 #include "fitness.cuh"
 #include "mic.cuh"
 #include "error.cuh"
-#include "common.cuh"
+
+const float PI              = 3.141592653589793;
 
 //Easy labels for indexing
 const int D0                = 0;

@@ -23,7 +23,11 @@ Get the fitness
 #include "neighbor.cuh"
 #include "error.cuh"
 #include "read_file.cuh"
-#include "common.cuh"
+
+
+const float WEIGHT_FORCE    = 0.05;
+const float WEIGHT_ENERGY   = 0.15;
+const float WEIGHT_STRESS   = 0.8;
 
 
 Fitness::Fitness(char* input_dir)
@@ -230,7 +234,7 @@ void Fitness::compute
 }
 
 
-static void predict_energy_or_stress
+void Fitness::predict_energy_or_stress
 (FILE* fid, float* cpu_data, float* data, float* ref, int N, int Nc)
 {
     cudaMemcpy(cpu_data, data, sizeof(float)*N, cudaMemcpyDeviceToHost);

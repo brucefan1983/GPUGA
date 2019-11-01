@@ -21,7 +21,6 @@ The class defining the simulation box.
 
 #include "box.cuh"
 #include "error.cuh"
-#include "common.cuh"
 
 
 void Box::read_file(char* input_dir, int Nc)
@@ -51,9 +50,9 @@ void Box::read_file(char* input_dir, int Nc)
             &triclinic[n], &cpu_pe_ref[n], &cpu_sxx_ref[n],
             &cpu_syy_ref[n], &cpu_szz_ref[n]);
 
-        if (n >= NC_FORCE)
+        if (n >= 5) // to be improved
         {
-            float energy = cpu_pe_ref[n] + 4.63 * MAX_ATOM_NUMBER;
+            float energy = cpu_pe_ref[n] + 4.63 * 64; // to be improved
             potential_square_sum += energy * energy;
             virial_square_sum += cpu_sxx_ref[n] * cpu_sxx_ref[n]
                                + cpu_syy_ref[n] * cpu_syy_ref[n]

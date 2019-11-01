@@ -23,7 +23,8 @@ find the neighbor list
 #include "box.cuh"
 #include "mic.cuh"
 #include "error.cuh"
-#include "common.cuh"
+
+const float NEIGHBOR_CUTOFF = 3.0;
 
 
 Neighbor::~Neighbor(void)
@@ -71,9 +72,9 @@ void Neighbor::compute
 {
     int m1 = sizeof(int) * N;
     CHECK(cudaMalloc((void**)&NN, m1));
-    CHECK(cudaMalloc((void**)&NL, m1 * MAX_ATOM_NUMBER));
+    CHECK(cudaMalloc((void**)&NL, m1 * 64)); // to be improved
     float rc2 = NEIGHBOR_CUTOFF * NEIGHBOR_CUTOFF;
-    gpu_find_neighbor<<<Nc, MAX_ATOM_NUMBER>>>
+    gpu_find_neighbor<<<Nc, 64>>> // to be improved
     (box->triclinic, N, Na, Na_sum, rc2, box->h, NN, NL, x, y, z);
     CUDA_CHECK_KERNEL
 }
