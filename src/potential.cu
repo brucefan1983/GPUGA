@@ -32,8 +32,8 @@ const int D0                = 0;
 const int A                 = 1;
 const int R0                = 2;
 const int S                 = 3;
-const int BETA              = 4;
-const int EN                = 5;
+const int EN                = 4;
+const int BETA              = 5;
 const int H                 = 6;
 const int R1                = 7;
 const int R2                = 8;
@@ -47,15 +47,15 @@ void Potential::update_potential(float* potential_parameters, int num_types)
     float r2 = 3.2; // to be read in
     if (num_types == 1)
     {
-        pot_para.ters[D0] = potential_parameters[0];
-        pot_para.ters[A]  = potential_parameters[1];
-        pot_para.ters[R0] = potential_parameters[2];
-        pot_para.ters[S]  = potential_parameters[3];
-        pot_para.ters[BETA] = potential_parameters[4];
-        pot_para.ters[EN] = potential_parameters[5];
-        pot_para.ters[H]  = potential_parameters[6];
-        pot_para.ters[R1] = r1;
-        pot_para.ters[R2] = r2;
+        pot_para.ters[D0]   = potential_parameters[0];
+        pot_para.ters[A]    = potential_parameters[1];
+        pot_para.ters[R0]   = potential_parameters[2];
+        pot_para.ters[S]    = potential_parameters[3];
+        pot_para.ters[EN]   = potential_parameters[4];
+        pot_para.ters[BETA] = potential_parameters[5];
+        pot_para.ters[H]    = potential_parameters[6];
+        pot_para.ters[R1]   = r1;
+        pot_para.ters[R2]   = r2;
         pot_para.ters[PI_FACTOR] = PI / (r2 - r1);
         pot_para.ters[MINUS_HALF_OVER_N] = - 0.5 / pot_para.ters[EN];
     }
