@@ -32,15 +32,13 @@ const int D0                = 0;
 const int A                 = 1;
 const int R0                = 2;
 const int S                 = 3;
-const int EN                = 4;
-const int H                 = 5;
-const int R1                = 6;
-const int R2                = 7;
-const int PI_FACTOR         = 8;
-const int MINUS_HALF_OVER_N = 9;
-const int C1                = 10;
-const int C2                = 11;
-const int C3                = 12;
+const int BETA              = 4;
+const int EN                = 5;
+const int H                 = 6;
+const int R1                = 7;
+const int R2                = 8;
+const int PI_FACTOR         = 9;
+const int MINUS_HALF_OVER_N = 10;
 
 
 void Potential::update_potential(float* potential_parameters, int num_types)
@@ -53,11 +51,9 @@ void Potential::update_potential(float* potential_parameters, int num_types)
         pot_para.ters[A]  = potential_parameters[1];
         pot_para.ters[R0] = potential_parameters[2];
         pot_para.ters[S]  = potential_parameters[3];
-        pot_para.ters[EN] = potential_parameters[4];
-        pot_para.ters[H]  = potential_parameters[5];
-        pot_para.ters[C1] = potential_parameters[6];
-        pot_para.ters[C2] = potential_parameters[7];
-        pot_para.ters[C3] = potential_parameters[8];
+        pot_para.ters[BETA] = potential_parameters[4];
+        pot_para.ters[EN] = potential_parameters[5];
+        pot_para.ters[H]  = potential_parameters[6];
         pot_para.ters[R1] = r1;
         pot_para.ters[R2] = r2;
         pot_para.ters[PI_FACTOR] = PI / (r2 - r1);
@@ -134,15 +130,9 @@ static __device__ void find_g_and_gp
 (Pot_Para pot_para, float cos, float &g, float &gp)
 {
     float x = cos - pot_para.ters[H];
-    float c1 = pot_para.ters[C1];
-    float c2 = pot_para.ters[C2];
-    float c3 = pot_para.ters[C3];
-    g = c3 * x;
-    g = (g + c2) * x;
-    g = (g + c1) * x;
-    gp = c3 * 3.0 * x;
-    gp = (gp + c2 * 2.0) * x;
-    gp = gp + c1;
+    float beta = pot_para.ters[BETA];
+    g = beta * x * x;
+    gp = beta * 2.0 * x;
 }
 
 
@@ -150,9 +140,8 @@ static __device__ void find_g
 (Pot_Para pot_para, float cos, float &g)
 {
     float x = cos - pot_para.ters[H];
-    g = pot_para.ters[C3] * x;
-    g = (g + pot_para.ters[C2]) * x;
-    g = (g + pot_para.ters[C1]) * x;
+    float beta = pot_para.ters[BETA];
+    g = beta * x * x;
 }
 
 
