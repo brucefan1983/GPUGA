@@ -107,15 +107,13 @@ void GA::compute(char* input_dir, Fitness* fitness_function)
             parameters_min, parameters_max, population, fitness);
         sort_population(n);
         output(n, fid);
-        if (0 == (n + 1) % 10)
-        {
-            fitness_function->predict(input_dir, number_of_variables, 
-                parameters_min, parameters_max, population);
-        }
         crossover();
         mutation(n);
     }
     fclose(fid);
+
+    fitness_function->predict(input_dir, number_of_variables, 
+        parameters_min, parameters_max, population);
 }
 
 
