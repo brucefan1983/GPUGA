@@ -19,7 +19,9 @@ Calculate force, energy, and virial
 ------------------------------------------------------------------------------*/
 
 
-#include "fitness.cuh"
+#include "potential.cuh"
+#include "box.cuh"
+#include "neighbor.cuh"
 #include "mic.cuh"
 #include "error.cuh"
 
@@ -41,7 +43,7 @@ const int C2                = 11;
 const int C3                = 12;
 
 
-void Fitness::update_potential(float* potential_parameters)
+void Potential::update_potential(float* potential_parameters, int num_types)
 {
     int n_entries = num_types * num_types * num_types;
     float d0 = potential_parameters[0];
@@ -409,24 +411,31 @@ static __global__ void find_force_tersoff_step3
 }
 
 
-void Fitness::find_force(void)
+void Potential::find_force
+(
+    int num_types, int Nc, int N, int *Na, int *Na_sum,
+    int max_Na, int *type, Box *box, Neighbor *neighbor,
+    float *x, float *y, float *z, float *fx, float *fy, float *fz, 
+    float *sxx, float *syy, float *szz, float *pe, 
+    float *f12x, float *f12y, float *f12z, float *b, float *bp
+)
 {
-    find_force_tersoff_step1<<<Nc, MAX_ATOM_NUMBER>>>
+    find_force_tersoff_step1<<<Nc, max_Na>>>
     (
-        N, Na, Na_sum, box.triclinic, num_types,
-        neighbor.NN, neighbor.NL, type, pot_para, x, y, z, box.h, b, bp
+        N, Na, Na_sum, box->triclinic, num_types,
+        neighbor->NN, neighbor->NL, type, pot_para, x, y, z, box->h, b, bp
     );
     CUDA_CHECK_KERNEL
-    find_force_tersoff_step2<<<Nc, MAX_ATOM_NUMBER>>>
+    find_force_tersoff_step2<<<Nc, max_Na>>>
     (
-        N, Na, Na_sum, box.triclinic, num_types, neighbor.NN, neighbor.NL, type, 
-        pot_para, b, bp, x, y, z, box.h, pe, f12x, f12y, f12z
+        N, Na, Na_sum, box->triclinic, num_types, neighbor->NN, neighbor->NL, type, 
+        pot_para, b, bp, x, y, z, box->h, pe, f12x, f12y, f12z
     );
     CUDA_CHECK_KERNEL
-    find_force_tersoff_step3<<<Nc, MAX_ATOM_NUMBER>>>
+    find_force_tersoff_step3<<<Nc, max_Na>>>
     (
-        N, Na, Na_sum, box.triclinic, neighbor.NN, neighbor.NL, 
-        f12x, f12y, f12z, x, y, z, box.h, fx, fy, fz, sxx, syy, szz
+        N, Na, Na_sum, box->triclinic, neighbor->NN, neighbor->NL, 
+        f12x, f12y, f12z, x, y, z, box->h, fx, fy, fz, sxx, syy, szz
     );
     CUDA_CHECK_KERNEL
 }

@@ -222,8 +222,12 @@ void Fitness::compute
             float b = parameters_max[m] - a;
             parameters[m] = a + b * individual[m];
         }
-        update_potential(parameters);
-        find_force();
+        potential.update_potential(parameters, num_types);
+        potential.find_force
+        (
+            num_types, Nc, N, Na, Na_sum, MAX_ATOM_NUMBER, type, &box, &neighbor,
+            x, y, z, fx, fy, fz, sxx, syy, szz, pe, f12x, f12y, f12z, b, bp
+        );
         fitness[n] = WEIGHT_ENERGY * get_fitness_energy(error_cpu, error_gpu);
         fitness[n] += WEIGHT_STRESS * get_fitness_stress(error_cpu, error_gpu);
         fitness[n] += WEIGHT_FORCE * get_fitness_force(error_cpu, error_gpu);
@@ -265,8 +269,12 @@ void Fitness::predict
         float b = parameters_max[m] - a;
         parameters[m] = a + b * elite[m];
     }
-    update_potential(parameters);
-    find_force();
+    potential.update_potential(parameters, num_types);
+    potential.find_force
+    (
+        num_types, Nc, N, Na, Na_sum, MAX_ATOM_NUMBER, type, &box, &neighbor,
+        x, y, z, fx, fy, fz, sxx, syy, szz, pe, f12x, f12y, f12z, b, bp
+    );
     MY_FREE(parameters);
 
     cudaMemcpy(cpu_fx, fx, sizeof(float)*N, cudaMemcpyDeviceToHost);

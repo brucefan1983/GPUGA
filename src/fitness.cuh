@@ -17,13 +17,8 @@
 #pragma once
 #include "box.cuh"
 #include "neighbor.cuh"
+#include "potential.cuh"
 #include <stdio.h>
-
-
-struct Pot_Para
-{
-    float ters[13];
-};
 
 
 class Fitness
@@ -50,9 +45,6 @@ protected:
     float get_fitness_force(float*, float*);
     float get_fitness_energy(float*, float*);
     float get_fitness_stress(float*, float*);
-    void initialize_potential(void); 
-    void update_potential(float*);
-    void find_force(void);
 
     // integer variables
     int Nc;      // number of configurations
@@ -77,7 +69,7 @@ protected:
     // other classes
     Box box;
     Neighbor neighbor;
-    Pot_Para pot_para;
+    Potential potential;
 };
 
 
