@@ -182,8 +182,7 @@ void GA::output(int generation, FILE* fid)
     // to screen
     if (0 == (generation + 1) % 10)
     {
-        printf("%d %g ", 
-            generation + 1, fitness[0]);
+        printf("%d %g ", generation + 1, fitness[0]);
         for (int m = 0; m < number_of_variables; ++m)
         {
             float a = parameters_min[m];
