@@ -35,10 +35,11 @@ void Box::read_file(char* input_dir, int Nc)
 
     CHECK(cudaMallocManaged((void**)&triclinic, sizeof(int) * Nc));
     CHECK(cudaMallocManaged((void**)&h, sizeof(float) * Nc * 18));
-    MY_MALLOC(cpu_pe_ref, float, Nc);
-    MY_MALLOC(cpu_sxx_ref, float, Nc);
-    MY_MALLOC(cpu_syy_ref, float, Nc);
-    MY_MALLOC(cpu_szz_ref, float, Nc);
+
+    CHECK(cudaMallocManaged((void**)&pe_ref, sizeof(float) * Nc));
+    CHECK(cudaMallocManaged((void**)&sxx_ref, sizeof(float) * Nc));
+    CHECK(cudaMallocManaged((void**)&syy_ref, sizeof(float) * Nc));
+    CHECK(cudaMallocManaged((void**)&szz_ref, sizeof(float) * Nc));
     
     potential_square_sum = 0.0;
     virial_square_sum = 0.0;
@@ -46,24 +47,26 @@ void Box::read_file(char* input_dir, int Nc)
     {
         float *h_local = h + n * 18; // define a local pointer
 
-        int count = fscanf(fid_box, "%d%f%f%f%f", 
-            &triclinic[n], &cpu_pe_ref[n], &cpu_sxx_ref[n],
-            &cpu_syy_ref[n], &cpu_szz_ref[n]);
+        int count = fscanf
+        (
+            fid_box, "%d%f%f%f%f", &triclinic[n], &pe_ref[n], &sxx_ref[n],
+            &syy_ref[n], &szz_ref[n]
+        );
 
         if (n >= 5) // to be improved
         {
-            float energy = cpu_pe_ref[n] + 4.63 * 64; // to be improved
+            float energy = pe_ref[n] + 4.63 * 64; // to be improved
             potential_square_sum += energy * energy;
-            virial_square_sum += cpu_sxx_ref[n] * cpu_sxx_ref[n]
-                               + cpu_syy_ref[n] * cpu_syy_ref[n]
-                               + cpu_szz_ref[n] * cpu_szz_ref[n];
+            virial_square_sum += sxx_ref[n] * sxx_ref[n]
+                               + syy_ref[n] * syy_ref[n]
+                               + szz_ref[n] * szz_ref[n];
         }
 
         if (count != 5) print_error("Reading error for box.in.\n");
         if (triclinic[n] == 0) printf("orthogonal %g %g %g %g\n", 
-            cpu_pe_ref[n], cpu_sxx_ref[n], cpu_syy_ref[n], cpu_szz_ref[n]);
+            pe_ref[n], sxx_ref[n], syy_ref[n], szz_ref[n]);
         else if (triclinic[n] == 1) printf("triclinic %g %g %g %g\n", 
-            cpu_pe_ref[n], cpu_sxx_ref[n], cpu_syy_ref[n], cpu_szz_ref[n]);
+            pe_ref[n], sxx_ref[n], syy_ref[n], szz_ref[n]);
         else print_error("Invalid box type.\n");
 
         if (triclinic[n] == 1)
@@ -89,16 +92,6 @@ void Box::read_file(char* input_dir, int Nc)
         }
     }
     fclose(fid_box);
-
-    int memory = sizeof(float) * Nc;
-    CHECK(cudaMalloc((void**)&pe_ref, memory));
-    CHECK(cudaMalloc((void**)&sxx_ref, memory));
-    CHECK(cudaMalloc((void**)&syy_ref, memory));
-    CHECK(cudaMalloc((void**)&szz_ref, memory));
-    CHECK(cudaMemcpy(pe_ref, cpu_pe_ref, memory, cudaMemcpyHostToDevice));
-    CHECK(cudaMemcpy(sxx_ref, cpu_sxx_ref, memory, cudaMemcpyHostToDevice));
-    CHECK(cudaMemcpy(syy_ref, cpu_syy_ref, memory, cudaMemcpyHostToDevice));
-    CHECK(cudaMemcpy(szz_ref, cpu_szz_ref, memory, cudaMemcpyHostToDevice));
 }  
 
 
@@ -106,10 +99,6 @@ Box::~Box(void)
 {
     CHECK(cudaFree(triclinic));
     CHECK(cudaFree(h));
-    MY_FREE(cpu_pe_ref);
-    MY_FREE(cpu_sxx_ref);
-    MY_FREE(cpu_syy_ref);
-    MY_FREE(cpu_szz_ref);
     CHECK(cudaFree(pe_ref)); 
     CHECK(cudaFree(sxx_ref));
     CHECK(cudaFree(syy_ref));

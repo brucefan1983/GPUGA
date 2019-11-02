@@ -333,16 +333,16 @@ void Fitness::predict
     float *cpu_prediction; MY_MALLOC(cpu_prediction, float, N);
     // energy
     predict_energy_or_stress
-    (fid_prediction, cpu_prediction, pe, box.cpu_pe_ref, N, Nc);
+    (fid_prediction, cpu_prediction, pe, box.pe_ref, N, Nc);
     // sxx
     predict_energy_or_stress
-    (fid_prediction, cpu_prediction, sxx, box.cpu_sxx_ref, N, Nc);
+    (fid_prediction, cpu_prediction, sxx, box.sxx_ref, N, Nc);
     // syy
     predict_energy_or_stress
-    (fid_prediction, cpu_prediction, syy, box.cpu_syy_ref, N, Nc);
+    (fid_prediction, cpu_prediction, syy, box.syy_ref, N, Nc);
     // szz
     predict_energy_or_stress
-    (fid_prediction, cpu_prediction, szz, box.cpu_szz_ref, N, Nc);
+    (fid_prediction, cpu_prediction, szz, box.szz_ref, N, Nc);
     fclose(fid_prediction);
     MY_FREE(cpu_prediction);
 }
