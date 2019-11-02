@@ -64,8 +64,6 @@ Potential::~Potential(void)
 
 void Potential::update_potential(float* potential_parameters, int num_types)
 {
-    float r1 = 2.8; // to be read in
-    float r2 = 3.2; // to be read in
     if (num_types == 1)
     {
         pot_para.ters[D0]   = potential_parameters[0];
@@ -75,9 +73,9 @@ void Potential::update_potential(float* potential_parameters, int num_types)
         pot_para.ters[EN]   = potential_parameters[4];
         pot_para.ters[BETA] = potential_parameters[5];
         pot_para.ters[H]    = potential_parameters[6];
-        pot_para.ters[R1]   = r1;
-        pot_para.ters[R2]   = r2;
-        pot_para.ters[PI_FACTOR] = PI / (r2 - r1);
+        pot_para.ters[R1]   = potential_parameters[7];
+        pot_para.ters[R2]   = potential_parameters[8];
+        pot_para.ters[PI_FACTOR] = PI / (pot_para.ters[R2] - pot_para.ters[R1]);
         pot_para.ters[MINUS_HALF_OVER_N] = - 0.5 / pot_para.ters[EN];
     }
     else
