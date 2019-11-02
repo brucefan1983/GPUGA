@@ -337,13 +337,6 @@ void Fitness::predict
 }
 
 
-static __device__ void warp_reduce(volatile float* s, int t) 
-{
-    s[t] += s[t + 32]; s[t] += s[t + 16]; s[t] += s[t + 8];
-    s[t] += s[t + 4];  s[t] += s[t + 2];  s[t] += s[t + 1];
-}
-
-
 static __global__ void gpu_sum_force_error
 (
     int N, float *g_fx, float *g_fy, float *g_fz, 
@@ -365,11 +358,21 @@ static __global__ void gpu_sum_force_error
             s_error[tid] += dx*dx + dy*dy + dz*dz;
         }
     }
+
     __syncthreads();
-    if (tid < 256) s_error[tid] += s_error[tid + 256]; __syncthreads();
-    if (tid < 128) s_error[tid] += s_error[tid + 128]; __syncthreads();
-    if (tid <  64) s_error[tid] += s_error[tid + 64];  __syncthreads();
-    if (tid <  32) warp_reduce(s_error, tid);
+
+    for (int offset = blockDim.x >> 1; offset > 32; offset >>= 1)
+    {
+        if (tid < offset) { s_error[tid] += s_error[tid + offset]; }
+        __syncthreads();
+    }
+
+    for (int offset = 32; offset > 0; offset >>= 1)
+    {
+        if (tid < offset) { s_error[tid] += s_error[tid + offset]; }
+        __syncwarp();
+    }
+
     if (tid ==  0) { g_error[0] = s_error[0]; }
 }
 
@@ -400,7 +403,13 @@ static __global__ void gpu_sum_pe_error
         s_pe[tid] += g_pe[n];
     }
     __syncthreads();
-    if (tid < 32) { warp_reduce(s_pe, tid); }
+
+    for (int offset = 32; offset > 0; offset >>= 1)
+    {
+        if (tid < offset) { s_pe[tid] += s_pe[tid + offset]; }
+        __syncwarp();
+    }
+
     if (tid == 0)
     {
         float diff = s_pe[0] - g_pe_ref[bid];
