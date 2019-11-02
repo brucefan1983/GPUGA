@@ -47,7 +47,6 @@ protected:
     void read_Na(FILE*);
     void read_xyz(FILE*);
     void read_box(char*);
-    void allocate_memory_gpu(void);
 
     // functions related to fitness evaluation
     void predict_energy_or_stress(FILE*, float*, float*, float*, int, int);
@@ -64,13 +63,11 @@ protected:
     int *Na_sum;         // prefix sum of Na
     int *type;           // atom type
 
-    // real variables
-    float *x, *y, *z;    // position
-    float *fx, *fy, *fz; // force
-    float *pe;           // potential energy
-    float *sxx, *syy, *szz; // virial
+    float *x, *y, *z;                // position
+    float *fx, *fy, *fz;             // force
+    float *pe;                       // potential energy
+    float *sxx, *syy, *szz;          // virial
     float *fx_ref, *fy_ref, *fz_ref; // reference force
-    float *cpu_fx, *cpu_fy, *cpu_fz; // use unified memory?
     float force_square_sum;          // sum of force square
 
     // other classes

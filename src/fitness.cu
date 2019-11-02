@@ -37,9 +37,6 @@ Fitness::Fitness(char* input_dir)
 
 Fitness::~Fitness(void)
 {
-    MY_FREE(cpu_fx);
-    MY_FREE(cpu_fy);
-    MY_FREE(cpu_fz);
     cudaFree(Na);
     cudaFree(Na_sum);
     cudaFree(type);
@@ -206,13 +203,17 @@ void Fitness::read_xyz(FILE* fid)
     CHECK(cudaMallocManaged((void**)&x, m2));
     CHECK(cudaMallocManaged((void**)&y, m2));
     CHECK(cudaMallocManaged((void**)&z, m2));
+    CHECK(cudaMallocManaged((void**)&fx, m2));
+    CHECK(cudaMallocManaged((void**)&fy, m2));
+    CHECK(cudaMallocManaged((void**)&fz, m2));
     CHECK(cudaMallocManaged((void**)&fx_ref, m2));
     CHECK(cudaMallocManaged((void**)&fy_ref, m2));
     CHECK(cudaMallocManaged((void**)&fz_ref, m2));
+    CHECK(cudaMalloc((void**)&pe, m2));
+    CHECK(cudaMalloc((void**)&sxx, m2));
+    CHECK(cudaMalloc((void**)&syy, m2));
+    CHECK(cudaMalloc((void**)&szz, m2));
 
-    MY_MALLOC(cpu_fx, float, N);
-    MY_MALLOC(cpu_fy, float, N);
-    MY_MALLOC(cpu_fz, float, N);
     num_types = 0;
     force_square_sum = 0.0;
     for (int n = 0; n < N; n++)
@@ -230,21 +231,6 @@ void Fitness::read_xyz(FILE* fid)
         }
     }
     num_types++;
-
-    allocate_memory_gpu();
-}
-
-
-void Fitness::allocate_memory_gpu(void)
-{
-    int m2 = sizeof(float) * N;
-    CHECK(cudaMalloc((void**)&pe, m2));
-    CHECK(cudaMalloc((void**)&sxx, m2));
-    CHECK(cudaMalloc((void**)&syy, m2));
-    CHECK(cudaMalloc((void**)&szz, m2));
-    CHECK(cudaMalloc((void**)&fx, m2));
-    CHECK(cudaMalloc((void**)&fy, m2));
-    CHECK(cudaMalloc((void**)&fz, m2));
 }
 
 
@@ -324,10 +310,6 @@ void Fitness::predict
     );
     MY_FREE(parameters);
 
-    cudaMemcpy(cpu_fx, fx, sizeof(float)*N, cudaMemcpyDeviceToHost);
-    cudaMemcpy(cpu_fy, fy, sizeof(float)*N, cudaMemcpyDeviceToHost);
-    cudaMemcpy(cpu_fz, fz, sizeof(float)*N, cudaMemcpyDeviceToHost);
-
     CHECK(cudaDeviceSynchronize()); // needed for CC < 6.0
 
     char file_force[200];
@@ -336,9 +318,11 @@ void Fitness::predict
     FILE* fid_force = my_fopen(file_force, "w");
     for (int n = 0; n < NC_FORCE*64; ++n)
     {
-        fprintf(fid_force, "%25.15e%25.15e%25.15e%25.15e%25.15e%25.15e\n", 
-            cpu_fx[n], cpu_fy[n], cpu_fz[n], 
-            fx_ref[n], fy_ref[n], fz_ref[n]);
+        fprintf
+        (
+            fid_force, "%25.15e%25.15e%25.15e%25.15e%25.15e%25.15e\n", 
+            fx[n], fy[n], fz[n], fx_ref[n], fy_ref[n], fz_ref[n]
+        );
     }
     fclose(fid_force);
 
