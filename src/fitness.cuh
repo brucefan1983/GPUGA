@@ -63,7 +63,6 @@ protected:
     float WEIGHT_STRESS;
 
     // real variables
-    float *b, *bp, *f12x, *f12y, *f12z;
     float *x, *y, *z, *fx, *fy, *fz, *pe, *sxx, *syy, *szz;
     float *fx_ref, *fy_ref, *fz_ref; 
     float *cpu_fx, *cpu_fy, *cpu_fz;

@@ -31,6 +31,7 @@ Fitness::Fitness(char* input_dir)
     read_xyz_in(input_dir);
     box.read_file(input_dir, Nc);
     neighbor.compute(Nc, N, Na, Na_sum, x, y, z, &box);
+    potential.initialize(N, MAX_ATOM_NUMBER);
 }
 
 
@@ -58,11 +59,6 @@ Fitness::~Fitness(void)
     cudaFree(fx);
     cudaFree(fy);
     cudaFree(fz);
-    cudaFree(b);
-    cudaFree(bp);
-    cudaFree(f12x);
-    cudaFree(f12y);
-    cudaFree(f12z);
 }
 
 
@@ -260,11 +256,6 @@ void Fitness::allocate_memory_gpu(void)
     CHECK(cudaMalloc((void**)&fx, m2));
     CHECK(cudaMalloc((void**)&fy, m2));
     CHECK(cudaMalloc((void**)&fz, m2));
-    CHECK(cudaMalloc((void**)&b, m2 * MAX_ATOM_NUMBER));
-    CHECK(cudaMalloc((void**)&bp, m2 * MAX_ATOM_NUMBER));
-    CHECK(cudaMalloc((void**)&f12x, m2 * MAX_ATOM_NUMBER));
-    CHECK(cudaMalloc((void**)&f12y, m2 * MAX_ATOM_NUMBER));
-    CHECK(cudaMalloc((void**)&f12z, m2 * MAX_ATOM_NUMBER));
 }
 
 
@@ -293,7 +284,7 @@ void Fitness::compute
         potential.find_force
         (
             num_types, Nc, N, Na, Na_sum, MAX_ATOM_NUMBER, type, &box, &neighbor,
-            x, y, z, fx, fy, fz, sxx, syy, szz, pe, f12x, f12y, f12z, b, bp
+            x, y, z, fx, fy, fz, sxx, syy, szz, pe
         );
         fitness[n] = WEIGHT_ENERGY * get_fitness_energy(error_cpu, error_gpu);
         fitness[n] += WEIGHT_STRESS * get_fitness_stress(error_cpu, error_gpu);
@@ -340,7 +331,7 @@ void Fitness::predict
     potential.find_force
     (
         num_types, Nc, N, Na, Na_sum, MAX_ATOM_NUMBER, type, &box, &neighbor,
-        x, y, z, fx, fy, fz, sxx, syy, szz, pe, f12x, f12y, f12z, b, bp
+        x, y, z, fx, fy, fz, sxx, syy, szz, pe
     );
     MY_FREE(parameters);
 

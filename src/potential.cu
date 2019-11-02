@@ -41,6 +41,27 @@ const int PI_FACTOR         = 9;
 const int MINUS_HALF_OVER_N = 10;
 
 
+void Potential::initialize(int N, int MAX_ATOM_NUMBER)
+{
+    int mem_size = sizeof(float) * N * MAX_ATOM_NUMBER;
+    CHECK(cudaMalloc((void**)&b, mem_size));
+    CHECK(cudaMalloc((void**)&bp, mem_size));
+    CHECK(cudaMalloc((void**)&f12x, mem_size));
+    CHECK(cudaMalloc((void**)&f12y, mem_size));
+    CHECK(cudaMalloc((void**)&f12z, mem_size));
+}
+
+
+Potential::~Potential(void)
+{
+    CHECK(cudaFree(b));
+    CHECK(cudaFree(bp));
+    CHECK(cudaFree(f12x));
+    CHECK(cudaFree(f12y));
+    CHECK(cudaFree(f12z));
+}
+
+
 void Potential::update_potential(float* potential_parameters, int num_types)
 {
     float r1 = 2.8; // to be read in
@@ -397,8 +418,7 @@ void Potential::find_force
     int num_types, int Nc, int N, int *Na, int *Na_sum,
     int max_Na, int *type, Box *box, Neighbor *neighbor,
     float *x, float *y, float *z, float *fx, float *fy, float *fz, 
-    float *sxx, float *syy, float *szz, float *pe, 
-    float *f12x, float *f12y, float *f12z, float *b, float *bp
+    float *sxx, float *syy, float *szz, float *pe
 )
 {
     find_force_tersoff_step1<<<Nc, max_Na>>>
