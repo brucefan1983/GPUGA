@@ -37,9 +37,6 @@ Fitness::Fitness(char* input_dir)
 
 Fitness::~Fitness(void)
 {
-    MY_FREE(cpu_fx_ref);
-    MY_FREE(cpu_fy_ref);
-    MY_FREE(cpu_fz_ref);
     MY_FREE(cpu_fx);
     MY_FREE(cpu_fy);
     MY_FREE(cpu_fz);
@@ -209,10 +206,10 @@ void Fitness::read_xyz(FILE* fid)
     CHECK(cudaMallocManaged((void**)&x, m2));
     CHECK(cudaMallocManaged((void**)&y, m2));
     CHECK(cudaMallocManaged((void**)&z, m2));
+    CHECK(cudaMallocManaged((void**)&fx_ref, m2));
+    CHECK(cudaMallocManaged((void**)&fy_ref, m2));
+    CHECK(cudaMallocManaged((void**)&fz_ref, m2));
 
-    MY_MALLOC(cpu_fx_ref, float, N);
-    MY_MALLOC(cpu_fy_ref, float, N);
-    MY_MALLOC(cpu_fz_ref, float, N);
     MY_MALLOC(cpu_fx, float, N);
     MY_MALLOC(cpu_fy, float, N);
     MY_MALLOC(cpu_fz, float, N);
@@ -222,33 +219,25 @@ void Fitness::read_xyz(FILE* fid)
     {
         int count = fscanf(fid, "%d%f%f%f%f%f%f", 
             &(type[n]), &(x[n]), &(y[n]), &(z[n]),
-            &(cpu_fx_ref[n]), &(cpu_fy_ref[n]), &(cpu_fz_ref[n]));
+            &(fx_ref[n]), &(fy_ref[n]), &(fz_ref[n]));
         if (count != 7) { print_error("reading error for xyz.in.\n"); }
         if (type[n] > num_types) { num_types = type[n]; }
         if (n < NC_FORCE * MAX_ATOM_NUMBER)
         {
-            force_square_sum += cpu_fx_ref[n] * cpu_fx_ref[n]
-                              + cpu_fy_ref[n] * cpu_fy_ref[n]
-                              + cpu_fz_ref[n] * cpu_fz_ref[n];
+            force_square_sum += fx_ref[n] * fx_ref[n]
+                              + fy_ref[n] * fy_ref[n]
+                              + fz_ref[n] * fz_ref[n];
         }
     }
     num_types++;
 
     allocate_memory_gpu();
-    CHECK(cudaMemcpy(fx_ref, cpu_fx_ref, m2, cudaMemcpyHostToDevice));
-    CHECK(cudaMemcpy(fy_ref, cpu_fy_ref, m2, cudaMemcpyHostToDevice));
-    CHECK(cudaMemcpy(fz_ref, cpu_fz_ref, m2, cudaMemcpyHostToDevice));
 }
 
 
 void Fitness::allocate_memory_gpu(void)
 {
     int m2 = sizeof(float) * N;
-    // read from CPU
-    CHECK(cudaMalloc((void**)&fx_ref, m2));
-    CHECK(cudaMalloc((void**)&fy_ref, m2));
-    CHECK(cudaMalloc((void**)&fz_ref, m2));
-    // Calculated on the GPU
     CHECK(cudaMalloc((void**)&pe, m2));
     CHECK(cudaMalloc((void**)&sxx, m2));
     CHECK(cudaMalloc((void**)&syy, m2));
@@ -338,9 +327,8 @@ void Fitness::predict
     cudaMemcpy(cpu_fx, fx, sizeof(float)*N, cudaMemcpyDeviceToHost);
     cudaMemcpy(cpu_fy, fy, sizeof(float)*N, cudaMemcpyDeviceToHost);
     cudaMemcpy(cpu_fz, fz, sizeof(float)*N, cudaMemcpyDeviceToHost);
-    cudaMemcpy(cpu_fx_ref, fx_ref, sizeof(float)*N, cudaMemcpyDeviceToHost);
-    cudaMemcpy(cpu_fy_ref, fy_ref, sizeof(float)*N, cudaMemcpyDeviceToHost);
-    cudaMemcpy(cpu_fz_ref, fz_ref, sizeof(float)*N, cudaMemcpyDeviceToHost);
+
+    CHECK(cudaDeviceSynchronize()); // needed for CC < 6.0
 
     char file_force[200];
     strcpy(file_force, input_dir);
@@ -350,7 +338,7 @@ void Fitness::predict
     {
         fprintf(fid_force, "%25.15e%25.15e%25.15e%25.15e%25.15e%25.15e\n", 
             cpu_fx[n], cpu_fy[n], cpu_fz[n], 
-            cpu_fx_ref[n], cpu_fy_ref[n], cpu_fz_ref[n]);
+            fx_ref[n], fy_ref[n], fz_ref[n]);
     }
     fclose(fid_force);
 

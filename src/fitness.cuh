@@ -71,7 +71,6 @@ protected:
     float *sxx, *syy, *szz; // virial
     float *fx_ref, *fy_ref, *fz_ref; // reference force
     float *cpu_fx, *cpu_fy, *cpu_fz; // use unified memory?
-    float *cpu_fx_ref, *cpu_fy_ref, *cpu_fz_ref; // use unified memory?
     float force_square_sum;          // sum of force square
 
     // other classes
