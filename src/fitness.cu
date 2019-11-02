@@ -91,37 +91,37 @@ void Fitness::read_weight(char* input_dir)
 
     int count = fscanf
     (
-        fid, "%f%f%f", &WEIGHT_FORCE, &WEIGHT_ENERGY, &WEIGHT_STRESS
+        fid, "%f%f%f", &weight.force, &weight.energy, &weight.stress
     );
     if (count != 3) print_error("Reading error for weight.in.\n");
 
     fclose(fid);
 
-    if (WEIGHT_FORCE < 0)
+    if (weight.force < 0)
     {
-        print_error("WEIGHT_FORCE should >= 0\n");
+        print_error("weight.force should >= 0\n");
     }
     else
     {
-        printf("WEIGHT_FORCE = %g.\n", WEIGHT_FORCE);
+        printf("weight.force = %g.\n", weight.force);
     }
 
-    if (WEIGHT_ENERGY < 0)
+    if (weight.energy < 0)
     {
-        print_error("WEIGHT_ENERGY should >= 0\n");
+        print_error("weight.energy should >= 0\n");
     }
     else
     {
-        printf("WEIGHT_ENERGY = %g.\n", WEIGHT_ENERGY);
+        printf("weight.energy = %g.\n", weight.energy);
     }
 
-    if (WEIGHT_STRESS < 0)
+    if (weight.stress < 0)
     {
-        print_error("WEIGHT_STRESS should >= 0\n");
+        print_error("weight.stress should >= 0\n");
     }
     else
     {
-        printf("WEIGHT_STRESS = %g.\n", WEIGHT_STRESS);
+        printf("weight.stress = %g.\n", weight.stress);
     }
 }
 
@@ -286,9 +286,9 @@ void Fitness::compute
             num_types, Nc, N, Na, Na_sum, MAX_ATOM_NUMBER, type, &box, &neighbor,
             x, y, z, fx, fy, fz, sxx, syy, szz, pe
         );
-        fitness[n] = WEIGHT_ENERGY * get_fitness_energy(error_cpu, error_gpu);
-        fitness[n] += WEIGHT_STRESS * get_fitness_stress(error_cpu, error_gpu);
-        fitness[n] += WEIGHT_FORCE * get_fitness_force(error_cpu, error_gpu);
+        fitness[n] = weight.energy * get_fitness_energy(error_cpu, error_gpu);
+        fitness[n] += weight.stress * get_fitness_stress(error_cpu, error_gpu);
+        fitness[n] += weight.force * get_fitness_force(error_cpu, error_gpu);
     }
     MY_FREE(parameters);
     MY_FREE(error_cpu);

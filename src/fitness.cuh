@@ -21,6 +21,14 @@
 #include <stdio.h>
 
 
+struct Weight
+{
+    float force;
+    float energy;
+    float stress;
+};
+
+
 class Fitness
 {
 public:
@@ -47,32 +55,30 @@ protected:
     float get_fitness_energy(float*, float*);
     float get_fitness_stress(float*, float*);
 
-    // integer variables
-    int Nc;      // number of configurations
-    int NC_FORCE;
-    int N;       // total number of atoms (sum of Na)
-    int num_types;
-    int MAX_ATOM_NUMBER; 
-    int *Na;     // number of atoms in each configuration
-    int *Na_sum; // prefix sum of Na
-    int *type;
-
-    // weighting factors
-    float WEIGHT_FORCE;
-    float WEIGHT_ENERGY;
-    float WEIGHT_STRESS;
+    int Nc;              // number of configurations
+    int NC_FORCE;        // number of force configurations
+    int N;               // total number of atoms (sum of Na[])
+    int num_types;       // number of atom types
+    int MAX_ATOM_NUMBER; // number of atoms in the largest configuration
+    int *Na;             // number of atoms in each configuration
+    int *Na_sum;         // prefix sum of Na
+    int *type;           // atom type
 
     // real variables
-    float *x, *y, *z, *fx, *fy, *fz, *pe, *sxx, *syy, *szz;
-    float *fx_ref, *fy_ref, *fz_ref; 
-    float *cpu_fx, *cpu_fy, *cpu_fz;
-    float *cpu_fx_ref, *cpu_fy_ref, *cpu_fz_ref;
-    float force_square_sum;
+    float *x, *y, *z;    // position
+    float *fx, *fy, *fz; // force
+    float *pe;           // potential energy
+    float *sxx, *syy, *szz; // virial
+    float *fx_ref, *fy_ref, *fz_ref; // reference force
+    float *cpu_fx, *cpu_fy, *cpu_fz; // use unified memory?
+    float *cpu_fx_ref, *cpu_fy_ref, *cpu_fz_ref; // use unified memory?
+    float force_square_sum;          // sum of force square
 
     // other classes
     Box box;
     Neighbor neighbor;
     Potential potential;
+    Weight weight;
 };
 
 
