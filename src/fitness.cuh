@@ -49,7 +49,7 @@ protected:
     void read_box(char*);
 
     // functions related to fitness evaluation
-    void predict_energy_or_stress(FILE*, float*, float*, float*, int, int);
+    void predict_energy_or_stress(FILE*, float*, float*, int, int);
     float get_fitness_force(float*, float*);
     float get_fitness_energy(float*, float*);
     float get_fitness_stress(float*, float*);

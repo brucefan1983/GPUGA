@@ -209,10 +209,10 @@ void Fitness::read_xyz(FILE* fid)
     CHECK(cudaMallocManaged((void**)&fx_ref, m2));
     CHECK(cudaMallocManaged((void**)&fy_ref, m2));
     CHECK(cudaMallocManaged((void**)&fz_ref, m2));
-    CHECK(cudaMalloc((void**)&pe, m2));
-    CHECK(cudaMalloc((void**)&sxx, m2));
-    CHECK(cudaMalloc((void**)&syy, m2));
-    CHECK(cudaMalloc((void**)&szz, m2));
+    CHECK(cudaMallocManaged((void**)&pe, m2));
+    CHECK(cudaMallocManaged((void**)&sxx, m2));
+    CHECK(cudaMallocManaged((void**)&syy, m2));
+    CHECK(cudaMallocManaged((void**)&szz, m2));
 
     num_types = 0;
     force_square_sum = 0.0;
@@ -272,18 +272,17 @@ void Fitness::compute
 
 
 void Fitness::predict_energy_or_stress
-(FILE* fid, float* cpu_data, float* data, float* ref, int N, int Nc)
+(FILE* fid, float* data, float* ref, int N, int Nc)
 {
-    cudaMemcpy(cpu_data, data, sizeof(float)*N, cudaMemcpyDeviceToHost);
     for (int nc = NC_FORCE; nc < Nc; ++nc)
     {
         int offset = nc * MAX_ATOM_NUMBER;
-        float cpu_data_nc = 0.0;
+        float data_nc = 0.0;
         for (int m = 0; m < MAX_ATOM_NUMBER; ++m)
         {
-            cpu_data_nc += cpu_data[offset + m];
+            data_nc += data[offset + m];
         }
-        fprintf(fid, "%25.15e%25.15e\n", cpu_data_nc, ref[nc]);
+        fprintf(fid, "%25.15e%25.15e\n", data_nc, ref[nc]);
     }
 }
 
@@ -330,21 +329,11 @@ void Fitness::predict
     strcpy(file, input_dir);
     strcat(file, "/prediction.out");
     FILE* fid_prediction = my_fopen(file, "w");
-    float *cpu_prediction; MY_MALLOC(cpu_prediction, float, N);
-    // energy
-    predict_energy_or_stress
-    (fid_prediction, cpu_prediction, pe, box.pe_ref, N, Nc);
-    // sxx
-    predict_energy_or_stress
-    (fid_prediction, cpu_prediction, sxx, box.sxx_ref, N, Nc);
-    // syy
-    predict_energy_or_stress
-    (fid_prediction, cpu_prediction, syy, box.syy_ref, N, Nc);
-    // szz
-    predict_energy_or_stress
-    (fid_prediction, cpu_prediction, szz, box.szz_ref, N, Nc);
+    predict_energy_or_stress(fid_prediction, pe, box.pe_ref, N, Nc);
+    predict_energy_or_stress(fid_prediction, sxx, box.sxx_ref, N, Nc);
+    predict_energy_or_stress(fid_prediction, syy, box.syy_ref, N, Nc);
+    predict_energy_or_stress(fid_prediction, szz, box.szz_ref, N, Nc);
     fclose(fid_prediction);
-    MY_FREE(cpu_prediction);
 }
 
 
