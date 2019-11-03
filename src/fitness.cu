@@ -199,18 +199,41 @@ void Fitness::read_potential(char* input_dir)
     print_line_1();
     printf("Started reading potential.in.\n");
     print_line_2();
+
     char file[200];
     strcpy(file, input_dir);
     strcat(file, "/potential.in");
     FILE* fid = my_fopen(file, "r");
-    int count = fscanf(fid, "%d", &number_of_variables);
-    if (count != 1) { print_error("reading error for potential.in."); }
-    printf("number of variables = %d\n", number_of_variables);
+
+    char name[20];
+
+    int count = fscanf(fid, "%s%d", name, &potential_type);
+    if (count != 2) { print_error("reading error for potential.in."); }
+    if (potential_type == 1)
+    {
+        number_of_variables = 9;
+        printf
+        (
+            "Use one-element mini-Tersoff potential with %d parameters.\n",
+            number_of_variables
+        );
+    }
+    else if (potential_type == 2)
+    {
+        number_of_variables = 37;
+        printf
+        (
+            "Use two-element mini-Tersoff potential with %d parameters.\n",
+            number_of_variables
+        );
+    }
+    else
+    {
+        print_error("unsupported potential type.\n");
+    }
 
     MY_MALLOC(parameters_min, float, number_of_variables);
     MY_MALLOC(parameters_max, float, number_of_variables);
-
-    char name[20];
 
     count = fscanf(fid, "%s%f", name, &neighbor.cutoff);
     if (count != 2) { print_error("reading error for potential.in."); }
