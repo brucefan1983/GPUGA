@@ -50,9 +50,9 @@ protected:
 
     // functions related to fitness evaluation
     void predict_energy_or_stress(FILE*, float*, float*, int, int);
-    float get_fitness_force(float*, float*);
-    float get_fitness_energy(float*, float*);
-    float get_fitness_stress(float*, float*);
+    float get_fitness_force(void);
+    float get_fitness_energy(void);
+    float get_fitness_stress(void);
 
     int Nc;              // number of configurations
     int NC_FORCE;        // number of force configurations
@@ -68,6 +68,7 @@ protected:
     float *pe;                       // potential energy
     float *sxx, *syy, *szz;          // virial
     float *fx_ref, *fy_ref, *fz_ref; // reference force
+    float *error_cpu, *error_gpu;    // error in energy, virial, or force
     float force_square_sum;          // sum of force square
 
     // other classes

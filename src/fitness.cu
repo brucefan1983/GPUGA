@@ -32,6 +32,8 @@ Fitness::Fitness(char* input_dir)
     box.read_file(input_dir, Nc);
     neighbor.compute(Nc, N, Na, Na_sum, x, y, z, &box);
     potential.initialize(N, MAX_ATOM_NUMBER);
+    MY_MALLOC(error_cpu, float, Nc);
+    CHECK(cudaMalloc((void**)&error_gpu, sizeof(float) * Nc));
 }
 
 
@@ -53,6 +55,8 @@ Fitness::~Fitness(void)
     cudaFree(fx);
     cudaFree(fy);
     cudaFree(fz);
+    MY_FREE(error_cpu);
+    CHECK(cudaFree(error_gpu));
 }
 
 
@@ -242,10 +246,8 @@ void Fitness::compute
 )
 {
     float *parameters;
-    float *error_gpu, *error_cpu;
-    MY_MALLOC(error_cpu, float, Nc);
-    CHECK(cudaMalloc((void**)&error_gpu, sizeof(float) * Nc));
     MY_MALLOC(parameters, float, number_of_variables);
+
     for (int n = 0; n < population_size; ++n)
     {
         float* individual = population + n * number_of_variables;
@@ -261,13 +263,12 @@ void Fitness::compute
             num_types, Nc, N, Na, Na_sum, MAX_ATOM_NUMBER, type, &box, &neighbor,
             x, y, z, fx, fy, fz, sxx, syy, szz, pe
         );
-        fitness[n] = weight.energy * get_fitness_energy(error_cpu, error_gpu);
-        fitness[n] += weight.stress * get_fitness_stress(error_cpu, error_gpu);
-        fitness[n] += weight.force * get_fitness_force(error_cpu, error_gpu);
+        fitness[n] = weight.energy * get_fitness_energy();
+        fitness[n] += weight.stress * get_fitness_stress();
+        fitness[n] += weight.force * get_fitness_force();
     }
+
     MY_FREE(parameters);
-    MY_FREE(error_cpu);
-    CHECK(cudaFree(error_gpu));
 }
 
 
@@ -377,7 +378,7 @@ static __global__ void gpu_sum_force_error
 }
 
 
-float Fitness::get_fitness_force(float *error_cpu, float *error_gpu)
+float Fitness::get_fitness_force(void)
 {
     int M = NC_FORCE * MAX_ATOM_NUMBER;
     gpu_sum_force_error<<<1, 512>>>(M, fx, fy, fz, 
@@ -418,7 +419,7 @@ static __global__ void gpu_sum_pe_error
 }
 
 
-float Fitness::get_fitness_energy(float* error_cpu, float* error_gpu)
+float Fitness::get_fitness_energy(void)
 {
     gpu_sum_pe_error<<<Nc, 64>>>(Na, Na_sum, pe, box.pe_ref, error_gpu);
     int mem = sizeof(float) * Nc;
@@ -432,7 +433,7 @@ float Fitness::get_fitness_energy(float* error_cpu, float* error_gpu)
 }
 
 
-float Fitness::get_fitness_stress(float* error_cpu, float* error_gpu)
+float Fitness::get_fitness_stress(void)
 {
     float error_ave = 0.0;
     int mem = sizeof(float) * Nc;
