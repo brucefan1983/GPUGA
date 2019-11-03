@@ -59,7 +59,7 @@ protected:
 
     int potential_type;  // 1=tersoff_mini_1 and 2=tersoff_mini_2
     int Nc;              // number of configurations
-    int NC_FORCE;        // number of force configurations
+    int Nc_force;        // number of force configurations
     int N;               // total number of atoms (sum of Na[])
     int N_force;         // total number of atoms in force configurations
     int num_types;       // number of atom types

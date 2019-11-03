@@ -80,7 +80,7 @@ void Fitness::read_xyz_in(char* input_dir)
 
 void Fitness::read_Nc(FILE* fid)
 {
-    int count = fscanf(fid, "%d%d", &Nc, &NC_FORCE);
+    int count = fscanf(fid, "%d%d", &Nc, &Nc_force);
     if (count != 2) print_error("Reading error for xyz.in.\n");
 
     if (Nc < 2)
@@ -88,18 +88,18 @@ void Fitness::read_Nc(FILE* fid)
         print_error("Number of configurations should >= 2\n");
     }
 
-    if (NC_FORCE < 1)
+    if (Nc_force < 1)
     {
         print_error("Number of force configurations should >= 1\n");
     }
-    else if (NC_FORCE > Nc - 1)
+    else if (Nc_force > Nc - 1)
     {
         print_error("Number of potential configurations should >= 1\n");
     }
 
     printf("Number of configurations is %d:\n", Nc);
-    printf("    %d force configurations;\n", NC_FORCE);
-    printf("    %d energy and virial configurations.\n", Nc - NC_FORCE);
+    printf("    %d force configurations;\n", Nc_force);
+    printf("    %d energy and virial configurations.\n", Nc - Nc_force);
 }
 
 
@@ -144,7 +144,7 @@ void Fitness::read_Na(FILE* fid)
 
     // get the total number of atoms in force configurations
     N_force = 0;
-    for (int nc = 0; nc < NC_FORCE; ++nc)
+    for (int nc = 0; nc < Nc_force; ++nc)
     {
         N_force += Na[nc];
     }
@@ -306,7 +306,7 @@ void Fitness::compute(int population_size, float* population, float* fitness)
 
 void Fitness::predict_energy_or_stress(FILE* fid, float* data, float* ref)
 {
-    for (int nc = NC_FORCE; nc < Nc; ++nc)
+    for (int nc = Nc_force; nc < Nc; ++nc)
     {
         int offset = Na_sum[nc];
         float data_nc = 0.0;
@@ -473,7 +473,7 @@ float Fitness::get_fitness_energy(void)
     int mem = sizeof(float) * Nc;
     CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
     float error_ave = 0.0;
-    for (int n = NC_FORCE; n < Nc; ++n)
+    for (int n = Nc_force; n < Nc; ++n)
     {
         error_ave += error_cpu[n];
     }
@@ -490,17 +490,17 @@ float Fitness::get_fitness_stress(void)
     gpu_sum_pe_error<<<Nc, block_size, sizeof(float) * block_size>>>
     (Na, Na_sum, sxx, box.sxx_ref, error_gpu);
     CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
-    for (int n = NC_FORCE; n < Nc; ++n) {error_ave += error_cpu[n];}
+    for (int n = Nc_force; n < Nc; ++n) {error_ave += error_cpu[n];}
 
     gpu_sum_pe_error<<<Nc, block_size, sizeof(float) * block_size>>>
     (Na, Na_sum, syy, box.syy_ref, error_gpu);
     CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
-    for (int n = NC_FORCE; n < Nc; ++n) {error_ave += error_cpu[n];}
+    for (int n = Nc_force; n < Nc; ++n) {error_ave += error_cpu[n];}
 
     gpu_sum_pe_error<<<Nc, block_size, sizeof(float) * block_size>>>
     (Na, Na_sum, szz, box.szz_ref, error_gpu);
     CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
-    for (int n = NC_FORCE; n < Nc; ++n) {error_ave += error_cpu[n];}
+    for (int n = Nc_force; n < Nc; ++n) {error_ave += error_cpu[n];}
 
     return sqrt(error_ave / box.virial_square_sum);
 }
