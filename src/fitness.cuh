@@ -57,6 +57,7 @@ protected:
     int Nc;              // number of configurations
     int NC_FORCE;        // number of force configurations
     int N;               // total number of atoms (sum of Na[])
+    int N_force;         // total number of atoms in force configurations
     int num_types;       // number of atom types
     int MAX_ATOM_NUMBER; // number of atoms in the largest configuration
     int *Na;             // number of atoms in each configuration

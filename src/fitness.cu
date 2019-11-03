@@ -195,6 +195,13 @@ void Fitness::read_Na(FILE* fid)
     {
         Na_sum[nc] = Na_sum[nc-1] + Na[nc-1];
     }
+
+    // get the total number of atoms in force configurations
+    N_force = 0;
+    for (int nc = 0; nc < NC_FORCE; ++nc)
+    {
+        N_force += Na[nc];
+    }
 } 
 
 
@@ -380,9 +387,8 @@ static __global__ void gpu_sum_force_error
 
 float Fitness::get_fitness_force(void)
 {
-    int M = NC_FORCE * MAX_ATOM_NUMBER;
-    gpu_sum_force_error<<<1, 512, sizeof(float)*512>>>
-    (M, fx, fy, fz, fx_ref, fy_ref, fz_ref, error_gpu);
+    gpu_sum_force_error<<<1, 512, sizeof(float) * 512>>>
+    (N_force, fx, fy, fz, fx_ref, fy_ref, fz_ref, error_gpu);
     CHECK(cudaMemcpy(error_cpu, error_gpu, sizeof(float), 
         cudaMemcpyDeviceToHost));
     return sqrt(error_cpu[0] / force_square_sum);
