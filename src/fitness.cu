@@ -374,7 +374,7 @@ static __global__ void gpu_sum_force_error
     int tid = threadIdx.x;
     int number_of_rounds = (N - 1) / blockDim.x + 1; 
     extern __shared__ float s_error[];
-    s_error[tid] = 0.0;
+    s_error[tid] = 0.0f;
     for (int round = 0; round < number_of_rounds; ++round)
     {
         int n = tid + round * blockDim.x;
@@ -423,7 +423,7 @@ static __global__ void gpu_sum_pe_error
     int Na = g_Na[bid];
     int offset = g_Na_sum[bid];
     extern __shared__ float s_pe[];
-    s_pe[tid] = 0.0;
+    s_pe[tid] = 0.0f;
     if (tid < Na)
     {
         int n = offset + tid; // particle index
