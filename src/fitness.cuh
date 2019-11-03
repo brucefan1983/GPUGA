@@ -53,7 +53,7 @@ protected:
     void read_potential(char*);
 
     // functions related to fitness evaluation
-    void predict_energy_or_stress(FILE*, float*, float*, int, int);
+    void predict_energy_or_stress(FILE*, float*, float*);
     float get_fitness_force(void);
     float get_fitness_energy(void);
     float get_fitness_stress(void);

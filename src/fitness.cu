@@ -298,14 +298,13 @@ void Fitness::compute(int population_size, float* population, float* fitness)
 }
 
 
-void Fitness::predict_energy_or_stress
-(FILE* fid, float* data, float* ref, int N, int Nc)
+void Fitness::predict_energy_or_stress(FILE* fid, float* data, float* ref)
 {
     for (int nc = NC_FORCE; nc < Nc; ++nc)
     {
-        int offset = nc * MAX_ATOM_NUMBER;
+        int offset = Na_sum[nc];
         float data_nc = 0.0;
-        for (int m = 0; m < MAX_ATOM_NUMBER; ++m)
+        for (int m = 0; m < Na[nc]; ++m)
         {
             data_nc += data[offset + m];
         }
@@ -338,7 +337,7 @@ void Fitness::predict(char* input_dir, float* elite)
     strcpy(file_force, input_dir);
     strcat(file_force, "/force.out");
     FILE* fid_force = my_fopen(file_force, "w");
-    for (int n = 0; n < NC_FORCE*64; ++n)
+    for (int n = 0; n < N_force; ++n)
     {
         fprintf
         (
@@ -352,10 +351,10 @@ void Fitness::predict(char* input_dir, float* elite)
     strcpy(file, input_dir);
     strcat(file, "/prediction.out");
     FILE* fid_prediction = my_fopen(file, "w");
-    predict_energy_or_stress(fid_prediction, pe, box.pe_ref, N, Nc);
-    predict_energy_or_stress(fid_prediction, sxx, box.sxx_ref, N, Nc);
-    predict_energy_or_stress(fid_prediction, syy, box.syy_ref, N, Nc);
-    predict_energy_or_stress(fid_prediction, szz, box.szz_ref, N, Nc);
+    predict_energy_or_stress(fid_prediction, pe, box.pe_ref);
+    predict_energy_or_stress(fid_prediction, sxx, box.sxx_ref);
+    predict_energy_or_stress(fid_prediction, syy, box.syy_ref);
+    predict_energy_or_stress(fid_prediction, szz, box.szz_ref);
     fclose(fid_prediction);
 }
 
