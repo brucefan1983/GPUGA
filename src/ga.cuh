@@ -28,13 +28,12 @@ public:
 protected:
     // parameters
     std::mt19937 rng;
-    int maximum_generation = 1000000;
+    int maximum_generation = 1000;
     int number_of_variables = 10;
-    int population_size = 100;
-    int parent_number = 50;
-    int child_number = 50;
-    float mutation_rate = 0.1;
-    float minimum_cost = 1.0e-6;
+    int population_size = 200;
+    int parent_number = 100;
+    int child_number = 100;
+    float mutation_rate = 0.2;
     // data
     int* index;
     float* fitness;
@@ -58,7 +57,6 @@ protected:
     void parse_population_size(char**, int);
     void parse_parent_number(char**, int);
     void parse_mutation_rate(char**, int);
-    void parse_minimum_cost(char**, int);
 };
 
 

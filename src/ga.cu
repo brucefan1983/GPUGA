@@ -280,10 +280,6 @@ void GA::parse(char **param, int num_param)
     {
         parse_mutation_rate(param, num_param);
     }
-    else if (strcmp(param[0], "minimum_cost") == 0)
-    {
-        parse_minimum_cost(param, num_param);
-    }
     else
     {
         printf("Error: '%s' is invalid keyword.\n", param[0]);
@@ -373,24 +369,6 @@ void GA::parse_mutation_rate(char **param, int num_param)
         print_error("mutation_rate should <= 1.\n");
     }
     printf("mutation_rate = %g.\n", mutation_rate);
-}
-
-
-void GA::parse_minimum_cost(char **param, int num_param)
-{
-    if (num_param != 2)
-    {
-        print_error("mutation_rate should have 1 parameter.\n");
-    }
-    if (!is_valid_real(param[1], &minimum_cost))
-    {
-        print_error("mutation_rate should be a number.\n");
-    }
-    if (minimum_cost <= 0)
-    {
-        print_error("mininum_cost should > 0.\n");
-    }
-    printf("mininum_cost = %g.\n", minimum_cost);
 }
 
 
