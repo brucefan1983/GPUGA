@@ -255,15 +255,22 @@ void Fitness::read_potential(char* input_dir)
     int count = fscanf(fid, "%d", &number_of_variables);
     if (count != 1) { print_error("reading error for potential.in."); }
     printf("number of variables = %d\n", number_of_variables);
+
     MY_MALLOC(parameters_min, float, number_of_variables);
     MY_MALLOC(parameters_max, float, number_of_variables);
+
     char name[20];
+
+    count = fscanf(fid, "%s%f", name, &neighbor.cutoff);
+    if (count != 2) { print_error("reading error for potential.in."); }
+    printf("cutoff for neighbor list is %f.\n", neighbor.cutoff);
+
     for (int n = 0; n <  number_of_variables; ++n)
     {
         count = fscanf
         (fid, "%s%f%f", name, &parameters_min[n], &parameters_max[n]);
         if (count != 3) { print_error("reading error for potential.in."); }
-        printf("%s\t%g\t%g\n", name, parameters_min[n], parameters_max[n]);
+        printf("%15s%15g%15g\n", name, parameters_min[n], parameters_max[n]);
     }
     fclose(fid);
 }

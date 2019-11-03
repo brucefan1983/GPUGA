@@ -24,8 +24,6 @@ find the neighbor list
 #include "mic.cuh"
 #include "error.cuh"
 
-const float NEIGHBOR_CUTOFF = 3.0;
-
 
 Neighbor::~Neighbor(void)
 {
@@ -71,12 +69,19 @@ void Neighbor::compute
 (int Nc, int N, int *Na, int *Na_sum, float *x, float *y, float *z, Box *box)
 {
     int m1 = sizeof(int) * N;
-    CHECK(cudaMalloc((void**)&NN, m1));
-    CHECK(cudaMalloc((void**)&NL, m1 * 64)); // to be improved
-    float rc2 = NEIGHBOR_CUTOFF * NEIGHBOR_CUTOFF;
+    CHECK(cudaMallocManaged((void**)&NN, m1));
+    CHECK(cudaMallocManaged((void**)&NL, m1 * 64)); // to be improved
+    float rc2 = cutoff * cutoff;
     gpu_find_neighbor<<<Nc, 64>>> // to be improved
     (box->triclinic, N, Na, Na_sum, rc2, box->h, NN, NL, x, y, z);
     CUDA_CHECK_KERNEL
+
+    CHECK(cudaDeviceSynchronize());
+    for (int nc = 0; nc < Nc; ++nc)
+    {
+        printf("NN[%d]=%d,", nc, NN[Na_sum[nc]]);
+        if (0 == (nc + 1) % 8) printf("\n");
+    }
 }
 
 

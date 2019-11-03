@@ -24,6 +24,7 @@ public:
     int *NN, *NL;
     ~Neighbor(void);
     void compute(int, int, int*, int*, float*, float*, float*, Box*);
+    float cutoff = 0;
 };
 
 
