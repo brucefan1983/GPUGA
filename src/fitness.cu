@@ -27,6 +27,7 @@ Get the fitness
 
 Fitness::Fitness(char* input_dir)
 {
+    read_potential(input_dir);
     read_weight(input_dir);
     read_xyz_in(input_dir);
     box.read_file(input_dir, Nc);
@@ -55,8 +56,10 @@ Fitness::~Fitness(void)
     cudaFree(fx);
     cudaFree(fy);
     cudaFree(fz);
-    MY_FREE(error_cpu);
     CHECK(cudaFree(error_gpu));
+    MY_FREE(error_cpu);
+    MY_FREE(parameters_min);
+    MY_FREE(parameters_max);
 }
 
 
@@ -245,12 +248,33 @@ void Fitness::read_xyz(FILE* fid)
 }
 
 
-void Fitness::compute
-(
-    int population_size, int number_of_variables, 
-    float *parameters_min, float *parameters_max,
-    float* population, float* fitness
-)
+void Fitness::read_potential(char* input_dir)
+{
+    print_line_1();
+    printf("Started reading potential.in.\n");
+    print_line_2();
+    char file[200];
+    strcpy(file, input_dir);
+    strcat(file, "/potential.in");
+    FILE* fid = my_fopen(file, "r");
+    int count = fscanf(fid, "%d", &number_of_variables);
+    if (count != 1) { print_error("reading error for potential.in."); }
+    printf("number of variables = %d\n", number_of_variables);
+    MY_MALLOC(parameters_min, float, number_of_variables);
+    MY_MALLOC(parameters_max, float, number_of_variables);
+    char name[20];
+    for (int n = 0; n <  number_of_variables; ++n)
+    {
+        count = fscanf
+        (fid, "%s%f%f", name, &parameters_min[n], &parameters_max[n]);
+        if (count != 3) { print_error("reading error for potential.in."); }
+        printf("%s\t%g\t%g\n", name, parameters_min[n], parameters_max[n]);
+    }
+    fclose(fid);
+}
+
+
+void Fitness::compute(int population_size, float* population, float* fitness)
 {
     float *parameters;
     MY_MALLOC(parameters, float, number_of_variables);
@@ -295,11 +319,7 @@ void Fitness::predict_energy_or_stress
 }
 
 
-void Fitness::predict
-(
-    char* input_dir, int number_of_variables, float *parameters_min, 
-    float *parameters_max, float* elite
-)
+void Fitness::predict(char* input_dir, float* elite)
 {
     float *parameters;
     MY_MALLOC(parameters, float, number_of_variables);

@@ -30,7 +30,7 @@ Use the genetic algorithm to fit potential parameters.
 GA::GA(char* input_dir, Fitness* fitness_function)
 {
     // parameters
-    read_potential(input_dir);
+    copy_potential(fitness_function);
     read_parameters(input_dir);
     child_number = population_size - parent_number;
 
@@ -66,29 +66,16 @@ GA::GA(char* input_dir, Fitness* fitness_function)
 }
 
 
-void GA::read_potential(char* input_dir)
+void GA::copy_potential(Fitness* fitness_function)
 {
-    print_line_1();
-    printf("Started reading potential.in.\n");
-    print_line_2();
-    char file[200];
-    strcpy(file, input_dir);
-    strcat(file, "/potential.in");
-    FILE* fid = my_fopen(file, "r");
-    int count = fscanf(fid, "%d", &number_of_variables);
-    if (count != 1) { print_error("reading error for potential.in."); }
-    printf("number of variables = %d\n", number_of_variables);
+    number_of_variables = fitness_function->number_of_variables;
     MY_MALLOC(parameters_min, float, number_of_variables);
     MY_MALLOC(parameters_max, float, number_of_variables);
-    char name[20];
-    for (int n = 0; n <  number_of_variables; ++n)
+    for (int n = 0; n < number_of_variables; ++n)
     {
-        count = fscanf
-        (fid, "%s%f%f", name, &parameters_min[n], &parameters_max[n]);
-        if (count != 3) { print_error("reading error for potential.in."); }
-        printf("%s\t%g\t%g\n", name, parameters_min[n], parameters_max[n]);
+        parameters_min[n] = fitness_function->parameters_min[n];
+        parameters_max[n] = fitness_function->parameters_max[n];
     }
-    fclose(fid);
 }
 
 
@@ -103,8 +90,7 @@ void GA::compute(char* input_dir, Fitness* fitness_function)
     FILE* fid = my_fopen(file, "w");
     for (int n = 0; n <  maximum_generation; ++n)
     {
-        fitness_function->compute(population_size, number_of_variables, 
-            parameters_min, parameters_max, population, fitness);
+        fitness_function->compute(population_size, population, fitness);
         sort_population(n);
         output(n, fid);
         crossover();
@@ -112,8 +98,7 @@ void GA::compute(char* input_dir, Fitness* fitness_function)
     }
     fclose(fid);
 
-    fitness_function->predict(input_dir, number_of_variables, 
-        parameters_min, parameters_max, population);
+    fitness_function->predict(input_dir, population);
 }
 
 

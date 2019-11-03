@@ -51,8 +51,8 @@ protected:
     int get_a_parent(void);
     void mutation(int);
     // for initialization
+    void copy_potential(Fitness*);
     void read_parameters(char*);
-    void read_potential(char*);
     void parse(char**, int);
     void parse_maximum_generation(char**, int);
     void parse_number_of_variables(char**, int);

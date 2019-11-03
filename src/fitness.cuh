@@ -35,8 +35,11 @@ public:
 
     Fitness(char*);
     ~Fitness(void);
-    void compute(int, int, float*, float*, float*, float*);
-    void predict(char*, int, float*, float*, float*);
+    void compute(int, float*, float*);
+    void predict(char*, float*);
+    int number_of_variables; // number of variables in the potential
+    float *parameters_min;   // lower limit of the potential parameters
+    float *parameters_max;   // upper limit of the potential parameters
 
 protected:
 
@@ -47,6 +50,7 @@ protected:
     void read_Na(FILE*);
     void read_xyz(FILE*);
     void read_box(char*);
+    void read_potential(char*);
 
     // functions related to fitness evaluation
     void predict_energy_or_stress(FILE*, float*, float*, int, int);
