@@ -30,8 +30,8 @@ Fitness::Fitness(char* input_dir)
     read_potential(input_dir);
     read_xyz_in(input_dir);
     box.read_file(input_dir, Nc);
-    neighbor.compute(Nc, N, MAX_ATOM_NUMBER, Na, Na_sum, x, y, z, &box);
-    potential.initialize(N, MAX_ATOM_NUMBER);
+    neighbor.compute(Nc, N, max_Na, Na, Na_sum, x, y, z, &box);
+    potential.initialize(N, max_Na);
     MY_MALLOC(error_cpu, float, Nc);
     CHECK(cudaMalloc((void**)&error_gpu, sizeof(float) * Nc));
 }
@@ -109,7 +109,7 @@ void Fitness::read_Na(FILE* fid)
     CHECK(cudaMallocManaged((void**)&Na_sum, sizeof(int) * Nc));
 
     N = 0;
-    MAX_ATOM_NUMBER = 0;
+    max_Na = 0;
 
     for (int nc = 0; nc < Nc; ++nc)
     {
@@ -126,9 +126,9 @@ void Fitness::read_Na(FILE* fid)
         }
 
         N += Na[nc];
-        if (Na[nc] > MAX_ATOM_NUMBER)
+        if (Na[nc] > max_Na)
         {
-            MAX_ATOM_NUMBER = Na[nc];
+            max_Na = Na[nc];
         }
 
         if (Na[nc] < 1)
@@ -292,7 +292,7 @@ void Fitness::compute(int population_size, float* population, float* fitness)
         potential.update_potential(parameters, num_types);
         potential.find_force
         (
-            num_types, Nc, N, Na, Na_sum, MAX_ATOM_NUMBER, type, &box, &neighbor,
+            num_types, Nc, N, Na, Na_sum, max_Na, type, &box, &neighbor,
             x, y, z, fx, fy, fz, sxx, syy, szz, pe
         );
         fitness[n] = weight.energy * get_fitness_energy();
@@ -332,7 +332,7 @@ void Fitness::predict(char* input_dir, float* elite)
     potential.update_potential(parameters, num_types);
     potential.find_force
     (
-        num_types, Nc, N, Na, Na_sum, MAX_ATOM_NUMBER, type, &box, &neighbor,
+        num_types, Nc, N, Na, Na_sum, max_Na, type, &box, &neighbor,
         x, y, z, fx, fy, fz, sxx, syy, szz, pe
     );
     MY_FREE(parameters);
@@ -467,7 +467,7 @@ static int get_block_size(int max_num_atom)
 
 float Fitness::get_fitness_energy(void)
 {
-    int block_size = get_block_size(MAX_ATOM_NUMBER);
+    int block_size = get_block_size(max_Na);
     gpu_sum_pe_error<<<Nc, block_size, sizeof(float) * block_size>>>
     (Na, Na_sum, pe, box.pe_ref, error_gpu);
     int mem = sizeof(float) * Nc;
@@ -485,7 +485,7 @@ float Fitness::get_fitness_stress(void)
 {
     float error_ave = 0.0;
     int mem = sizeof(float) * Nc;
-    int block_size = get_block_size(MAX_ATOM_NUMBER);
+    int block_size = get_block_size(max_Na);
 
     gpu_sum_pe_error<<<Nc, block_size, sizeof(float) * block_size>>>
     (Na, Na_sum, sxx, box.sxx_ref, error_gpu);
