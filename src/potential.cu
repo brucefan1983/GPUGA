@@ -89,15 +89,15 @@ static __device__ void find_fr_and_frp
 (float d0, float a, float r0, float s, float d12, float &fr, float &frp)
 {
 
-    fr = d0 / (s - 1) * exp(-sqrt(2.0 * s) * a * (d12 - r0));
-    frp = -2.0 * a * fr;
+    fr = d0 / (s - 1.0f) * exp(-sqrt(2.0f * s) * a * (d12 - r0));
+    frp = -2.0f * a * fr;
 }
 
 
 static __device__ void find_fa_and_fap
 (float d0, float a, float r0, float s, float d12, float &fa, float &fap)
 {
-    fa = s * d0 / (s - 1) * exp(-sqrt(2.0 / s) * a * (d12 - r0));
+    fa = s * d0 / (s - 1.0f) * exp(-sqrt(2.0f / s) * a * (d12 - r0));
     fap = -a * fa;
 }
 
@@ -105,32 +105,32 @@ static __device__ void find_fa_and_fap
 static __device__ void find_fc_and_fcp
 (float r1, float r2, float pi_factor, float d12, float &fc, float &fcp)
 {
-    if (d12 < r1) {fc = 1.0; fcp = 0.0;}
+    if (d12 < r1) {fc = 1.0f; fcp = 0.0f;}
     else if (d12 < r2)
     {
-        fc = 0.5 * cos(pi_factor * (d12 - r1)) + 0.5;
-        fcp = - sin(pi_factor * (d12 - r1)) * pi_factor * 0.5;
+        fc = 0.5f * cos(pi_factor * (d12 - r1)) + 0.5f;
+        fcp = - sin(pi_factor * (d12 - r1)) * pi_factor * 0.5f;
     }
-    else {fc  = 0.0; fcp = 0.0;}
+    else {fc  = 0.0f; fcp = 0.0f;}
 }
 
 
 static __device__ void find_fa
 (float d0, float a, float r0, float s, float d12, float &fa)
 {
-    fa = s * d0 / (s - 1) * exp(-sqrt(2.0 / s) * a * (d12 - r0));
+    fa = s * d0 / (s - 1.0f) * exp(-sqrt(2.0f / s) * a * (d12 - r0));
 }
 
 
 static __device__ void find_fc
 (float r1, float r2, float pi_factor, float d12, float &fc)
 {
-    if (d12 < r1) {fc  = 1.0;}
+    if (d12 < r1) {fc  = 1.0f;}
     else if (d12 < r2)
     {
-        fc = 0.5 * cos(pi_factor * (d12 - r1)) + 0.5;
+        fc = 0.5f * cos(pi_factor * (d12 - r1)) + 0.5f;
     }
-    else {fc  = 0.0;}
+    else {fc  = 0.0f;}
 }
 
 
@@ -139,7 +139,7 @@ static __device__ void find_g_and_gp
 {
     float x = cos - h;
     g = beta * x * x;
-    gp = beta * 2.0 * x;
+    gp = beta * 2.0f * x;
 }
 
 
@@ -186,7 +186,7 @@ static __global__ void find_force_tersoff_step1
             float z12  = LDG(g_z, n2) - z1;
             dev_apply_mic(triclinic, h, x12, y12, z12);
             float d12 = sqrt(x12 * x12 + y12 * y12 + z12 * z12);
-            float zeta = 0.0;
+            float zeta = 0.0f;
             for (int i2 = 0; i2 < neighbor_number; ++i2)
             {
                 int n3 = g_neighbor_list[n1 + number_of_particles * i2];
@@ -210,10 +210,10 @@ static __global__ void find_force_tersoff_step1
             }
             float bzn, b_ijj;
             bzn = pow(zeta, pot_para.ters[EN]);
-            b_ijj = pow(1.0 + bzn, pot_para.ters[MINUS_HALF_OVER_N]);
+            b_ijj = pow(1.0f + bzn, pot_para.ters[MINUS_HALF_OVER_N]);
             g_b[i1 * number_of_particles + n1]  = b_ijj;
             g_bp[i1 * number_of_particles + n1] = 
-                - b_ijj * bzn * 0.5 / ((1.0 + bzn) * zeta);
+                - b_ijj * bzn * 0.5f / ((1.0f + bzn) * zeta);
         }
     }
 }
@@ -247,7 +247,7 @@ static __global__ void find_force_tersoff_step2
         float x1 = LDG(g_x, n1); 
         float y1 = LDG(g_y, n1); 
         float z1 = LDG(g_z, n1);
-        float pot_energy = 0.0;
+        float pot_energy = 0.0f;
         for (int i1 = 0; i1 < neighbor_number; ++i1)
         {
             int index = i1 * number_of_particles + n1;
@@ -258,7 +258,7 @@ static __global__ void find_force_tersoff_step2
             float z12  = LDG(g_z, n2) - z1;
             dev_apply_mic(triclinic, h, x12, y12, z12);
             float d12 = sqrt(x12 * x12 + y12 * y12 + z12 * z12);
-            float d12inv = 1.0 / d12;
+            float d12inv = 1.0f / d12;
             float fc12, fcp12, fa12, fap12, fr12, frp12;
 
             float d0 = pot_para.ters[D0];
@@ -279,12 +279,12 @@ static __global__ void find_force_tersoff_step2
             float b12 = LDG(g_b, index);
             float factor3 = (fcp12 * (fr12 - b12 * fa12) 
                 + fc12 * (frp12 - b12 * fap12)) * d12inv;
-            float f12x = x12 * factor3 * 0.5;
-            float f12y = y12 * factor3 * 0.5;
-            float f12z = z12 * factor3 * 0.5;
+            float f12x = x12 * factor3 * 0.5f;
+            float f12y = y12 * factor3 * 0.5f;
+            float f12z = z12 * factor3 * 0.5f;
 
             // accumulate potential energy
-            pot_energy += fc12 * (fr12 - b12 * fa12) * 0.5;
+            pot_energy += fc12 * (fr12 - b12 * fa12) * 0.5f;
 
             // (i,j,k) part
             float bp12 = LDG(g_bp, index);
@@ -307,7 +307,7 @@ static __global__ void find_force_tersoff_step2
                 );
                 find_fa(d0, a, r0, s, d13, fa13);
                 float bp13 = LDG(g_bp, index_2);
-                float one_over_d12d13 = 1.0 / (d12 * d13);
+                float one_over_d12d13 = 1.0f / (d12 * d13);
                 float cos123 = (x12*x13 + y12*y13 + z12*z13) * one_over_d12d13;
                 float cos123_over_d12d12 = cos123 * d12inv * d12inv;
                 float g123, gp123;
@@ -323,11 +323,11 @@ static __global__ void find_force_tersoff_step2
                 float dr = -fcp12 * bp13 * fa13 * g123 * fc13 * d12inv;
 
                 float cos_d = x13 * one_over_d12d13 - x12 * cos123_over_d12d12;
-                f12x += (x12 * dr + dc * cos_d)*0.5;
+                f12x += (x12 * dr + dc * cos_d)*0.5f;
                 cos_d = y13 * one_over_d12d13 - y12 * cos123_over_d12d12;
-                f12y += (y12 * dr + dc * cos_d)*0.5;
+                f12y += (y12 * dr + dc * cos_d)*0.5f;
                 cos_d = z13 * one_over_d12d13 - z12 * cos123_over_d12d12;
-                f12z += (z12 * dr + dc * cos_d)*0.5;
+                f12z += (z12 * dr + dc * cos_d)*0.5f;
             }
             g_f12x[index] = f12x; 
             g_f12y[index] = f12y; 
@@ -360,12 +360,12 @@ static __global__ void find_force_tersoff_step3
     int n1 = N1 + threadIdx.x;
     if (n1 < N2)
     {
-        float s_fx = 0.0; // force_x
-        float s_fy = 0.0; // force_y
-        float s_fz = 0.0; // force_z
-        float s_sx = 0.0; // virial_x
-        float s_sy = 0.0; // virial_y
-        float s_sz = 0.0; // virial_z
+        float s_fx = 0.0f; // force_x
+        float s_fy = 0.0f; // force_y
+        float s_fz = 0.0f; // force_z
+        float s_sx = 0.0f; // virial_x
+        float s_sy = 0.0f; // virial_y
+        float s_sz = 0.0f; // virial_z
         const float* __restrict__ h = g_box + 18 * blockIdx.x;
         int triclinic = LDG(g_triclinic, blockIdx.x);
         int neighbor_number = g_neighbor_number[n1];
@@ -404,9 +404,9 @@ static __global__ void find_force_tersoff_step3
             s_fz += f12z - f21z; 
 
             // per-atom virial
-            s_sx -= x12 * (f12x - f21x) * 0.5;
-            s_sy -= y12 * (f12y - f21y) * 0.5;
-            s_sz -= z12 * (f12z - f21z) * 0.5;
+            s_sx -= x12 * (f12x - f21x) * 0.5f;
+            s_sy -= y12 * (f12y - f21y) * 0.5f;
+            s_sz -= z12 * (f12z - f21z) * 0.5f;
         }
         // save force
         g_fx[n1] = s_fx;

@@ -314,7 +314,7 @@ void Fitness::predict_energy_or_stress(FILE* fid, float* data, float* ref)
         {
             data_nc += data[offset + m];
         }
-        fprintf(fid, "%25.15e%25.15e\n", data_nc, ref[nc]);
+        fprintf(fid, "%g %g\n", data_nc, ref[nc]);
     }
 }
 
@@ -347,7 +347,7 @@ void Fitness::predict(char* input_dir, float* elite)
     {
         fprintf
         (
-            fid_force, "%25.15e%25.15e%25.15e%25.15e%25.15e%25.15e\n", 
+            fid_force, "%g %g %g %g %g %g\n", 
             fx[n], fy[n], fz[n], fx_ref[n], fy_ref[n], fz_ref[n]
         );
     }
