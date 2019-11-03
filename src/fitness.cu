@@ -30,7 +30,7 @@ Fitness::Fitness(char* input_dir)
     read_potential(input_dir);
     read_xyz_in(input_dir);
     box.read_file(input_dir, Nc);
-    neighbor.compute(Nc, N, Na, Na_sum, x, y, z, &box);
+    neighbor.compute(Nc, N, MAX_ATOM_NUMBER, Na, Na_sum, x, y, z, &box);
     potential.initialize(N, MAX_ATOM_NUMBER);
     MY_MALLOC(error_cpu, float, Nc);
     CHECK(cudaMalloc((void**)&error_gpu, sizeof(float) * Nc));
