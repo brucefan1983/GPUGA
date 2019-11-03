@@ -86,80 +86,67 @@ void Potential::update_potential(float* potential_parameters, int num_types)
 
 
 static __device__ void find_fr_and_frp
-(Pot_Para pot_para, float d12, float &fr, float &frp)
+(float d0, float a, float r0, float s, float d12, float &fr, float &frp)
 {
-    float d0 = pot_para.ters[D0];
-    float a = pot_para.ters[A];
-    float r0 = pot_para.ters[R0];
-    float s = pot_para.ters[S];
+
     fr = d0 / (s - 1) * exp(-sqrt(2.0 * s) * a * (d12 - r0));
     frp = -2.0 * a * fr;
 }
 
 
 static __device__ void find_fa_and_fap
-(Pot_Para pot_para, float d12, float &fa, float &fap)
+(float d0, float a, float r0, float s, float d12, float &fa, float &fap)
 {
-    float d0 = pot_para.ters[D0];
-    float a = pot_para.ters[A];
-    float r0 = pot_para.ters[R0];
-    float s = pot_para.ters[S];
     fa = s * d0 / (s - 1) * exp(-sqrt(2.0 / s) * a * (d12 - r0));
     fap = -a * fa;
 }
 
 
 static __device__ void find_fc_and_fcp
-(Pot_Para pot_para, float d12, float &fc, float &fcp)
+(float r1, float r2, float pi_factor, float d12, float &fc, float &fcp)
 {
-    if (d12 < pot_para.ters[R1]) {fc = 1.0; fcp = 0.0;}
-    else if (d12 < pot_para.ters[R2])
+    if (d12 < r1) {fc = 1.0; fcp = 0.0;}
+    else if (d12 < r2)
     {
-        fc = 0.5 * cos(pot_para.ters[PI_FACTOR] * (d12 - pot_para.ters[R1])) + 0.5;
-        fcp = - sin(pot_para.ters[PI_FACTOR] * (d12 - pot_para.ters[R1])) * pot_para.ters[PI_FACTOR] * 0.5;
+        fc = 0.5 * cos(pi_factor * (d12 - r1)) + 0.5;
+        fcp = - sin(pi_factor * (d12 - r1)) * pi_factor * 0.5;
     }
     else {fc  = 0.0; fcp = 0.0;}
 }
 
 
 static __device__ void find_fa
-(Pot_Para pot_para, float d12, float &fa)
+(float d0, float a, float r0, float s, float d12, float &fa)
 {
-    float d0 = pot_para.ters[D0];
-    float a = pot_para.ters[A];
-    float r0 = pot_para.ters[R0];
-    float s = pot_para.ters[S];
     fa = s * d0 / (s - 1) * exp(-sqrt(2.0 / s) * a * (d12 - r0));
 }
 
 
 static __device__ void find_fc
-(Pot_Para pot_para, float d12, float &fc)
+(float r1, float r2, float pi_factor, float d12, float &fc)
 {
-    if (d12 < pot_para.ters[R1]) {fc  = 1.0;}
-    else if (d12 < pot_para.ters[R2])
+    if (d12 < r1) {fc  = 1.0;}
+    else if (d12 < r2)
     {
-        fc = 0.5 * cos(pot_para.ters[PI_FACTOR] * (d12 - pot_para.ters[R1])) + 0.5;
+        fc = 0.5 * cos(pi_factor * (d12 - r1)) + 0.5;
     }
     else {fc  = 0.0;}
 }
 
 
 static __device__ void find_g_and_gp
-(Pot_Para pot_para, float cos, float &g, float &gp)
+(float beta, float h, float cos, float &g, float &gp)
 {
-    float x = cos - pot_para.ters[H];
-    float beta = pot_para.ters[BETA];
+    float x = cos - h;
     g = beta * x * x;
     gp = beta * 2.0 * x;
 }
 
 
 static __device__ void find_g
-(Pot_Para pot_para, float cos, float &g)
+(float beta, float h, float cos, float &g)
 {
-    float x = cos - pot_para.ters[H];
-    float beta = pot_para.ters[BETA];
+    float x = cos - h;
     g = beta * x * x;
 }
 
@@ -186,14 +173,14 @@ static __global__ void find_force_tersoff_step1
         const float* __restrict__ h = g_box + 18 * blockIdx.x;
         int triclinic = LDG(g_triclinic, blockIdx.x);
         int neighbor_number = g_neighbor_number[n1];
-        //int type1 = g_type[n1];
+
         float x1 = LDG(g_x, n1); 
         float y1 = LDG(g_y, n1); 
         float z1 = LDG(g_z, n1);
         for (int i1 = 0; i1 < neighbor_number; ++i1)
         {
             int n2 = g_neighbor_list[n1 + number_of_particles * i1];
-            //int type2 = g_type[n2];
+
             float x12  = LDG(g_x, n2) - x1;
             float y12  = LDG(g_y, n2) - y1;
             float z12  = LDG(g_z, n2) - z1;
@@ -204,7 +191,7 @@ static __global__ void find_force_tersoff_step1
             {
                 int n3 = g_neighbor_list[n1 + number_of_particles * i2];
                 if (n3 == n2) { continue; } // ensure that n3 != n2
-                //int type3 = g_type[n3];
+
                 float x13 = LDG(g_x, n3) - x1;
                 float y13 = LDG(g_y, n3) - y1;
                 float z13 = LDG(g_z, n3) - z1;
@@ -213,15 +200,20 @@ static __global__ void find_force_tersoff_step1
                 float cos123 = (x12 * x13 + y12 * y13 + z12 * z13) / (d12*d13);
                 float fc13, g123;
 
-                find_fc(pot_para, d13, fc13);
-                find_g(pot_para, cos123, g123);
+                find_fc
+                (
+                    pot_para.ters[R1], pot_para.ters[R2], 
+                    pot_para.ters[PI_FACTOR], d13, fc13
+                );
+                find_g(pot_para.ters[BETA], pot_para.ters[H], cos123, g123);
                 zeta += fc13 * g123;
             }
             float bzn, b_ijj;
             bzn = pow(zeta, pot_para.ters[EN]);
             b_ijj = pow(1.0 + bzn, pot_para.ters[MINUS_HALF_OVER_N]);
             g_b[i1 * number_of_particles + n1]  = b_ijj;
-            g_bp[i1 * number_of_particles + n1] = - b_ijj * bzn * 0.5 / ((1.0 + bzn) * zeta);
+            g_bp[i1 * number_of_particles + n1] = 
+                - b_ijj * bzn * 0.5 / ((1.0 + bzn) * zeta);
         }
     }
 }
@@ -251,7 +243,7 @@ static __global__ void find_force_tersoff_step2
         const float* __restrict__ h = g_box + 18 * blockIdx.x;
         int triclinic = LDG(g_triclinic, blockIdx.x);
         int neighbor_number = g_neighbor_number[n1];
-        //int type1 = g_type[n1];
+
         float x1 = LDG(g_x, n1); 
         float y1 = LDG(g_y, n1); 
         float z1 = LDG(g_z, n1);
@@ -260,7 +252,6 @@ static __global__ void find_force_tersoff_step2
         {
             int index = i1 * number_of_particles + n1;
             int n2 = g_neighbor_list[index];
-            //int type2 = g_type[n2];
 
             float x12  = LDG(g_x, n2) - x1;
             float y12  = LDG(g_y, n2) - y1;
@@ -270,13 +261,24 @@ static __global__ void find_force_tersoff_step2
             float d12inv = 1.0 / d12;
             float fc12, fcp12, fa12, fap12, fr12, frp12;
 
-            find_fc_and_fcp(pot_para, d12, fc12, fcp12);
-            find_fa_and_fap(pot_para, d12, fa12, fap12);
-            find_fr_and_frp(pot_para, d12, fr12, frp12);
+            float d0 = pot_para.ters[D0];
+            float a = pot_para.ters[A];
+            float r0 = pot_para.ters[R0];
+            float s = pot_para.ters[S];
+
+            find_fc_and_fcp
+            (
+                pot_para.ters[R1], pot_para.ters[R2], 
+                pot_para.ters[PI_FACTOR], d12, fc12, fcp12
+            );
+            find_fa_and_fap(d0, a, r0, s, d12, fa12, fap12);
+            find_fr_and_frp(d0, a, r0, s, d12, fr12, frp12);
+
 
             // (i,j) part
             float b12 = LDG(g_b, index);
-            float factor3 = (fcp12 * (fr12 - b12 * fa12) + fc12 * (frp12 - b12 * fap12)) * d12inv;
+            float factor3 = (fcp12 * (fr12 - b12 * fa12) 
+                + fc12 * (frp12 - b12 * fap12)) * d12inv;
             float f12x = x12 * factor3 * 0.5;
             float f12y = y12 * factor3 * 0.5;
             float f12z = z12 * factor3 * 0.5;
@@ -291,21 +293,28 @@ static __global__ void find_force_tersoff_step2
                 int index_2 = n1 + number_of_particles * i2;
                 int n3 = g_neighbor_list[index_2];
                 if (n3 == n2) { continue; }
-                //int type3 = g_type[n3];
+
                 float x13 = LDG(g_x, n3) - x1;
                 float y13 = LDG(g_y, n3) - y1;
                 float z13 = LDG(g_z, n3) - z1;
                 dev_apply_mic(triclinic, h, x13, y13, z13);
                 float d13 = sqrt(x13 * x13 + y13 * y13 + z13 * z13);
                 float fc13, fa13;
-                find_fc(pot_para, d13, fc13);
-                find_fa(pot_para, d13, fa13);
+                find_fc
+                (
+                    pot_para.ters[R1], pot_para.ters[R2], 
+                    pot_para.ters[PI_FACTOR], d13, fc13
+                );
+                find_fa(d0, a, r0, s, d13, fa13);
                 float bp13 = LDG(g_bp, index_2);
                 float one_over_d12d13 = 1.0 / (d12 * d13);
                 float cos123 = (x12*x13 + y12*y13 + z12*z13) * one_over_d12d13;
                 float cos123_over_d12d12 = cos123 * d12inv * d12inv;
                 float g123, gp123;
-                find_g_and_gp(pot_para, cos123, g123, gp123);
+                find_g_and_gp
+                (
+                    pot_para.ters[BETA], pot_para.ters[H], cos123, g123, gp123
+                );
 
                 // derivatives with cosine
                 float dc = -fc12 * bp12 * fa12 * fc13 * gp123
