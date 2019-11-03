@@ -425,9 +425,25 @@ static __global__ void gpu_sum_pe_error
 }
 
 
+static int get_block_size(int max_num_atom)
+{
+    int block_size = 64;
+    for (int n = 64; n < 1024; n <<= 1 )
+    {
+        if (max_num_atom > n)
+        {
+            block_size = n << 1;
+        }
+    }
+    return block_size;
+}
+
+
 float Fitness::get_fitness_energy(void)
 {
-    gpu_sum_pe_error<<<Nc, 64, sizeof(float)*64>>>(Na, Na_sum, pe, box.pe_ref, error_gpu);
+    int block_size = get_block_size(MAX_ATOM_NUMBER);
+    gpu_sum_pe_error<<<Nc, block_size, sizeof(float) * block_size>>>
+    (Na, Na_sum, pe, box.pe_ref, error_gpu);
     int mem = sizeof(float) * Nc;
     CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
     float error_ave = 0.0;
@@ -443,18 +459,19 @@ float Fitness::get_fitness_stress(void)
 {
     float error_ave = 0.0;
     int mem = sizeof(float) * Nc;
+    int block_size = get_block_size(MAX_ATOM_NUMBER);
 
-    gpu_sum_pe_error<<<Nc, 64, sizeof(float)*64>>>
+    gpu_sum_pe_error<<<Nc, block_size, sizeof(float) * block_size>>>
     (Na, Na_sum, sxx, box.sxx_ref, error_gpu);
     CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
     for (int n = NC_FORCE; n < Nc; ++n) {error_ave += error_cpu[n];}
 
-    gpu_sum_pe_error<<<Nc, 64, sizeof(float)*64>>>
+    gpu_sum_pe_error<<<Nc, block_size, sizeof(float) * block_size>>>
     (Na, Na_sum, syy, box.syy_ref, error_gpu);
     CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
     for (int n = NC_FORCE; n < Nc; ++n) {error_ave += error_cpu[n];}
 
-    gpu_sum_pe_error<<<Nc, 64, sizeof(float)*64>>>
+    gpu_sum_pe_error<<<Nc, block_size, sizeof(float) * block_size>>>
     (Na, Na_sum, szz, box.szz_ref, error_gpu);
     CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
     for (int n = NC_FORCE; n < Nc; ++n) {error_ave += error_cpu[n];}
