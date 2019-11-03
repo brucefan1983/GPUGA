@@ -183,7 +183,7 @@ void Fitness::read_xyz(FILE* fid)
             &(fx_ref[n]), &(fy_ref[n]), &(fz_ref[n]));
         if (count != 7) { print_error("reading error for xyz.in.\n"); }
         if (type[n] > num_types) { num_types = type[n]; }
-        if (n < NC_FORCE * MAX_ATOM_NUMBER)
+        if (n < N_force)
         {
             force_square_sum += fx_ref[n] * fx_ref[n]
                               + fy_ref[n] * fy_ref[n]
