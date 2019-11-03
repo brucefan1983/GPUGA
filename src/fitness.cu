@@ -136,10 +136,6 @@ void Fitness::read_Nc(FILE* fid)
     {
         print_error("Number of configurations should >= 2\n");
     }
-    else
-    {
-        printf("Number of configurations = %d.\n", Nc);
-    }
 
     if (NC_FORCE < 1)
     {
@@ -149,10 +145,10 @@ void Fitness::read_Nc(FILE* fid)
     {
         print_error("Number of potential configurations should >= 1\n");
     }
-    else
-    {
-        printf("Number of force configurations = %d.\n", NC_FORCE);
-    }
+
+    printf("Number of configurations is %d:\n", Nc);
+    printf("    %d force configurations;\n", NC_FORCE);
+    printf("    %d energy and virial configurations.\n", Nc - NC_FORCE);
 }
 
 
@@ -188,11 +184,6 @@ void Fitness::read_Na(FILE* fid)
         {
             print_error("Number of atoms %d should >= 1\n");
         }
-        else
-        {
-            printf("N[%d] = %d ", nc, Na[nc]);
-            if (0 == (nc + 1) % 5) { printf("\n"); }
-        }
     }
 
     for (int nc = 1; nc < Nc; ++nc)
@@ -206,6 +197,9 @@ void Fitness::read_Na(FILE* fid)
     {
         N_force += Na[nc];
     }
+    printf("Total number of atoms is %d:\n", N);
+    printf("    %d in force configurations;\n", N_force);
+    printf("    %d in energy and virial configurations.\n", N - N_force);
 } 
 
 
