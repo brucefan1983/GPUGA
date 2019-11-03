@@ -55,7 +55,6 @@ protected:
     void read_parameters(char*);
     void parse(char**, int);
     void parse_maximum_generation(char**, int);
-    void parse_number_of_variables(char**, int);
     void parse_population_size(char**, int);
     void parse_parent_number(char**, int);
     void parse_mutation_rate(char**, int);
