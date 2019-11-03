@@ -44,7 +44,6 @@ public:
 protected:
 
     // functions related to initialization
-    void read_weight(char*);
     void read_xyz_in(char*);
     void read_Nc(FILE*);
     void read_Na(FILE*);

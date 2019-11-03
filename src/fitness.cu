@@ -28,7 +28,6 @@ Get the fitness
 Fitness::Fitness(char* input_dir)
 {
     read_potential(input_dir);
-    read_weight(input_dir);
     read_xyz_in(input_dir);
     box.read_file(input_dir, Nc);
     neighbor.compute(Nc, N, Na, Na_sum, x, y, z, &box);
@@ -76,54 +75,6 @@ void Fitness::read_xyz_in(char* input_dir)
     read_Na(fid_xyz);
     read_xyz(fid_xyz);
     fclose(fid_xyz);
-}
-
-
-void Fitness::read_weight(char* input_dir)
-{
-    print_line_1();
-    printf("Started reading weight.in.\n");
-    print_line_2();
-
-    char file_weight[200];
-    strcpy(file_weight, input_dir);
-    strcat(file_weight, "/weight.in");
-    FILE *fid = my_fopen(file_weight, "r");
-
-    int count = fscanf
-    (
-        fid, "%f%f%f", &weight.force, &weight.energy, &weight.stress
-    );
-    if (count != 3) print_error("Reading error for weight.in.\n");
-
-    fclose(fid);
-
-    if (weight.force < 0)
-    {
-        print_error("weight.force should >= 0\n");
-    }
-    else
-    {
-        printf("weight.force = %g.\n", weight.force);
-    }
-
-    if (weight.energy < 0)
-    {
-        print_error("weight.energy should >= 0\n");
-    }
-    else
-    {
-        printf("weight.energy = %g.\n", weight.energy);
-    }
-
-    if (weight.stress < 0)
-    {
-        print_error("weight.stress should >= 0\n");
-    }
-    else
-    {
-        printf("weight.stress = %g.\n", weight.stress);
-    }
 }
 
 
@@ -263,7 +214,31 @@ void Fitness::read_potential(char* input_dir)
 
     count = fscanf(fid, "%s%f", name, &neighbor.cutoff);
     if (count != 2) { print_error("reading error for potential.in."); }
-    printf("cutoff for neighbor list is %f.\n", neighbor.cutoff);
+    printf("cutoff for neighbor list is %g A.\n", neighbor.cutoff);
+
+    count = fscanf(fid, "%s%f", name, &weight.force);
+    if (count != 2) { print_error("reading error for potential.in."); }
+    if (weight.force < 0)
+    {
+        print_error("weight for force should >= 0\n");
+    }
+    printf("weight for force is %g.\n", weight.force);
+
+    count = fscanf(fid, "%s%f", name, &weight.energy);
+    if (count != 2) { print_error("reading error for potential.in."); }
+    if (weight.energy < 0)
+    {
+        print_error("weight for energy should >= 0\n");
+    }
+    printf("weight for energy is %g.\n", weight.energy);
+
+    count = fscanf(fid, "%s%f", name, &weight.stress);
+    if (count != 2) { print_error("reading error for potential.in."); }
+    if (weight.stress < 0)
+    {
+        print_error("weight for stress should >= 0\n");
+    }
+    printf("weight for stress is %g.\n", weight.stress);
 
     for (int n = 0; n <  number_of_variables; ++n)
     {
@@ -272,6 +247,7 @@ void Fitness::read_potential(char* input_dir)
         if (count != 3) { print_error("reading error for potential.in."); }
         printf("%15s%15g%15g\n", name, parameters_min[n], parameters_max[n]);
     }
+
     fclose(fid);
 }
 
