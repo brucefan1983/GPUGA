@@ -63,11 +63,10 @@ void Box::read_file(char* input_dir, int Nc)
         }
 
         if (count != 5) print_error("Reading error for box.in.\n");
-        if (triclinic[n] == 0) printf("orthogonal %g %g %g %g\n", 
-            pe_ref[n], sxx_ref[n], syy_ref[n], szz_ref[n]);
-        else if (triclinic[n] == 1) printf("triclinic %g %g %g %g\n", 
-            pe_ref[n], sxx_ref[n], syy_ref[n], szz_ref[n]);
-        else print_error("Invalid box type.\n");
+        if (triclinic[n] != 0 && triclinic[n] != 1)
+        {
+            print_error("Invalid box type.\n");
+        }
 
         if (triclinic[n] == 1)
         {
@@ -79,8 +78,6 @@ void Box::read_file(char* input_dir, int Nc)
             h_local[1] = bx; h_local[4] = by; h_local[7] = bz;
             h_local[2] = cx; h_local[5] = cy; h_local[8] = cz;
             get_inverse(triclinic[n], h_local);
-            for (int k = 0; k < 9; ++k) printf("%g ", h_local[k]);
-            printf("\n");
         }
         else
         {
@@ -88,7 +85,6 @@ void Box::read_file(char* input_dir, int Nc)
             int count = fscanf(fid_box, "%f%f%f", &lx, &ly, &lz);
             if (count != 3) print_error("reading error for box.in.\n");
             h_local[0] = lx; h_local[1] = ly; h_local[2] = lz;
-            printf("%g %g %g\n", lx, ly, lz);
         }
     }
     fclose(fid_box);

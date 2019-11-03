@@ -190,7 +190,8 @@ void Fitness::read_Na(FILE* fid)
         }
         else
         {
-            printf("N[%d] = %d.\n", nc, Na[nc]);
+            printf("N[%d] = %d ", nc, Na[nc]);
+            if (0 == (nc + 1) % 5) { printf("\n"); }
         }
     }
 
