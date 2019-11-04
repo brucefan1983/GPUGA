@@ -34,60 +34,6 @@ Fitness::Fitness(char* input_dir)
     potential.initialize(N, max_Na);
     MY_MALLOC(error_cpu, float, Nc);
     CHECK(cudaMalloc((void**)&error_gpu, sizeof(float) * Nc));
-
-
-
-// test==================================
-CHECK(cudaDeviceSynchronize());
-FILE *fid = my_fopen("train.in", "w");
-fprintf(fid, "%d %d\n", Nc, Nc_force);
-
-for (int n = 0; n < Nc; ++n)
-{
-    // line 1
-    if (n < Nc_force)
-    {
-        fprintf(fid, "%d\n", Na[n]);
-    }
-    else
-    {
-        fprintf(fid, "%d %g %g %g %g 0 0 0\n", Na[n], box.pe_ref[n],
-            box.sxx_ref[n], box.syy_ref[n], box.szz_ref[n]);
-    }
-
-    // line 2
-    fprintf(fid, "%g 0 0 0 %g 0 0 0 %g\n", 
-        box.h[0+18*n], box.h[1+18*n], box.h[2+18*n]);
-
-    // line 3
-    for (int k = 0; k < Na[n]; ++k)
-    {
-        if (n < Nc_force)
-        fprintf
-        (
-            fid, "%d %g %g %g %g %g %g\n", 
-            type[Na_sum[n] + k], 
-            r[Na_sum[n] + k], 
-            r[Na_sum[n] + k + N],
-            r[Na_sum[n] + k + N * 2],
-            force_ref[Na_sum[n] + k], 
-            force_ref[Na_sum[n] + k + N],
-            force_ref[Na_sum[n] + k + N * 2]
-        );
-        else
-        fprintf
-        (
-            fid, "%d %g %g %g\n", 
-            type[Na_sum[n] + k], 
-            r[Na_sum[n] + k], 
-            r[Na_sum[n] + k + N],
-            r[Na_sum[n] + k + N * 2]
-        );
-    }
-}
-
-fclose(fid);
-// test over==================================
 }
 
 
@@ -105,6 +51,91 @@ Fitness::~Fitness(void)
     MY_FREE(error_cpu);
     MY_FREE(parameters_min);
     MY_FREE(parameters_max);
+}
+
+
+void Fitness::read_train_in(char* input_dir)
+{
+    print_line_1();
+    printf("Started reading train.in.\n");
+    print_line_2();
+
+    char file_train[200];
+    strcpy(file_train, input_dir);
+    strcat(file_train, "/train.in");
+    FILE *fid = my_fopen(file_train, "r");
+
+    // Nc
+    read_Nc(fid);
+    CHECK(cudaMallocManaged((void**)&box.triclinic, sizeof(int) * Nc));
+    CHECK(cudaMallocManaged((void**)&box.h, sizeof(float) * Nc * 18));
+    CHECK(cudaMallocManaged((void**)&box.pe_ref, sizeof(float) * Nc));
+    CHECK(cudaMallocManaged((void**)&box.sxx_ref, sizeof(float) * Nc));
+    CHECK(cudaMallocManaged((void**)&box.syy_ref, sizeof(float) * Nc));
+    CHECK(cudaMallocManaged((void**)&box.szz_ref, sizeof(float) * Nc));
+
+    for (int n = 0; n < Nc; ++n)
+    {
+        int count; 
+
+        // N, energy, virial
+        float tmp;
+        if (n < Nc_force)
+        {
+            count = fscanf(fid, "%d", &Na[n]);
+            if (count != 1) { print_error("reading error for train.in.\n"); }
+        }
+        else
+        {
+            count = fscanf
+            (
+                fid, "%d%f%f%f%f%f%f%f", &Na[n], &box.pe_ref[n],
+                &box.sxx_ref[n], &box.syy_ref[n], &box.szz_ref[n], 
+                &tmp, &tmp, &tmp
+            );
+            if (count != 8) { print_error("reading error for train.in.\n"); }
+        }
+
+        // box
+        box.triclinic[n] = 1;
+        for (int k = 0; k < 9; ++k)
+        {
+            count = fscanf(fid, "%f", &box.h[k+18*n]);
+            if (count != 1) { print_error("reading error for train.in.\n"); }
+        }
+
+        // type, position, force
+        for (int k = 0; k < Na[n]; ++k)
+        {
+            if (n < Nc_force)
+            {
+                count = fscanf
+                (
+                    fid, "%d%f%f%f%f%f%f", 
+                    &type[Na_sum[n] + k], 
+                    &r[Na_sum[n] + k], 
+                    &r[Na_sum[n] + k + N],
+                    &r[Na_sum[n] + k + N * 2],
+                    &force_ref[Na_sum[n] + k], 
+                    &force_ref[Na_sum[n] + k + N],
+                    &force_ref[Na_sum[n] + k + N * 2]
+                );
+                if (count != 7) { print_error("reading error for train.in.\n"); }
+            }
+            else
+            {
+                count = fscanf
+                (
+                    fid, "%d%f%f%f", 
+                    &type[Na_sum[n] + k], 
+                    &r[Na_sum[n] + k], 
+                    &r[Na_sum[n] + k + N],
+                    &r[Na_sum[n] + k + N * 2]
+                );
+                if (count != 4) { print_error("reading error for train.in.\n"); }
+            }
+        }
+    }
 }
 
 

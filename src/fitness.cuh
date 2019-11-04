@@ -50,6 +50,7 @@ protected:
     void read_xyz(FILE*);
     void read_box(char*);
     void read_potential(char*);
+    void read_train_in(char*);
 
     // functions related to fitness evaluation
     void predict_energy_or_stress(FILE*, float*, float*);
