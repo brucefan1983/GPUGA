@@ -28,8 +28,7 @@ Get the fitness
 Fitness::Fitness(char* input_dir)
 {
     read_potential(input_dir);
-    read_xyz_in(input_dir);
-    box.read_file(input_dir, Nc, Nc_force);
+    read_train_in(input_dir);
     neighbor.compute(Nc, N, max_Na, Na, Na_sum, r, &box);
     potential.initialize(N, max_Na);
     MY_MALLOC(error_cpu, float, Nc);
@@ -65,7 +64,7 @@ void Fitness::read_train_in(char* input_dir)
     strcat(file_train, "/train.in");
     FILE *fid = my_fopen(file_train, "r");
 
-    // Nc
+    // get Nc and Nc_force
     read_Nc(fid);
     CHECK(cudaMallocManaged((void**)&box.triclinic, sizeof(int) * Nc));
     CHECK(cudaMallocManaged((void**)&box.h, sizeof(float) * Nc * 18));
@@ -89,13 +88,17 @@ void Fitness::read_train_in(char* input_dir)
     box.potential_square_sum = 0.0;
     box.virial_square_sum = 0.0;
     force_square_sum = 0.0;
+    for (int nc = 0; nc < Nc; ++nc)
+    {
+        Na_sum[nc] = 0;
+    }
 
     for (int n = 0; n < Nc; ++n)
     {
         int count; 
 
         // Na, energy, virial
-        float tmp;
+        float tmp; // TODO
         if (n < Nc_force)
         {
             count = fscanf(fid, "%d", &Na[n]);
@@ -113,11 +116,16 @@ void Fitness::read_train_in(char* input_dir)
             if (box.pe_ref[n] < energy_minimum) energy_minimum = box.pe_ref[n];
         }
 
+        if (n > 0)
+        {
+            Na_sum[n] = Na_sum[n-1] + Na[n-1];
+        }
+
         // box
-        box.triclinic[n] = 1;
+        box.triclinic[n] = 1; // TODO
         for (int k = 0; k < 9; ++k)
         {
-            count = fscanf(fid, "%f", &box.h[k+18*n]);
+            count = fscanf(fid, "%f", &box.h[k + 18 * n]);
             if (count != 1) { print_error("reading error for train.in.\n"); }
         }
         box.get_inverse(box.triclinic[n], box.h + 18 * n);
@@ -161,6 +169,10 @@ void Fitness::read_train_in(char* input_dir)
         }
     }
 
+    fclose(fid);
+
+    ++num_types;
+
     for (int n = Nc_force; n < Nc; ++n)
     {
         float energy = box.pe_ref[n] - energy_minimum;
@@ -176,11 +188,6 @@ void Fitness::read_train_in(char* input_dir)
 
     for (int nc = 0; nc < Nc; ++nc)
     {
-        Na_sum[nc] = 0;
-    }
-
-    for (int nc = 0; nc < Nc; ++nc)
-    {
         N += Na[nc];
         if (Na[nc] > max_Na)
         {
@@ -192,11 +199,6 @@ void Fitness::read_train_in(char* input_dir)
         }
     }
 
-    for (int nc = 1; nc < Nc; ++nc)
-    {
-        Na_sum[nc] = Na_sum[nc-1] + Na[nc-1];
-    }
-
     // get the total number of atoms in force configurations
     N_force = 0;
     for (int nc = 0; nc < Nc_force; ++nc)
@@ -204,24 +206,9 @@ void Fitness::read_train_in(char* input_dir)
         N_force += Na[nc];
     }
     printf("Total number of atoms is %d:\n", N);
-    printf("    %d in force configurations;\n", N_force);
-    printf("    %d in energy and virial configurations.\n", N - N_force);
-}
-
-
-void Fitness::read_xyz_in(char* input_dir)
-{
-    print_line_1();
-    printf("Started reading xyz.in.\n");
-    print_line_2();
-    char file_xyz[200];
-    strcpy(file_xyz, input_dir);
-    strcat(file_xyz, "/xyz.in");
-    FILE *fid_xyz = my_fopen(file_xyz, "r");
-    read_Nc(fid_xyz);
-    read_Na(fid_xyz);
-    read_xyz(fid_xyz);
-    fclose(fid_xyz);
+    printf("    %d atoms in the largest configuration;\n", max_Na);
+    printf("    %d atoms in force configurations;\n", N_force);
+    printf("    %d atoms in energy-virial configurations.\n", N - N_force);
 }
 
 
@@ -246,90 +233,7 @@ void Fitness::read_Nc(FILE* fid)
 
     printf("Number of configurations is %d:\n", Nc);
     printf("    %d force configurations;\n", Nc_force);
-    printf("    %d energy and virial configurations.\n", Nc - Nc_force);
-}
-
-
-void Fitness::read_Na(FILE* fid)
-{ 
-    CHECK(cudaMallocManaged((void**)&Na, sizeof(int) * Nc));
-    CHECK(cudaMallocManaged((void**)&Na_sum, sizeof(int) * Nc));
-
-    N = 0;
-    max_Na = 0;
-
-    for (int nc = 0; nc < Nc; ++nc)
-    {
-        Na_sum[nc] = 0;
-    }
-
-    for (int nc = 0; nc < Nc; ++nc)
-    {
-        int count = fscanf(fid, "%d", &Na[nc]);
-
-        if (count != 1)
-        {
-            print_error("Reading error for xyz.in.\n");
-        }
-
-        N += Na[nc];
-        if (Na[nc] > max_Na)
-        {
-            max_Na = Na[nc];
-        }
-
-        if (Na[nc] < 1)
-        {
-            print_error("Number of atoms %d should >= 1\n");
-        }
-    }
-
-    for (int nc = 1; nc < Nc; ++nc)
-    {
-        Na_sum[nc] = Na_sum[nc-1] + Na[nc-1];
-    }
-
-    // get the total number of atoms in force configurations
-    N_force = 0;
-    for (int nc = 0; nc < Nc_force; ++nc)
-    {
-        N_force += Na[nc];
-    }
-    printf("Total number of atoms is %d:\n", N);
-    printf("    %d in force configurations;\n", N_force);
-    printf("    %d in energy and virial configurations.\n", N - N_force);
-} 
-
-
-void Fitness::read_xyz(FILE* fid)
-{
-    int m1 = sizeof(int) * N;
-    int m2 = sizeof(float) * N;
-
-    CHECK(cudaMallocManaged((void**)&type, m1));
-    CHECK(cudaMallocManaged((void**)&r, m2 * 3));
-    CHECK(cudaMallocManaged((void**)&force, m2 * 3));
-    CHECK(cudaMallocManaged((void**)&force_ref, m2 * 3));
-    CHECK(cudaMallocManaged((void**)&pe, m2));
-    CHECK(cudaMallocManaged((void**)&virial, m2 * 6));
-
-    num_types = 0;
-    force_square_sum = 0.0;
-    for (int n = 0; n < N; n++)
-    {
-        int count = fscanf(fid, "%d%f%f%f%f%f%f", 
-            &(type[n]), &(r[n]), &(r[n+N]), &(r[n+N*2]),
-            &(force_ref[n]), &(force_ref[n+N]), &(force_ref[n+N*2]));
-        if (count != 7) { print_error("reading error for xyz.in.\n"); }
-        if (type[n] > num_types) { num_types = type[n]; }
-        if (n < N_force)
-        {
-            force_square_sum += force_ref[n] * force_ref[n]
-                              + force_ref[n+N] * force_ref[n+N]
-                              + force_ref[n+N*2] * force_ref[n+N*2];
-        }
-    }
-    num_types++;
+    printf("    %d energy-virial configurations.\n", Nc - Nc_force);
 }
 
 
