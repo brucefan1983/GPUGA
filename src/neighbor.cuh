@@ -23,7 +23,7 @@ class Neighbor
 public:
     int *NN, *NL;
     ~Neighbor(void);
-    void compute(int, int, int, int*, int*, float*, Box*);
+    void compute(int, int, int, int*, int*, float*, float*);
     float cutoff = 0;
 };
 

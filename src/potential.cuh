@@ -32,7 +32,7 @@ public:
     void update_potential(float*, int);
     void find_force
     (
-        int, int, int, int*, int*, int, int*, Box*, Neighbor*,
+        int, int, int, int*, int*, int, int*, float*, Neighbor*,
         float*, float*, float*, float*
     );
 

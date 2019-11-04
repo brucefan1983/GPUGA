@@ -417,26 +417,26 @@ static __global__ void find_force_tersoff_step3
 void Potential::find_force
 (
     int num_types, int Nc, int N, int *Na, int *Na_sum,
-    int max_Na, int *type, Box *box, Neighbor *neighbor,
+    int max_Na, int *type, float *h, Neighbor *neighbor,
     float *r, float *f, float *virial, float *pe
 )
 {
     find_force_tersoff_step1<<<Nc, max_Na>>>
     (
         N, Na, Na_sum, num_types,
-        neighbor->NN, neighbor->NL, type, pot_para, r, r+N, r+N*2, box->h, b, bp
+        neighbor->NN, neighbor->NL, type, pot_para, r, r+N, r+N*2, h, b, bp
     );
     CUDA_CHECK_KERNEL
     find_force_tersoff_step2<<<Nc, max_Na>>>
     (
         N, Na, Na_sum, num_types, neighbor->NN, neighbor->NL, type, 
-        pot_para, b, bp, r, r+N, r+N*2, box->h, pe, f12x, f12y, f12z
+        pot_para, b, bp, r, r+N, r+N*2, h, pe, f12x, f12y, f12z
     );
     CUDA_CHECK_KERNEL
     find_force_tersoff_step3<<<Nc, max_Na>>>
     (
         N, Na, Na_sum, neighbor->NN, neighbor->NL, 
-        f12x, f12y, f12z, r, r+N, r+N*2, box->h, f, f+N, f+N*2, virial
+        f12x, f12y, f12z, r, r+N, r+N*2, h, f, f+N, f+N*2, virial
     );
     CUDA_CHECK_KERNEL
 }

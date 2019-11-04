@@ -29,7 +29,7 @@ Fitness::Fitness(char* input_dir)
 {
     read_potential(input_dir);
     read_train_in(input_dir);
-    neighbor.compute(Nc, N, max_Na, Na, Na_sum, r, &box);
+    neighbor.compute(Nc, N, max_Na, Na, Na_sum, r, h);
     potential.initialize(N, max_Na);
     MY_MALLOC(error_cpu, float, Nc);
     CHECK(cudaMalloc((void**)&error_gpu, sizeof(float) * Nc));
@@ -38,6 +38,11 @@ Fitness::Fitness(char* input_dir)
 
 Fitness::~Fitness(void)
 {
+    CHECK(cudaFree(h));
+    CHECK(cudaFree(pe_ref)); 
+    CHECK(cudaFree(sxx_ref));
+    CHECK(cudaFree(syy_ref));
+    CHECK(cudaFree(szz_ref));
     cudaFree(Na);
     cudaFree(Na_sum);
     cudaFree(type);
@@ -50,6 +55,24 @@ Fitness::~Fitness(void)
     MY_FREE(error_cpu);
     MY_FREE(parameters_min);
     MY_FREE(parameters_max);
+}
+
+
+static void get_inverse(float *cpu_h)
+{
+    cpu_h[9]  = cpu_h[4]*cpu_h[8] - cpu_h[5]*cpu_h[7];
+    cpu_h[10] = cpu_h[2]*cpu_h[7] - cpu_h[1]*cpu_h[8];
+    cpu_h[11] = cpu_h[1]*cpu_h[5] - cpu_h[2]*cpu_h[4];
+    cpu_h[12] = cpu_h[5]*cpu_h[6] - cpu_h[3]*cpu_h[8];
+    cpu_h[13] = cpu_h[0]*cpu_h[8] - cpu_h[2]*cpu_h[6];
+    cpu_h[14] = cpu_h[2]*cpu_h[3] - cpu_h[0]*cpu_h[5];
+    cpu_h[15] = cpu_h[3]*cpu_h[7] - cpu_h[4]*cpu_h[6];
+    cpu_h[16] = cpu_h[1]*cpu_h[6] - cpu_h[0]*cpu_h[7];
+    cpu_h[17] = cpu_h[0]*cpu_h[4] - cpu_h[1]*cpu_h[3];
+    float volume = cpu_h[0] * (cpu_h[4]*cpu_h[8] - cpu_h[5]*cpu_h[7])
+                 + cpu_h[1] * (cpu_h[5]*cpu_h[6] - cpu_h[3]*cpu_h[8])
+                 + cpu_h[2] * (cpu_h[3]*cpu_h[7] - cpu_h[4]*cpu_h[6]);
+    for (int n = 9; n < 18; n++) { cpu_h[n] /= volume; }
 }
 
 
@@ -66,11 +89,11 @@ void Fitness::read_train_in(char* input_dir)
 
     // get Nc and Nc_force
     read_Nc(fid);
-    CHECK(cudaMallocManaged((void**)&box.h, sizeof(float) * Nc * 18));
-    CHECK(cudaMallocManaged((void**)&box.pe_ref, sizeof(float) * Nc));
-    CHECK(cudaMallocManaged((void**)&box.sxx_ref, sizeof(float) * Nc));
-    CHECK(cudaMallocManaged((void**)&box.syy_ref, sizeof(float) * Nc));
-    CHECK(cudaMallocManaged((void**)&box.szz_ref, sizeof(float) * Nc));
+    CHECK(cudaMallocManaged((void**)&h, sizeof(float) * Nc * 18));
+    CHECK(cudaMallocManaged((void**)&pe_ref, sizeof(float) * Nc));
+    CHECK(cudaMallocManaged((void**)&sxx_ref, sizeof(float) * Nc));
+    CHECK(cudaMallocManaged((void**)&syy_ref, sizeof(float) * Nc));
+    CHECK(cudaMallocManaged((void**)&szz_ref, sizeof(float) * Nc));
     CHECK(cudaMallocManaged((void**)&Na, sizeof(int) * Nc));
     CHECK(cudaMallocManaged((void**)&Na_sum, sizeof(int) * Nc));
 
@@ -84,8 +107,8 @@ void Fitness::read_train_in(char* input_dir)
 
     float energy_minimum = 0.0;
     num_types = 0;
-    box.potential_square_sum = 0.0;
-    box.virial_square_sum = 0.0;
+    potential_square_sum = 0.0;
+    virial_square_sum = 0.0;
     force_square_sum = 0.0;
     for (int nc = 0; nc < Nc; ++nc)
     {
@@ -107,12 +130,12 @@ void Fitness::read_train_in(char* input_dir)
         {
             count = fscanf
             (
-                fid, "%d%f%f%f%f%f%f%f", &Na[n], &box.pe_ref[n],
-                &box.sxx_ref[n], &box.syy_ref[n], &box.szz_ref[n], 
+                fid, "%d%f%f%f%f%f%f%f", &Na[n], &pe_ref[n],
+                &sxx_ref[n], &syy_ref[n], &szz_ref[n], 
                 &tmp, &tmp, &tmp
             );
             if (count != 8) { print_error("reading error for train.in.\n"); }
-            if (box.pe_ref[n] < energy_minimum) energy_minimum = box.pe_ref[n];
+            if (pe_ref[n] < energy_minimum) energy_minimum = pe_ref[n];
         }
 
         if (n > 0)
@@ -123,10 +146,10 @@ void Fitness::read_train_in(char* input_dir)
         // box
         for (int k = 0; k < 9; ++k)
         {
-            count = fscanf(fid, "%f", &box.h[k + 18 * n]);
+            count = fscanf(fid, "%f", &h[k + 18 * n]);
             if (count != 1) { print_error("reading error for train.in.\n"); }
         }
-        box.get_inverse(box.h + 18 * n);
+        get_inverse(h + 18 * n);
 
         // type, position, force
         for (int k = 0; k < Na[n]; ++k)
@@ -173,11 +196,11 @@ void Fitness::read_train_in(char* input_dir)
 
     for (int n = Nc_force; n < Nc; ++n)
     {
-        float energy = box.pe_ref[n] - energy_minimum;
-        box.potential_square_sum += energy * energy;
-        box.virial_square_sum += box.sxx_ref[n] * box.sxx_ref[n]
-                               + box.syy_ref[n] * box.syy_ref[n]
-                               + box.szz_ref[n] * box.szz_ref[n];
+        float energy = pe_ref[n] - energy_minimum;
+        potential_square_sum += energy * energy;
+        virial_square_sum += sxx_ref[n] * sxx_ref[n]
+                               + syy_ref[n] * syy_ref[n]
+                               + szz_ref[n] * szz_ref[n];
     }
 
     // N, max_N
@@ -333,7 +356,7 @@ void Fitness::compute(int population_size, float* population, float* fitness)
         potential.update_potential(parameters, num_types);
         potential.find_force
         (
-            num_types, Nc, N, Na, Na_sum, max_Na, type, &box, &neighbor,
+            num_types, Nc, N, Na, Na_sum, max_Na, type, h, &neighbor,
             r, force, virial, pe
         );
         fitness[n] = weight.energy * get_fitness_energy();
@@ -373,7 +396,7 @@ void Fitness::predict(char* input_dir, float* elite)
     potential.update_potential(parameters, num_types);
     potential.find_force
     (
-        num_types, Nc, N, Na, Na_sum, max_Na, type, &box, &neighbor,
+        num_types, Nc, N, Na, Na_sum, max_Na, type, h, &neighbor,
         r, force, virial, pe
     );
     MY_FREE(parameters);
@@ -399,10 +422,10 @@ void Fitness::predict(char* input_dir, float* elite)
     strcpy(file, input_dir);
     strcat(file, "/prediction.out");
     FILE* fid_prediction = my_fopen(file, "w");
-    predict_energy_or_stress(fid_prediction, pe, box.pe_ref);
-    predict_energy_or_stress(fid_prediction, virial, box.sxx_ref);
-    predict_energy_or_stress(fid_prediction, virial+N, box.syy_ref);
-    predict_energy_or_stress(fid_prediction, virial+N*2, box.szz_ref);
+    predict_energy_or_stress(fid_prediction, pe, pe_ref);
+    predict_energy_or_stress(fid_prediction, virial, sxx_ref);
+    predict_energy_or_stress(fid_prediction, virial+N, syy_ref);
+    predict_energy_or_stress(fid_prediction, virial+N*2, szz_ref);
     fclose(fid_prediction);
 }
 
@@ -514,7 +537,7 @@ float Fitness::get_fitness_energy(void)
 {
     int block_size = get_block_size(max_Na);
     gpu_sum_pe_error<<<Nc, block_size, sizeof(float) * block_size>>>
-    (Na, Na_sum, pe, box.pe_ref, error_gpu);
+    (Na, Na_sum, pe, pe_ref, error_gpu);
     int mem = sizeof(float) * Nc;
     CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
     float error_ave = 0.0;
@@ -522,7 +545,7 @@ float Fitness::get_fitness_energy(void)
     {
         error_ave += error_cpu[n];
     }
-    return sqrt(error_ave / box.potential_square_sum);
+    return sqrt(error_ave / potential_square_sum);
 }
 
 
@@ -533,21 +556,21 @@ float Fitness::get_fitness_stress(void)
     int block_size = get_block_size(max_Na);
 
     gpu_sum_pe_error<<<Nc, block_size, sizeof(float) * block_size>>>
-    (Na, Na_sum, virial, box.sxx_ref, error_gpu);
+    (Na, Na_sum, virial, sxx_ref, error_gpu);
     CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
     for (int n = Nc_force; n < Nc; ++n) {error_ave += error_cpu[n];}
 
     gpu_sum_pe_error<<<Nc, block_size, sizeof(float) * block_size>>>
-    (Na, Na_sum, virial+N, box.syy_ref, error_gpu);
+    (Na, Na_sum, virial+N, syy_ref, error_gpu);
     CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
     for (int n = Nc_force; n < Nc; ++n) {error_ave += error_cpu[n];}
 
     gpu_sum_pe_error<<<Nc, block_size, sizeof(float) * block_size>>>
-    (Na, Na_sum, virial+N*2, box.szz_ref, error_gpu);
+    (Na, Na_sum, virial+N*2, szz_ref, error_gpu);
     CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
     for (int n = Nc_force; n < Nc; ++n) {error_ave += error_cpu[n];}
 
-    return sqrt(error_ave / box.virial_square_sum);
+    return sqrt(error_ave / virial_square_sum);
 }
 
 

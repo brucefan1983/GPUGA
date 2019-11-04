@@ -66,7 +66,7 @@ static __global__ void gpu_find_neighbor
 
 void Neighbor::compute
 (
-    int Nc, int N, int max_Na, int *Na, int *Na_sum, float *r, Box *box
+    int Nc, int N, int max_Na, int *Na, int *Na_sum, float *r, float *h
 )
 {
     int m1 = sizeof(int) * N;
@@ -74,7 +74,7 @@ void Neighbor::compute
     CHECK(cudaMallocManaged((void**)&NL, m1 * max_Na));
     float rc2 = cutoff * cutoff;
     gpu_find_neighbor<<<Nc, max_Na>>>
-    (N, Na, Na_sum, rc2, box->h, NN, NL, r, r+N, r+N*2);
+    (N, Na, Na_sum, rc2, h, NN, NL, r, r+N, r+N*2);
     CUDA_CHECK_KERNEL
 
     CHECK(cudaDeviceSynchronize());

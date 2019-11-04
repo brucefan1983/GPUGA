@@ -15,7 +15,6 @@
 
 
 #pragma once
-#include "box.cuh"
 #include "neighbor.cuh"
 #include "potential.cuh"
 #include <stdio.h>
@@ -73,12 +72,16 @@ protected:
     float *force;                    // force
     float *pe;                       // potential energy
     float *virial;                   // per-atom virial tensor
+    float *h;                           // box and inverse box
+    float *pe_ref;                      // reference energy for the whole box
+    float *sxx_ref, *syy_ref, *szz_ref; // reference virial for the whole box
     float *force_ref;                // reference force
     float *error_cpu, *error_gpu;    // error in energy, virial, or force
     float force_square_sum;          // sum of force square
+    float potential_square_sum;      // sum of potential square
+    float virial_square_sum;         // sum of virial square
 
     // other classes
-    Box box;
     Neighbor neighbor;
     Potential potential;
     Weight weight;
