@@ -34,6 +34,60 @@ Fitness::Fitness(char* input_dir)
     potential.initialize(N, max_Na);
     MY_MALLOC(error_cpu, float, Nc);
     CHECK(cudaMalloc((void**)&error_gpu, sizeof(float) * Nc));
+
+
+
+// test==================================
+CHECK(cudaDeviceSynchronize());
+FILE *fid = my_fopen("train.in", "w");
+fprintf(fid, "%d %d\n", Nc, Nc_force);
+
+for (int n = 0; n < Nc; ++n)
+{
+    // line 1
+    if (n < Nc_force)
+    {
+        fprintf(fid, "%d\n", Na[n]);
+    }
+    else
+    {
+        fprintf(fid, "%d %g %g %g %g 0 0 0\n", Na[n], box.pe_ref[n],
+            box.sxx_ref[n], box.syy_ref[n], box.szz_ref[n]);
+    }
+
+    // line 2
+    fprintf(fid, "%g 0 0 0 %g 0 0 0 %g\n", 
+        box.h[0+18*n], box.h[1+18*n], box.h[2+18*n]);
+
+    // line 3
+    for (int k = 0; k < Na[n]; ++k)
+    {
+        if (n < Nc_force)
+        fprintf
+        (
+            fid, "%d %g %g %g %g %g %g\n", 
+            type[Na_sum[n] + k], 
+            r[Na_sum[n] + k], 
+            r[Na_sum[n] + k + N],
+            r[Na_sum[n] + k + N * 2],
+            force_ref[Na_sum[n] + k], 
+            force_ref[Na_sum[n] + k + N],
+            force_ref[Na_sum[n] + k + N * 2]
+        );
+        else
+        fprintf
+        (
+            fid, "%d %g %g %g\n", 
+            type[Na_sum[n] + k], 
+            r[Na_sum[n] + k], 
+            r[Na_sum[n] + k + N],
+            r[Na_sum[n] + k + N * 2]
+        );
+    }
+}
+
+fclose(fid);
+// test over==================================
 }
 
 
