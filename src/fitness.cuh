@@ -68,8 +68,8 @@ protected:
     int *Na_sum;         // prefix sum of Na
     int *type;           // atom type
 
-    float *x, *y, *z;                // position
-    float *fx, *fy, *fz;             // force
+    float *r;                        // position
+    float *force;                    // force
     float *pe;                       // potential energy
     float *sxx, *syy, *szz;          // virial
     float *fx_ref, *fy_ref, *fz_ref; // reference force

@@ -30,7 +30,7 @@ Fitness::Fitness(char* input_dir)
     read_potential(input_dir);
     read_xyz_in(input_dir);
     box.read_file(input_dir, Nc, Nc_force);
-    neighbor.compute(Nc, N, max_Na, Na, Na_sum, x, y, z, &box);
+    neighbor.compute(Nc, N, max_Na, Na, Na_sum, r, &box);
     potential.initialize(N, max_Na);
     MY_MALLOC(error_cpu, float, Nc);
     CHECK(cudaMalloc((void**)&error_gpu, sizeof(float) * Nc));
@@ -42,9 +42,7 @@ Fitness::~Fitness(void)
     cudaFree(Na);
     cudaFree(Na_sum);
     cudaFree(type);
-    cudaFree(x);
-    cudaFree(y);
-    cudaFree(z);
+    cudaFree(r);
     cudaFree(fx_ref);
     cudaFree(fy_ref);
     cudaFree(fz_ref);
@@ -52,9 +50,7 @@ Fitness::~Fitness(void)
     cudaFree(sxx);
     cudaFree(syy);
     cudaFree(szz);
-    cudaFree(fx);
-    cudaFree(fy);
-    cudaFree(fz);
+    cudaFree(force);
     CHECK(cudaFree(error_gpu));
     MY_FREE(error_cpu);
     MY_FREE(parameters_min);
@@ -160,12 +156,8 @@ void Fitness::read_xyz(FILE* fid)
     int m2 = sizeof(float) * N;
 
     CHECK(cudaMallocManaged((void**)&type, m1));
-    CHECK(cudaMallocManaged((void**)&x, m2));
-    CHECK(cudaMallocManaged((void**)&y, m2));
-    CHECK(cudaMallocManaged((void**)&z, m2));
-    CHECK(cudaMallocManaged((void**)&fx, m2));
-    CHECK(cudaMallocManaged((void**)&fy, m2));
-    CHECK(cudaMallocManaged((void**)&fz, m2));
+    CHECK(cudaMallocManaged((void**)&r, m2 * 3));
+    CHECK(cudaMallocManaged((void**)&force, m2 * 3));
     CHECK(cudaMallocManaged((void**)&fx_ref, m2));
     CHECK(cudaMallocManaged((void**)&fy_ref, m2));
     CHECK(cudaMallocManaged((void**)&fz_ref, m2));
@@ -179,7 +171,7 @@ void Fitness::read_xyz(FILE* fid)
     for (int n = 0; n < N; n++)
     {
         int count = fscanf(fid, "%d%f%f%f%f%f%f", 
-            &(type[n]), &(x[n]), &(y[n]), &(z[n]),
+            &(type[n]), &(r[n]), &(r[n+N]), &(r[n+N*2]),
             &(fx_ref[n]), &(fy_ref[n]), &(fz_ref[n]));
         if (count != 7) { print_error("reading error for xyz.in.\n"); }
         if (type[n] > num_types) { num_types = type[n]; }
@@ -293,7 +285,7 @@ void Fitness::compute(int population_size, float* population, float* fitness)
         potential.find_force
         (
             num_types, Nc, N, Na, Na_sum, max_Na, type, &box, &neighbor,
-            x, y, z, fx, fy, fz, sxx, syy, szz, pe
+            r, force, sxx, syy, szz, pe
         );
         fitness[n] = weight.energy * get_fitness_energy();
         fitness[n] += weight.stress * get_fitness_stress();
@@ -333,7 +325,7 @@ void Fitness::predict(char* input_dir, float* elite)
     potential.find_force
     (
         num_types, Nc, N, Na, Na_sum, max_Na, type, &box, &neighbor,
-        x, y, z, fx, fy, fz, sxx, syy, szz, pe
+        r, force, sxx, syy, szz, pe
     );
     MY_FREE(parameters);
 
@@ -348,7 +340,7 @@ void Fitness::predict(char* input_dir, float* elite)
         fprintf
         (
             fid_force, "%g %g %g %g %g %g\n", 
-            fx[n], fy[n], fz[n], fx_ref[n], fy_ref[n], fz_ref[n]
+            force[n], force[n+N], force[n+N*2], fx_ref[n], fy_ref[n], fz_ref[n]
         );
     }
     fclose(fid_force);
@@ -408,7 +400,7 @@ static __global__ void gpu_sum_force_error
 float Fitness::get_fitness_force(void)
 {
     gpu_sum_force_error<<<1, 512, sizeof(float) * 512>>>
-    (N_force, fx, fy, fz, fx_ref, fy_ref, fz_ref, error_gpu);
+    (N_force, force, force+N, force+N*2, fx_ref, fy_ref, fz_ref, error_gpu);
     CHECK(cudaMemcpy(error_cpu, error_gpu, sizeof(float), 
         cudaMemcpyDeviceToHost));
     return sqrt(error_cpu[0] / force_square_sum);

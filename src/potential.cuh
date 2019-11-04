@@ -30,10 +30,11 @@ public:
     void initialize(int, int);
     ~Potential(void);
     void update_potential(float*, int);
-    void find_force(int num_types, int Nc, int N, int *Na, int *Na_sum,
-        int max_Na, int *type, Box *box, Neighbor *neighbor,
-        float *x, float *y, float *z, float *fx, float *fy, float *fz, 
-        float *sxx, float *syy, float *szz, float *pe);
+    void find_force
+    (
+        int, int, int, int*, int*, int, int*, Box*, Neighbor*,
+        float*, float*, float*, float*, float*, float*
+    );
 
 private:
     float *b, *bp, *f12x, *f12y, *f12z;
