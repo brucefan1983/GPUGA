@@ -20,7 +20,7 @@
 class Box
 {
 public:
-    void read_file(char*, int);
+    void read_file(char*, int, int);
     ~Box(void);
     int *triclinic;                     // 1 for triclinic and 0 for orthogonal
     float* h;                           // box and inverse box

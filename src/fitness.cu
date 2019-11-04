@@ -29,7 +29,7 @@ Fitness::Fitness(char* input_dir)
 {
     read_potential(input_dir);
     read_xyz_in(input_dir);
-    box.read_file(input_dir, Nc);
+    box.read_file(input_dir, Nc, Nc_force);
     neighbor.compute(Nc, N, max_Na, Na, Na_sum, x, y, z, &box);
     potential.initialize(N, max_Na);
     MY_MALLOC(error_cpu, float, Nc);

@@ -23,7 +23,7 @@ The class defining the simulation box.
 #include "error.cuh"
 
 
-void Box::read_file(char* input_dir, int Nc)
+void Box::read_file(char* input_dir, int Nc, int Nc_force)
 {
     print_line_1();
     printf("Started reading box.in.\n");
@@ -41,8 +41,7 @@ void Box::read_file(char* input_dir, int Nc)
     CHECK(cudaMallocManaged((void**)&syy_ref, sizeof(float) * Nc));
     CHECK(cudaMallocManaged((void**)&szz_ref, sizeof(float) * Nc));
     
-    potential_square_sum = 0.0;
-    virial_square_sum = 0.0;
+    float energy_minimum = 0.0;
     for (int n = 0; n < Nc; ++n)
     {
         float *h_local = h + n * 18; // define a local pointer
@@ -53,13 +52,9 @@ void Box::read_file(char* input_dir, int Nc)
             &syy_ref[n], &szz_ref[n]
         );
 
-        if (n >= 5) // to be improved
+        if (n >= Nc_force)
         {
-            float energy = pe_ref[n] + 4.63 * 64; // to be improved
-            potential_square_sum += energy * energy;
-            virial_square_sum += sxx_ref[n] * sxx_ref[n]
-                               + syy_ref[n] * syy_ref[n]
-                               + szz_ref[n] * szz_ref[n];
+            if (pe_ref[n] < energy_minimum) energy_minimum = pe_ref[n];
         }
 
         if (count != 5) print_error("Reading error for box.in.\n");
@@ -88,6 +83,17 @@ void Box::read_file(char* input_dir, int Nc)
         }
     }
     fclose(fid_box);
+
+    potential_square_sum = 0.0;
+    virial_square_sum = 0.0;
+    for (int n = Nc_force; n < Nc; ++n)
+    {
+        float energy = pe_ref[n] - energy_minimum;
+        potential_square_sum += energy * energy;
+        virial_square_sum += sxx_ref[n] * sxx_ref[n]
+                           + syy_ref[n] * syy_ref[n]
+                           + szz_ref[n] * szz_ref[n];
+    }
 }  
 
 
