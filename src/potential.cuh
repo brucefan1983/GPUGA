@@ -28,10 +28,10 @@ class Potential
 public:
     void initialize(int, int);
     ~Potential(void);
-    void update_potential(float*, int);
+    void update_potential(float*);
     void find_force
     (
-        int, int, int, int*, int*, int, int*, float*, Neighbor*,
+        int, int, int*, int*, int, int*, float*, Neighbor*,
         float*, float*, float*, float*
     );
 

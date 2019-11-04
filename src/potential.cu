@@ -61,26 +61,19 @@ Potential::~Potential(void)
 }
 
 
-void Potential::update_potential(float* potential_parameters, int num_types)
+void Potential::update_potential(float* potential_parameters)
 {
-    if (num_types == 1)
-    {
-        pot_para.ters[D0]   = potential_parameters[0];
-        pot_para.ters[A]    = potential_parameters[1];
-        pot_para.ters[R0]   = potential_parameters[2];
-        pot_para.ters[S]    = potential_parameters[3];
-        pot_para.ters[EN]   = potential_parameters[4];
-        pot_para.ters[BETA] = potential_parameters[5];
-        pot_para.ters[H]    = potential_parameters[6];
-        pot_para.ters[R1]   = potential_parameters[7];
-        pot_para.ters[R2]   = potential_parameters[8];
-        pot_para.ters[PI_FACTOR] = PI / (pot_para.ters[R2] - pot_para.ters[R1]);
-        pot_para.ters[MINUS_HALF_OVER_N] = - 0.5 / pot_para.ters[EN];
-    }
-    else
-    {
-        print_error("GPUGA only supports one atom type now.\n");
-    }
+    pot_para.ters[D0]   = potential_parameters[0];
+    pot_para.ters[A]    = potential_parameters[1];
+    pot_para.ters[R0]   = potential_parameters[2];
+    pot_para.ters[S]    = potential_parameters[3];
+    pot_para.ters[EN]   = potential_parameters[4];
+    pot_para.ters[BETA] = potential_parameters[5];
+    pot_para.ters[H]    = potential_parameters[6];
+    pot_para.ters[R1]   = potential_parameters[7];
+    pot_para.ters[R2]   = potential_parameters[8];
+    pot_para.ters[PI_FACTOR] = PI / (pot_para.ters[R2] - pot_para.ters[R1]);
+    pot_para.ters[MINUS_HALF_OVER_N] = - 0.5 / pot_para.ters[EN];
 }
 
 
@@ -154,7 +147,7 @@ static __device__ void find_g
 static __global__ void find_force_tersoff_step1
 (
     int number_of_particles, int *Na, int *Na_sum, 
-    int num_types, int* g_neighbor_number, int* g_neighbor_list, int* g_type,
+    int* g_neighbor_number, int* g_neighbor_list, int* g_type,
     Pot_Para pot_para,
     const float* __restrict__ g_x,
     const float* __restrict__ g_y,
@@ -220,7 +213,7 @@ static __global__ void find_force_tersoff_step1
 static __global__ void find_force_tersoff_step2
 (
     int number_of_particles, int *Na, int *Na_sum, 
-    int num_types, int *g_neighbor_number, int *g_neighbor_list, int *g_type,
+    int *g_neighbor_number, int *g_neighbor_list, int *g_type,
     Pot_Para pot_para,
     const float* __restrict__ g_b,
     const float* __restrict__ g_bp,
@@ -415,20 +408,20 @@ static __global__ void find_force_tersoff_step3
 
 void Potential::find_force
 (
-    int num_types, int Nc, int N, int *Na, int *Na_sum,
+    int Nc, int N, int *Na, int *Na_sum,
     int max_Na, int *type, float *h, Neighbor *neighbor,
     float *r, float *f, float *virial, float *pe
 )
 {
     find_force_tersoff_step1<<<Nc, max_Na>>>
     (
-        N, Na, Na_sum, num_types,
+        N, Na, Na_sum,
         neighbor->NN, neighbor->NL, type, pot_para, r, r+N, r+N*2, h, b, bp
     );
     CUDA_CHECK_KERNEL
     find_force_tersoff_step2<<<Nc, max_Na>>>
     (
-        N, Na, Na_sum, num_types, neighbor->NN, neighbor->NL, type, 
+        N, Na, Na_sum, neighbor->NN, neighbor->NL, type, 
         pot_para, b, bp, r, r+N, r+N*2, h, pe, f12x, f12y, f12z
     );
     CUDA_CHECK_KERNEL

@@ -106,7 +106,6 @@ void Fitness::read_train_in(char* input_dir)
     CHECK(cudaMallocManaged((void**)&virial, sizeof(float) * N * 6));
 
     float energy_minimum = 0.0;
-    num_types = 0;
     potential_square_sum = 0.0;
     virial_square_sum = 0.0;
     force_square_sum = 0.0;
@@ -185,14 +184,10 @@ void Fitness::read_train_in(char* input_dir)
                 );
                 if (count != 4) { print_error("reading error for train.in.\n"); }
             }
-
-            if (type[Na_sum[n] + k] > num_types) { num_types = type[Na_sum[n] + k]; }
         }
     }
 
     fclose(fid);
-
-    ++num_types;
 
     for (int n = Nc_force; n < Nc; ++n)
     {
@@ -353,10 +348,10 @@ void Fitness::compute(int population_size, float* population, float* fitness)
             float b = parameters_max[m] - a;
             parameters[m] = a + b * individual[m];
         }
-        potential.update_potential(parameters, num_types);
+        potential.update_potential(parameters);
         potential.find_force
         (
-            num_types, Nc, N, Na, Na_sum, max_Na, type, h, &neighbor,
+            Nc, N, Na, Na_sum, max_Na, type, h, &neighbor,
             r, force, virial, pe
         );
         fitness[n] = weight.energy * get_fitness_energy();
@@ -393,10 +388,10 @@ void Fitness::predict(char* input_dir, float* elite)
         float b = parameters_max[m] - a;
         parameters[m] = a + b * elite[m];
     }
-    potential.update_potential(parameters, num_types);
+    potential.update_potential(parameters);
     potential.find_force
     (
-        num_types, Nc, N, Na, Na_sum, max_Na, type, h, &neighbor,
+        Nc, N, Na, Na_sum, max_Na, type, h, &neighbor,
         r, force, virial, pe
     );
     MY_FREE(parameters);
