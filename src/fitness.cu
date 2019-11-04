@@ -66,7 +66,6 @@ void Fitness::read_train_in(char* input_dir)
 
     // get Nc and Nc_force
     read_Nc(fid);
-    CHECK(cudaMallocManaged((void**)&box.triclinic, sizeof(int) * Nc));
     CHECK(cudaMallocManaged((void**)&box.h, sizeof(float) * Nc * 18));
     CHECK(cudaMallocManaged((void**)&box.pe_ref, sizeof(float) * Nc));
     CHECK(cudaMallocManaged((void**)&box.sxx_ref, sizeof(float) * Nc));
@@ -122,13 +121,12 @@ void Fitness::read_train_in(char* input_dir)
         }
 
         // box
-        box.triclinic[n] = 1; // TODO
         for (int k = 0; k < 9; ++k)
         {
             count = fscanf(fid, "%f", &box.h[k + 18 * n]);
             if (count != 1) { print_error("reading error for train.in.\n"); }
         }
-        box.get_inverse(box.triclinic[n], box.h + 18 * n);
+        box.get_inverse(box.h + 18 * n);
 
         // type, position, force
         for (int k = 0; k < Na[n]; ++k)

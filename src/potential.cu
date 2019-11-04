@@ -154,8 +154,7 @@ static __device__ void find_g
 // step 1: pre-compute all the bond-order functions and their derivatives
 static __global__ void find_force_tersoff_step1
 (
-    int number_of_particles, int *Na, int *Na_sum,
-    const int* __restrict__ g_triclinic, 
+    int number_of_particles, int *Na, int *Na_sum, 
     int num_types, int* g_neighbor_number, int* g_neighbor_list, int* g_type,
     Pot_Para pot_para,
     const float* __restrict__ g_x,
@@ -171,7 +170,6 @@ static __global__ void find_force_tersoff_step1
     if (n1 < N2)
     {
         const float* __restrict__ h = g_box + 18 * blockIdx.x;
-        int triclinic = LDG(g_triclinic, blockIdx.x);
         int neighbor_number = g_neighbor_number[n1];
 
         float x1 = LDG(g_x, n1); 
@@ -184,7 +182,7 @@ static __global__ void find_force_tersoff_step1
             float x12  = LDG(g_x, n2) - x1;
             float y12  = LDG(g_y, n2) - y1;
             float z12  = LDG(g_z, n2) - z1;
-            dev_apply_mic(triclinic, h, x12, y12, z12);
+            dev_apply_mic(h, x12, y12, z12);
             float d12 = sqrt(x12 * x12 + y12 * y12 + z12 * z12);
             float zeta = 0.0f;
             for (int i2 = 0; i2 < neighbor_number; ++i2)
@@ -195,7 +193,7 @@ static __global__ void find_force_tersoff_step1
                 float x13 = LDG(g_x, n3) - x1;
                 float y13 = LDG(g_y, n3) - y1;
                 float z13 = LDG(g_z, n3) - z1;
-                dev_apply_mic(triclinic, h, x13, y13, z13);
+                dev_apply_mic(h, x13, y13, z13);
                 float d13 = sqrt(x13 * x13 + y13 * y13 + z13 * z13);
                 float cos123 = (x12 * x13 + y12 * y13 + z12 * z13) / (d12*d13);
                 float fc13, g123;
@@ -222,8 +220,7 @@ static __global__ void find_force_tersoff_step1
 // step 2: calculate all the partial forces dU_i/dr_ij
 static __global__ void find_force_tersoff_step2
 (
-    int number_of_particles, int *Na, int *Na_sum,
-    const int* __restrict__ g_triclinic, 
+    int number_of_particles, int *Na, int *Na_sum, 
     int num_types, int *g_neighbor_number, int *g_neighbor_list, int *g_type,
     Pot_Para pot_para,
     const float* __restrict__ g_b,
@@ -241,7 +238,6 @@ static __global__ void find_force_tersoff_step2
     if (n1 < N2)
     {
         const float* __restrict__ h = g_box + 18 * blockIdx.x;
-        int triclinic = LDG(g_triclinic, blockIdx.x);
         int neighbor_number = g_neighbor_number[n1];
 
         float x1 = LDG(g_x, n1); 
@@ -256,7 +252,7 @@ static __global__ void find_force_tersoff_step2
             float x12  = LDG(g_x, n2) - x1;
             float y12  = LDG(g_y, n2) - y1;
             float z12  = LDG(g_z, n2) - z1;
-            dev_apply_mic(triclinic, h, x12, y12, z12);
+            dev_apply_mic(h, x12, y12, z12);
             float d12 = sqrt(x12 * x12 + y12 * y12 + z12 * z12);
             float d12inv = 1.0f / d12;
             float fc12, fcp12, fa12, fap12, fr12, frp12;
@@ -297,7 +293,7 @@ static __global__ void find_force_tersoff_step2
                 float x13 = LDG(g_x, n3) - x1;
                 float y13 = LDG(g_y, n3) - y1;
                 float z13 = LDG(g_z, n3) - z1;
-                dev_apply_mic(triclinic, h, x13, y13, z13);
+                dev_apply_mic(h, x13, y13, z13);
                 float d13 = sqrt(x13 * x13 + y13 * y13 + z13 * z13);
                 float fc13, fa13;
                 find_fc
@@ -342,7 +338,6 @@ static __global__ void find_force_tersoff_step2
 static __global__ void find_force_tersoff_step3
 (
     int number_of_particles, int *Na, int *Na_sum,
-    const int* __restrict__ g_triclinic,
     int *g_neighbor_number, int *g_neighbor_list,
     const float* __restrict__ g_f12x,
     const float* __restrict__ g_f12y,
@@ -367,7 +362,6 @@ static __global__ void find_force_tersoff_step3
         float s_sy = 0.0f; // virial_y
         float s_sz = 0.0f; // virial_z
         const float* __restrict__ h = g_box + 18 * blockIdx.x;
-        int triclinic = LDG(g_triclinic, blockIdx.x);
         int neighbor_number = g_neighbor_number[n1];
         float x1 = LDG(g_x, n1); 
         float y1 = LDG(g_y, n1); 
@@ -382,7 +376,7 @@ static __global__ void find_force_tersoff_step3
             float x12  = LDG(g_x, n2) - x1;
             float y12  = LDG(g_y, n2) - y1;
             float z12  = LDG(g_z, n2) - z1;
-            dev_apply_mic(triclinic, h, x12, y12, z12);
+            dev_apply_mic(h, x12, y12, z12);
 
             float f12x = LDG(g_f12x, index);
             float f12y = LDG(g_f12y, index);
@@ -429,19 +423,19 @@ void Potential::find_force
 {
     find_force_tersoff_step1<<<Nc, max_Na>>>
     (
-        N, Na, Na_sum, box->triclinic, num_types,
+        N, Na, Na_sum, num_types,
         neighbor->NN, neighbor->NL, type, pot_para, r, r+N, r+N*2, box->h, b, bp
     );
     CUDA_CHECK_KERNEL
     find_force_tersoff_step2<<<Nc, max_Na>>>
     (
-        N, Na, Na_sum, box->triclinic, num_types, neighbor->NN, neighbor->NL, type, 
+        N, Na, Na_sum, num_types, neighbor->NN, neighbor->NL, type, 
         pot_para, b, bp, r, r+N, r+N*2, box->h, pe, f12x, f12y, f12z
     );
     CUDA_CHECK_KERNEL
     find_force_tersoff_step3<<<Nc, max_Na>>>
     (
-        N, Na, Na_sum, box->triclinic, neighbor->NN, neighbor->NL, 
+        N, Na, Na_sum, neighbor->NN, neighbor->NL, 
         f12x, f12y, f12z, r, r+N, r+N*2, box->h, f, f+N, f+N*2, virial
     );
     CUDA_CHECK_KERNEL

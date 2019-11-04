@@ -25,31 +25,18 @@ mininum image convention
 
 static __device__ void dev_apply_mic
 (
-    int triclinic,
     const float* __restrict__ h, float &x12, float &y12, float &z12
 )
 {
-    if (triclinic == 0) // orthogonal box
-    {
-        if      (x12 < - LDG(h,0) * 0.5) {x12 += LDG(h,0);}
-        else if (x12 > + LDG(h,0) * 0.5) {x12 -= LDG(h,0);}
-        if      (y12 < - LDG(h,1) * 0.5) {y12 += LDG(h,1);}
-        else if (y12 > + LDG(h,1) * 0.5) {y12 -= LDG(h,1);}
-        if      (z12 < - LDG(h,2) * 0.5) {z12 += LDG(h,2);}
-        else if (z12 > + LDG(h,2) * 0.5) {z12 -= LDG(h,2);}
-    }
-    else // triclinic box
-    {
-        float sx12 = LDG(h,9)  * x12 + LDG(h,10) * y12 + LDG(h,11) * z12;
-        float sy12 = LDG(h,12) * x12 + LDG(h,13) * y12 + LDG(h,14) * z12;
-        float sz12 = LDG(h,15) * x12 + LDG(h,16) * y12 + LDG(h,17) * z12;
-        sx12 -= nearbyint(sx12);
-        sy12 -= nearbyint(sy12);
-        sz12 -= nearbyint(sz12);
-        x12 = LDG(h,0) * sx12 + LDG(h,1) * sy12 + LDG(h,2) * sz12;
-        y12 = LDG(h,3) * sx12 + LDG(h,4) * sy12 + LDG(h,5) * sz12;
-        z12 = LDG(h,6) * sx12 + LDG(h,7) * sy12 + LDG(h,8) * sz12;
-    }
+    float sx12 = LDG(h,9)  * x12 + LDG(h,10) * y12 + LDG(h,11) * z12;
+    float sy12 = LDG(h,12) * x12 + LDG(h,13) * y12 + LDG(h,14) * z12;
+    float sz12 = LDG(h,15) * x12 + LDG(h,16) * y12 + LDG(h,17) * z12;
+    sx12 -= nearbyint(sx12);
+    sy12 -= nearbyint(sy12);
+    sz12 -= nearbyint(sz12);
+    x12 = LDG(h,0) * sx12 + LDG(h,1) * sy12 + LDG(h,2) * sz12;
+    y12 = LDG(h,3) * sx12 + LDG(h,4) * sy12 + LDG(h,5) * sz12;
+    z12 = LDG(h,6) * sx12 + LDG(h,7) * sy12 + LDG(h,8) * sz12;
 }
 
 

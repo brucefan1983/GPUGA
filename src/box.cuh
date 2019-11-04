@@ -21,14 +21,12 @@ class Box
 {
 public:
     ~Box(void);
-    int *triclinic;                     // 1 for triclinic and 0 for orthogonal
     float* h;                           // box and inverse box
     float *pe_ref;                      // energy for the whole box
     float *sxx_ref, *syy_ref, *szz_ref; // virial for the whole box
     float potential_square_sum;         // sum of potential square
     float virial_square_sum;            // sum of virial square
-    float get_volume(int, float*);      // get the volume of the box
-    void get_inverse(int, float*);      // get the inverse box matrix
+    void get_inverse(float*);           // get the inverse box matrix
 };
 
 
