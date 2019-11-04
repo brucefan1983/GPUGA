@@ -33,7 +33,7 @@ public:
     void find_force
     (
         int, int, int, int*, int*, int, int*, Box*, Neighbor*,
-        float*, float*, float*, float*, float*, float*
+        float*, float*, float*, float*
     );
 
 private:

@@ -71,7 +71,7 @@ protected:
     float *r;                        // position
     float *force;                    // force
     float *pe;                       // potential energy
-    float *sxx, *syy, *szz;          // virial
+    float *virial;                   // per-atom virial tensor
     float *force_ref;                // reference force
     float *error_cpu, *error_gpu;    // error in energy, virial, or force
     float force_square_sum;          // sum of force square

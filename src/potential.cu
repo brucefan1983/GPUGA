@@ -352,7 +352,7 @@ static __global__ void find_force_tersoff_step3
     const float* __restrict__ g_z,
     const float* __restrict__ g_box,
     float *g_fx, float *g_fy, float *g_fz,
-    float *g_sx, float *g_sy, float *g_sz
+    float *g_virial
 )
 {
     int N1 = Na_sum[blockIdx.x];
@@ -413,9 +413,9 @@ static __global__ void find_force_tersoff_step3
         g_fy[n1] = s_fy;
         g_fz[n1] = s_fz;
         // save virial
-        g_sx[n1] = s_sx;
-        g_sy[n1] = s_sy;
-        g_sz[n1] = s_sz;
+        g_virial[n1] = s_sx;
+        g_virial[n1+number_of_particles] = s_sy;
+        g_virial[n1+number_of_particles*2] = s_sz;
     }
 }
 
@@ -424,8 +424,7 @@ void Potential::find_force
 (
     int num_types, int Nc, int N, int *Na, int *Na_sum,
     int max_Na, int *type, Box *box, Neighbor *neighbor,
-    float *r, float *f, 
-    float *sxx, float *syy, float *szz, float *pe
+    float *r, float *f, float *virial, float *pe
 )
 {
     find_force_tersoff_step1<<<Nc, max_Na>>>
@@ -443,7 +442,7 @@ void Potential::find_force
     find_force_tersoff_step3<<<Nc, max_Na>>>
     (
         N, Na, Na_sum, box->triclinic, neighbor->NN, neighbor->NL, 
-        f12x, f12y, f12z, r, r+N, r+N*2, box->h, f, f+N, f+N*2, sxx, syy, szz
+        f12x, f12y, f12z, r, r+N, r+N*2, box->h, f, f+N, f+N*2, virial
     );
     CUDA_CHECK_KERNEL
 }

@@ -45,9 +45,7 @@ Fitness::~Fitness(void)
     cudaFree(r);
     cudaFree(force_ref);
     cudaFree(pe);
-    cudaFree(sxx);
-    cudaFree(syy);
-    cudaFree(szz);
+    cudaFree(virial);
     cudaFree(force);
     CHECK(cudaFree(error_gpu));
     MY_FREE(error_cpu);
@@ -158,9 +156,7 @@ void Fitness::read_xyz(FILE* fid)
     CHECK(cudaMallocManaged((void**)&force, m2 * 3));
     CHECK(cudaMallocManaged((void**)&force_ref, m2 * 3));
     CHECK(cudaMallocManaged((void**)&pe, m2));
-    CHECK(cudaMallocManaged((void**)&sxx, m2));
-    CHECK(cudaMallocManaged((void**)&syy, m2));
-    CHECK(cudaMallocManaged((void**)&szz, m2));
+    CHECK(cudaMallocManaged((void**)&virial, m2 * 6));
 
     num_types = 0;
     force_square_sum = 0.0;
@@ -281,7 +277,7 @@ void Fitness::compute(int population_size, float* population, float* fitness)
         potential.find_force
         (
             num_types, Nc, N, Na, Na_sum, max_Na, type, &box, &neighbor,
-            r, force, sxx, syy, szz, pe
+            r, force, virial, pe
         );
         fitness[n] = weight.energy * get_fitness_energy();
         fitness[n] += weight.stress * get_fitness_stress();
@@ -321,7 +317,7 @@ void Fitness::predict(char* input_dir, float* elite)
     potential.find_force
     (
         num_types, Nc, N, Na, Na_sum, max_Na, type, &box, &neighbor,
-        r, force, sxx, syy, szz, pe
+        r, force, virial, pe
     );
     MY_FREE(parameters);
 
@@ -347,9 +343,9 @@ void Fitness::predict(char* input_dir, float* elite)
     strcat(file, "/prediction.out");
     FILE* fid_prediction = my_fopen(file, "w");
     predict_energy_or_stress(fid_prediction, pe, box.pe_ref);
-    predict_energy_or_stress(fid_prediction, sxx, box.sxx_ref);
-    predict_energy_or_stress(fid_prediction, syy, box.syy_ref);
-    predict_energy_or_stress(fid_prediction, szz, box.szz_ref);
+    predict_energy_or_stress(fid_prediction, virial, box.sxx_ref);
+    predict_energy_or_stress(fid_prediction, virial+N, box.syy_ref);
+    predict_energy_or_stress(fid_prediction, virial+N*2, box.szz_ref);
     fclose(fid_prediction);
 }
 
@@ -480,17 +476,17 @@ float Fitness::get_fitness_stress(void)
     int block_size = get_block_size(max_Na);
 
     gpu_sum_pe_error<<<Nc, block_size, sizeof(float) * block_size>>>
-    (Na, Na_sum, sxx, box.sxx_ref, error_gpu);
+    (Na, Na_sum, virial, box.sxx_ref, error_gpu);
     CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
     for (int n = Nc_force; n < Nc; ++n) {error_ave += error_cpu[n];}
 
     gpu_sum_pe_error<<<Nc, block_size, sizeof(float) * block_size>>>
-    (Na, Na_sum, syy, box.syy_ref, error_gpu);
+    (Na, Na_sum, virial+N, box.syy_ref, error_gpu);
     CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
     for (int n = Nc_force; n < Nc; ++n) {error_ave += error_cpu[n];}
 
     gpu_sum_pe_error<<<Nc, block_size, sizeof(float) * block_size>>>
-    (Na, Na_sum, szz, box.szz_ref, error_gpu);
+    (Na, Na_sum, virial+N*2, box.szz_ref, error_gpu);
     CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
     for (int n = Nc_force; n < Nc; ++n) {error_ave += error_cpu[n];}
 
