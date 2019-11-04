@@ -28,7 +28,6 @@ public:
     float *sxx_ref, *syy_ref, *szz_ref; // virial for the whole box
     float potential_square_sum;         // sum of potential square
     float virial_square_sum;            // sum of virial square
-private:
     float get_volume(int, float*);      // get the volume of the box
     void get_inverse(int, float*);      // get the inverse box matrix
 };

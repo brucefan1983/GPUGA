@@ -73,12 +73,28 @@ void Fitness::read_train_in(char* input_dir)
     CHECK(cudaMallocManaged((void**)&box.sxx_ref, sizeof(float) * Nc));
     CHECK(cudaMallocManaged((void**)&box.syy_ref, sizeof(float) * Nc));
     CHECK(cudaMallocManaged((void**)&box.szz_ref, sizeof(float) * Nc));
+    CHECK(cudaMallocManaged((void**)&Na, sizeof(int) * Nc));
+    CHECK(cudaMallocManaged((void**)&Na_sum, sizeof(int) * Nc));
+
+    N = Nc * 64; // TODO: to be improved
+    CHECK(cudaMallocManaged((void**)&type, sizeof(int) * N));
+    CHECK(cudaMallocManaged((void**)&r, sizeof(float) * N * 3));
+    CHECK(cudaMallocManaged((void**)&force, sizeof(float) * N * 3));
+    CHECK(cudaMallocManaged((void**)&force_ref, sizeof(float) * N * 3));
+    CHECK(cudaMallocManaged((void**)&pe, sizeof(float) * N));
+    CHECK(cudaMallocManaged((void**)&virial, sizeof(float) * N * 6));
+
+    float energy_minimum = 0.0;
+    num_types = 0;
+    box.potential_square_sum = 0.0;
+    box.virial_square_sum = 0.0;
+    force_square_sum = 0.0;
 
     for (int n = 0; n < Nc; ++n)
     {
         int count; 
 
-        // N, energy, virial
+        // Na, energy, virial
         float tmp;
         if (n < Nc_force)
         {
@@ -94,6 +110,7 @@ void Fitness::read_train_in(char* input_dir)
                 &tmp, &tmp, &tmp
             );
             if (count != 8) { print_error("reading error for train.in.\n"); }
+            if (box.pe_ref[n] < energy_minimum) energy_minimum = box.pe_ref[n];
         }
 
         // box
@@ -103,6 +120,7 @@ void Fitness::read_train_in(char* input_dir)
             count = fscanf(fid, "%f", &box.h[k+18*n]);
             if (count != 1) { print_error("reading error for train.in.\n"); }
         }
+        box.get_inverse(box.triclinic[n], box.h + 18 * n);
 
         // type, position, force
         for (int k = 0; k < Na[n]; ++k)
@@ -121,6 +139,10 @@ void Fitness::read_train_in(char* input_dir)
                     &force_ref[Na_sum[n] + k + N * 2]
                 );
                 if (count != 7) { print_error("reading error for train.in.\n"); }
+
+                force_square_sum += force_ref[Na_sum[n] + k] * force_ref[Na_sum[n] + k]
+                    + force_ref[Na_sum[n] + k + N] * force_ref[Na_sum[n] + k + N]
+                    + force_ref[Na_sum[n] + k + N * 2] * force_ref[Na_sum[n] + k + N * 2];
             }
             else
             {
@@ -134,8 +156,56 @@ void Fitness::read_train_in(char* input_dir)
                 );
                 if (count != 4) { print_error("reading error for train.in.\n"); }
             }
+
+            if (type[Na_sum[n] + k] > num_types) { num_types = type[Na_sum[n] + k]; }
         }
     }
+
+    for (int n = Nc_force; n < Nc; ++n)
+    {
+        float energy = box.pe_ref[n] - energy_minimum;
+        box.potential_square_sum += energy * energy;
+        box.virial_square_sum += box.sxx_ref[n] * box.sxx_ref[n]
+                               + box.syy_ref[n] * box.syy_ref[n]
+                               + box.szz_ref[n] * box.szz_ref[n];
+    }
+
+    // N, max_N
+    N = 0;
+    max_Na = 0;
+
+    for (int nc = 0; nc < Nc; ++nc)
+    {
+        Na_sum[nc] = 0;
+    }
+
+    for (int nc = 0; nc < Nc; ++nc)
+    {
+        N += Na[nc];
+        if (Na[nc] > max_Na)
+        {
+            max_Na = Na[nc];
+        }
+        if (Na[nc] < 1)
+        {
+            print_error("Number of atoms %d should >= 1\n");
+        }
+    }
+
+    for (int nc = 1; nc < Nc; ++nc)
+    {
+        Na_sum[nc] = Na_sum[nc-1] + Na[nc-1];
+    }
+
+    // get the total number of atoms in force configurations
+    N_force = 0;
+    for (int nc = 0; nc < Nc_force; ++nc)
+    {
+        N_force += Na[nc];
+    }
+    printf("Total number of atoms is %d:\n", N);
+    printf("    %d in force configurations;\n", N_force);
+    printf("    %d in energy and virial configurations.\n", N - N_force);
 }
 
 
