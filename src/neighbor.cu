@@ -20,7 +20,6 @@ find the neighbor list
 
 
 #include "neighbor.cuh"
-#include "box.cuh"
 #include "mic.cuh"
 #include "error.cuh"
 

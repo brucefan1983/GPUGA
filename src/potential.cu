@@ -20,7 +20,6 @@ Calculate force, energy, and virial
 
 
 #include "potential.cuh"
-#include "box.cuh"
 #include "neighbor.cuh"
 #include "mic.cuh"
 #include "error.cuh"
