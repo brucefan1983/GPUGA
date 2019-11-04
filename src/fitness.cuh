@@ -72,7 +72,7 @@ protected:
     float *force;                    // force
     float *pe;                       // potential energy
     float *sxx, *syy, *szz;          // virial
-    float *fx_ref, *fy_ref, *fz_ref; // reference force
+    float *force_ref;                // reference force
     float *error_cpu, *error_gpu;    // error in energy, virial, or force
     float force_square_sum;          // sum of force square
 
