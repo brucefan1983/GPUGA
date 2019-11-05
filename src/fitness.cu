@@ -105,10 +105,6 @@ void Fitness::read_train_in(char* input_dir)
     potential_square_sum = 0.0;
     virial_square_sum = 0.0;
     force_square_sum = 0.0;
-    for (int nc = 0; nc < Nc; ++nc)
-    {
-        Na_sum[nc] = 0;
-    }
 
     for (int n = 0; n < Nc; ++n)
     {
@@ -125,11 +121,6 @@ void Fitness::read_train_in(char* input_dir)
             );
             if (count != 7) { print_error("reading error for train.in.\n"); }
             if (pe_ref[n] < energy_minimum) energy_minimum = pe_ref[n];
-        }
-
-        if (n > 0)
-        {
-            Na_sum[n] = Na_sum[n-1] + Na[n-1];
         }
 
         // box
