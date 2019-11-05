@@ -102,20 +102,20 @@ This will run the prepared example. To run your own calculations, just replace t
 
 \section{Input files for GPUGA}
 
-To run on simulation with GPUGA, you need to prepare three files in your chosen working directory: \verb''ga.in", \verb"potential.in", and \verb"train.in". We describe them below.
+To run one simulation with \verb"GPUGA", you need to prepare three input files in your chosen working directory: \verb"ga.in", \verb"potential.in", and \verb"train.in". We describe them below.
 
 \subsection{The ga.in input file}
 
-This file contains the controlling parameters defining the GA simulation. In this input file, blank lines and lines started with \verb"#" are ignored. Each non-empty line starts with a keyword followed by one parameter.  The valid keywords and their parameters are listed below.
+This file contains the controlling parameters defining the GA evolution. In this input file, blank lines and lines starting with \verb"#" are ignored. Each non-empty line starts with a keyword followed by one parameter.  The valid keywords and their parameters are listed below.
 \begin{enumerate}
 \item  \verb"maximum_generation"\\
-This keyword needs one parameter, which is the maximum number of generations in the GA evolution. It can be any positive integer. The default value is 1000.
+This keyword needs one parameter, which is the maximum number of generations in the GA evolution. It should be a positive integer. The default value is 1000.
 \item  \verb"population_size" \\
-This keyword needs one parameter, which is the population size (number of individuals in one generation). It can be no less than 20 and should be a multiple of 10. The default value is 200.
+This keyword needs one parameter, which is the population size (number of individuals in one generation). It should be no less than 20 and should be a multiple of 10. The default value is 200.
 \item  \verb"parent_number"\\
 This keyword needs one parameter, which is the number of parents in one generation. It can be no less than 10 and should be a multiple of 10. The default value is 100.
 \item  \verb"mutation_rate"\\
-This keyword needs one parameter, which is the initial mutation rate in GA evolution. It should be in $[0,1]$. The default value is 0.2. The mutation rate will linearly decrease and reach 0 up to the \verb"maximum_generation".
+This keyword needs one parameter, which is the initial mutation rate in the GA evolution. It should be in $[0,1]$. The default value is 0.2. The mutation rate will linearly decrease and reach 0 up to step \verb"maximum_generation".
 \end{enumerate}
 
 \subsection{The potential.in input file}
@@ -139,32 +139,46 @@ R2             3.2 3.2
 \end{verbatim}
 At each line, there is one character string and one or two numbers. To do new experiments, just keep the strings unchanged and modify the numbers. Here are some explanations:
 \begin{itemize}
-\item line 1: The type of the potential to be fitted, which can only be 1  (means the minimum Tersoff potential) in this version.
-\item line 2: The cutoff distance used for building the neighbor list for each configuration (see below), which should be a positive number.
-\item lines 3-5: The weighting factors for force, energy, and stress. They should be non-negative numbers. It is good the make their summation to be 1, although the code does not complain if this is not the case.
-\item lines 6-14: The lower (the first number in each line) and upper (the second number in each line) bounds of the potential parameters for the minimal Tersoff potential. The order of the parameters are the same as those in Table II of Ref. \cite{fan2019arxiv}.
+\item Line 1: The type of the potential to be fitted, which can only be 1  (means the minimum Tersoff potential \cite{fan2019arxiv}) in this version.
+\item Line 2: The cutoff distance used for building the neighbor list for each configuration (see below), which should be a positive number.
+\item Lines 3-5: The weighting factors for force, energy, and stress. They should be non-negative numbers. It is good to make their sum to be 1, although the code does not complain if this is not the case.
+\item Lines 6-14: The lower (the first number in each line) and upper (the second number in each line) bounds of the potential parameters for the minimal Tersoff potential. The order of the parameters are the same as those in Table II of \cite{fan2019arxiv}.
 \end{itemize}
 
 
 \subsection{The train.in input file}
 
-This file contains all the training data, possibly from DFT calculations. It's format is fixed to:
+This file contains all the training data, possibly from DFT calculations. The format is fixed:
 \begin{verbatim}
 Nc Nc_force
-Na_1
-Na_2
+N_1
+N_2
 ...
-Na_Nc
-data for force configuration 1
-data for force configuration 2
+N_Nc
+Data for force configuration 1
+Data for force configuration 2
 ...
-data for force configuration Nc_force
-data for energy/virial configuration 1
-data for energy/virial configuration 1
+Data for force configuration Nc_force
+Data for energy/virial configuration 1
+Data for energy/virial configuration 2
 ...
-data forenergy/virial configuration Nc - Nc_force
+Data for energy/virial configuration Nc - Nc_force
 \end{verbatim}
-
+Here, 
+\begin{itemize}
+\item \verb"Nc" is the total number of configurations.
+\item \verb"Nc_force" is the total number of force configurations. \verb"Nc - Nc_force" is the number of energy/virial configurations.
+\item \verb"N_i" is the number of atoms in configuration \verb"i". All the force configurations should come before all the energy/virial configurations.
+\item Data for one force configuration occupy \verb"N_i + 1" lines. The first line should have nine numbers defining the cell vectors ($\vect{a}$, $\vect{b}$, $\vect{c}$):
+\begin{verbatim}
+    ax ay az bx by bz cx cy cz
+\end{verbatim} 
+In the remaining \verb"N_i" lines, each line contains 7 numbers, corresponding to the atom type (not used in this version and can be set to 0), position components, and force components:
+\begin{verbatim}
+    type x y z fx fy fz
+\end{verbatim} 
+\item Data for one energy/virial configuration occupy \verb"N_i + 2" lines. The first line should have 7 numbers. The first one is the total energy of the current configuration. The remaining 6 numbers are the $xx$, $yy$, $zz$, $xy$, $yz$, and $zx$ components of the virial tensor of the current configuration. The second line gives the cell vectors, similar to the first line for the force configurations. The remaining \verb"N_i" lines are similar to those in the force configurations, but each line only has 4 numbers, which are the atom type and positions components.
+\end{itemize}
 
 
 \section{Output files of GPUGA}
