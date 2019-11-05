@@ -68,9 +68,9 @@ protected:
     float *force;                    // force
     float *pe;                       // potential energy
     float *virial;                   // per-atom virial tensor
-    float *h;                           // box and inverse box
-    float *pe_ref;                      // reference energy for the whole box
-    float *sxx_ref, *syy_ref, *szz_ref; // reference virial for the whole box
+    float *h;                        // box and inverse box
+    float *pe_ref;                   // reference energy for the whole box
+    float *virial_ref;               // reference virial for the whole box
     float *force_ref;                // reference force
     float *error_cpu, *error_gpu;    // error in energy, virial, or force
     float force_square_sum;          // sum of force square
