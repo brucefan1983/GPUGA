@@ -350,9 +350,12 @@ static __global__ void find_force_tersoff_step3
         float s_fx = 0.0f; // force_x
         float s_fy = 0.0f; // force_y
         float s_fz = 0.0f; // force_z
-        float s_sx = 0.0f; // virial_x
-        float s_sy = 0.0f; // virial_y
-        float s_sz = 0.0f; // virial_z
+        float s_virial_xx = 0.0f;
+        float s_virial_yy = 0.0f;
+        float s_virial_zz = 0.0f;
+        float s_virial_xy = 0.0f;
+        float s_virial_yz = 0.0f;
+        float s_virial_zx = 0.0f;
         const float* __restrict__ h = g_box + 18 * blockIdx.x;
         int neighbor_number = g_neighbor_number[n1];
         float x1 = LDG(g_x, n1); 
@@ -390,18 +393,24 @@ static __global__ void find_force_tersoff_step3
             s_fz += f12z - f21z; 
 
             // per-atom virial
-            s_sx -= x12 * (f12x - f21x) * 0.5f;
-            s_sy -= y12 * (f12y - f21y) * 0.5f;
-            s_sz -= z12 * (f12z - f21z) * 0.5f;
+            s_virial_xx -= x12 * (f12x - f21x) * 0.5f;
+            s_virial_yy -= y12 * (f12y - f21y) * 0.5f;
+            s_virial_zz -= z12 * (f12z - f21z) * 0.5f;
+            s_virial_xy -= x12 * (f12y - f21y) * 0.5f;
+            s_virial_yz -= y12 * (f12z - f21z) * 0.5f;
+            s_virial_zx -= z12 * (f12x - f21x) * 0.5f;
         }
         // save force
         g_fx[n1] = s_fx;
         g_fy[n1] = s_fy;
         g_fz[n1] = s_fz;
         // save virial
-        g_virial[n1] = s_sx;
-        g_virial[n1+number_of_particles] = s_sy;
-        g_virial[n1+number_of_particles*2] = s_sz;
+        g_virial[n1] = s_virial_xx;
+        g_virial[n1 + number_of_particles] = s_virial_yy;
+        g_virial[n1 + number_of_particles * 2] = s_virial_zz;
+        g_virial[n1 + number_of_particles * 3] = s_virial_xy;
+        g_virial[n1 + number_of_particles * 4] = s_virial_yz;
+        g_virial[n1 + number_of_particles * 5] = s_virial_zx;
     }
 }
 
