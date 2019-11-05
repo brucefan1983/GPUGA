@@ -150,10 +150,28 @@ At each line, there is one character string and one or two numbers. To do new ex
 
 \subsection{The train.in input file}
 
+This file contains all the training data, possibly from DFT calculations. It's format is fixed to:
+\begin{verbatim}
+Nc Nc_force
+Na_1
+Na_2
+...
+Na_Nc
+data for force configuration 1
+data for force configuration 2
+...
+data for force configuration Nc_force
+data for energy/virial configuration 1
+data for energy/virial configuration 1
+...
+data forenergy/virial configuration Nc - Nc_force
+\end{verbatim}
+
+
 
 \section{Output files of GPUGA}
 
-For each simulation, four output files will be generated in the working directory: \verb"ga.out", \verb"force.out", \verb"energy.out", and \verb"virial.out".
+For each simulation, four output files will be generated in the working directory: \verb"ga.out", \verb"force.out", \verb"energy.out", and \verb"virial.out". A Matlab script \verb"plot_results.m" can be used to plot a figure similar to Fig. 2 in Ref. \cite{fan2019arxiv}.
 
 \subsection{The ga.out file}
 
@@ -175,7 +193,7 @@ There are 2 columns. The first column gives the energies calculated calculated f
 
 \subsection{The virial.out file}
 
-There are 2 columns. The first column gives the virials calculated calculated from the best solution. The second column gives the corresponding virials from \verb"train.in". The number of row is a multiple of 6 and the first 1/6 corresponds to the $xx$ component of the viral, followed by the $yy$, $zz$, $xy$, $yz$, and $zx$ components.
+There are 2 columns. The first column gives the virials calculated calculated from the best solution. The second column gives the corresponding virials from \verb"train.in". The number of row is a multiple of 6 and the first 1/6 corresponds to the $xx$ component of the viral in the same order as the energy data in \verb"energy.out", followed by the $yy$, $zz$, $xy$, $yz$, and $zx$ components.
 
 \bibliographystyle{plainnat}
 
