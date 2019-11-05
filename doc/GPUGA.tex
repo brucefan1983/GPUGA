@@ -157,11 +157,25 @@ For each simulation, four output files will be generated in the working director
 
 \subsection{The ga.out file}
 
+This file will contain \verb"maximum_generation" lines (or less if the simulation is terminated ahead of time by the user) and 11 columns. Each line contains the following items
+\begin{verbatim}
+step best_fitness D0 alpha r0 S n beta h R1 R2
+\end{verbatim}
+Here, \verb"step" is the step in the GA evolution, starting with 0, \verb"maximum_generation" is the fitness function (the smaller, the better) for the elite (the best solution) in each generation, and the remaining 8 numbers are the potential parameters (in the same order as in \verb"potential.in") for the elite in each generation.
+
+To find the best solution for one simulation, just check the last line.
+
 \subsection{The force.out file}
+
+There are 6 columns. The first three columns are the $x$, $y$, and $z$ force components in the force configurations calculated from the best solution. The last three columns are the corresponding forces from \verb"train.in". The first $N_1$ rows correspond to the $N_1$ atoms in the first force configuration; the next $N_2$ rows correspond to the $N_2$ atoms in the second force configuration; and so on.
 
 \subsection{The energy.out file}
 
+There are 2 columns. The first column gives the energies calculated calculated from the best solution. The second column gives the corresponding energies from \verb"train.in". Each row corresponds to one energy/virial configuration \verb"train.in".
+
 \subsection{The virial.out file}
+
+There are 2 columns. The first column gives the virials calculated calculated from the best solution. The second column gives the corresponding virials from \verb"train.in". The number of row is a multiple of 6 and the first 1/6 corresponds to the $xx$ component of the viral, followed by the $yy$, $zz$, $xy$, $yz$, and $zx$ components.
 
 \bibliographystyle{plainnat}
 
