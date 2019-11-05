@@ -80,17 +80,17 @@ The code has only been tested in linux operating systems and we assume that the 
 
 \subsection{Compiling}
 
-After downloading and unpacking \verb"GPUGA", one can see three folders:  \verb"src",  \verb"doc",  \verb''tools'', and \verb"examples". The folder \verb"src" contains all the source files. The folder \verb"examples" contains all the examples. The folder \verb"tools" contains a Matlab script for plotting Fig. 3 in the above paper. The folder \verb"doc" contains the pdf file you are reading and the source files generating it.
+After downloading and unpacking \verb"GPUGA", one can four folders:  \verb"src",  \verb"examples",  \verb"tools", and \verb"doc". The folder \verb"src" contains all the source files. The folder \verb"examples" contains all the examples. The folder \verb"tools" contains a Matlab script for plotting Fig. 3 in \cite{fan2019arxiv}. The folder \verb"doc" contains the pdf file you are reading and the source files generating it.
 
-To compile the code, first go to the \verb"src" folder. The just type
+To compile the code, go to the \verb"src" folder and type
 \begin{verbatim}
-    make -f makefile.cpu
+    make
 \end{verbatim}
 in the command line. This will produce an executable called \verb"gpuga" in the \verb"src" folder. The second line of \verb"makefile" reads
 \begin{verbatim}
     CFLAGS = -std=c++11 -O3 -arch=sm_50 --use_fast_math
 \end{verbatim}
-Change \verb"gpuga" to the appropriate ``compute capability'' of your GPU. The minimum compute capability supported by \verb"GPUGA" is 3.5.
+Change \verb"50" to the appropriate ``compute capability'' of your GPU. The minimum compute capability supported by \verb"GPUGA" is 3.5.
 
 \subsection{Running}
 
@@ -98,7 +98,7 @@ Go to the directory where you can see the \verb"src" folder and type
 \begin{verbatim}
     src/gpuga < examples/input.txt
 \end{verbatim}
-This will run the prepared example. To run your own calculations, just replace folder name (including absolute or relative path but excluding a ``/'') as specified in examples/input.txt to your own working directory. Then you need to prepare some input files in the working directory, as describe below.
+This will run the prepared example. To run your own calculations, just replace the folder name (including absolute or relative path) as specified in \verb"examples/input.txt" to your own working directory. Then you need to prepare some input files in the working directory, as described below.
 
 \section{Input files for GPUGA}
 
