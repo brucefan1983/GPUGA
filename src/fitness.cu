@@ -174,9 +174,10 @@ void Fitness::read_train_in(char* input_dir)
     {
         float energy = pe_ref[n] - energy_minimum;
         potential_square_sum += energy * energy;
-        virial_square_sum += virial_ref[n+Nc*0] * virial_ref[n+Nc*0]
-                           + virial_ref[n+Nc*1] * virial_ref[n+Nc*1]
-                           + virial_ref[n+Nc*2] * virial_ref[n+Nc*2];
+        for (int k = 0; k < 6; ++k)
+        {
+            virial_square_sum += virial_ref[n + Nc*k] * virial_ref[n + Nc*k];
+        }
     }
 }
 
@@ -392,15 +393,24 @@ void Fitness::predict(char* input_dir, float* elite)
     }
     fclose(fid_force);
 
-    char file[200];
-    strcpy(file, input_dir);
-    strcat(file, "/prediction.out");
-    FILE* fid_prediction = my_fopen(file, "w");
-    predict_energy_or_stress(fid_prediction, pe, pe_ref);
-    predict_energy_or_stress(fid_prediction, virial, virial_ref);
-    predict_energy_or_stress(fid_prediction, virial+N, virial_ref+Nc);
-    predict_energy_or_stress(fid_prediction, virial+N*2, virial_ref+Nc*2);
-    fclose(fid_prediction);
+    char file_energy[200];
+    strcpy(file_energy, input_dir);
+    strcat(file_energy, "/energy.out");
+    FILE* fid_energy = my_fopen(file_energy, "w");
+    predict_energy_or_stress(fid_energy, pe, pe_ref);
+    fclose(fid_energy);
+
+    char file_virial[200];
+    strcpy(file_virial, input_dir);
+    strcat(file_virial, "/virial.out");
+    FILE* fid_virial = my_fopen(file_virial, "w");
+    predict_energy_or_stress(fid_virial, virial, virial_ref);
+    predict_energy_or_stress(fid_virial, virial + N,   virial_ref + Nc);
+    predict_energy_or_stress(fid_virial, virial + N*2, virial_ref + Nc*2);
+    predict_energy_or_stress(fid_virial, virial + N*3, virial_ref + Nc*3);
+    predict_energy_or_stress(fid_virial, virial + N*4, virial_ref + Nc*4);
+    predict_energy_or_stress(fid_virial, virial + N*5, virial_ref + Nc*5);
+    fclose(fid_virial);
 }
 
 
@@ -541,6 +551,21 @@ float Fitness::get_fitness_stress(void)
 
     gpu_sum_pe_error<<<Nc, block_size, sizeof(float) * block_size>>>
     (Na, Na_sum, virial+N*2, virial_ref+Nc*2, error_gpu);
+    CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
+    for (int n = Nc_force; n < Nc; ++n) {error_ave += error_cpu[n];}
+
+    gpu_sum_pe_error<<<Nc, block_size, sizeof(float) * block_size>>>
+    (Na, Na_sum, virial+N*3, virial_ref+Nc*3, error_gpu);
+    CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
+    for (int n = Nc_force; n < Nc; ++n) {error_ave += error_cpu[n];}
+
+    gpu_sum_pe_error<<<Nc, block_size, sizeof(float) * block_size>>>
+    (Na, Na_sum, virial+N*4, virial_ref+Nc*4, error_gpu);
+    CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
+    for (int n = Nc_force; n < Nc; ++n) {error_ave += error_cpu[n];}
+
+    gpu_sum_pe_error<<<Nc, block_size, sizeof(float) * block_size>>>
+    (Na, Na_sum, virial+N*5, virial_ref+Nc*5, error_gpu);
     CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
     for (int n = Nc_force; n < Nc; ++n) {error_ave += error_cpu[n];}
 
