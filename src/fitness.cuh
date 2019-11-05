@@ -43,11 +43,8 @@ public:
 protected:
 
     // functions related to initialization
-    void read_xyz_in(char*);
     void read_Nc(FILE*);
     void read_Na(FILE*);
-    void read_xyz(FILE*);
-    void read_box(char*);
     void read_potential(char*);
     void read_train_in(char*);
 
