@@ -10,7 +10,7 @@ Graphics Processing Units Genetic Algorithm
 * I have only tested the code in linux operating system.
 
 ## Compile GPUGA
-* go to the `src` directory and type `make`. When the compilation finishes, an executable named `gpuga` will be generated in the `src` directory. 
+* Go to the `src` directory and type `make`. When the compilation finishes, an executable named `gpuga` will be generated in the `src` directory. 
 
 ## Run GPUGA
 * To run the provided example, go to the directory where you can see `src` and type `src/gpuga < examples/input.txt`
