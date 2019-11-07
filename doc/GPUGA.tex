@@ -34,7 +34,7 @@ urlcolor=Blue           % color of external links
    \vspace*{1.0cm}
    Version 1.0 \\
    \vspace*{1.0cm}
-   (Nov 06, 2019)\\
+   (Nov 07, 2019)\\
   \vspace*{2.0cm}
   }
   \large
@@ -59,7 +59,7 @@ This is version 1.0, and it can only be used to fit the minimal Tersoff potentia
 
 All the potentials considered in \verb"GPUGA" will be implemented in the \verb"GPUMD" package, which can be found here:
 
-\url{https://github.com/brucefan1983}
+\url{https://github.com/brucefan1983/GPUMD}
 
 
 \section{Feedbacks}
@@ -103,7 +103,17 @@ Go to the directory where you can see the \verb"src" folder and type
 \begin{verbatim}
     src/gpuga < examples/input.txt
 \end{verbatim}
-This will run the prepared example. To run your own calculations, just replace the folder name (including absolute or relative path) as specified in \verb"examples/input.txt" to your own working directory. Then you need to prepare some input files in the working directory, as described below.
+This will run the prepared example. To run your own calculations, just replace the folder name (including absolute or relative path) as specified in \verb"examples/input.txt" to your own working directory. Then you need to prepare some input files in the working directory.
+
+\section{Units used in the input and output files}
+
+In all the input and output files, we use the following units:
+\begin{itemize}
+\item length (box vectors and positions): \AA
+\item energy: eV
+\item virial (virial is the product of position and force): eV
+\item force: eV/\AA
+\end{itemize}
 
 \section{Input files for GPUGA}
 
@@ -145,9 +155,9 @@ R2             3.2 3.2
 At each line, there is one character string and one or two numbers. To do new experiments, just keep the strings unchanged and modify the numbers. Here are some explanations:
 \begin{itemize}
 \item Line 1: The type of the potential to be fitted, which can only be 1  (means the minimal Tersoff potential \cite{fan2019arxiv}) in this version.
-\item Line 2: The cutoff distance used for building the neighbor list for each configuration (see below), which should be a positive number.
-\item Lines 3-5: The weighting factors for force, energy, and virial. They should be non-negative numbers. It is good to make their sum to be 1, although the code does not complain if this is not the case.
-\item Lines 6-14: The lower (the first number in each line) and upper (the second number in each line) bounds of the potential parameters for the minimal Tersoff potential. The order of the parameters are the same as those in Table II of \cite{fan2019arxiv}.
+\item Line 2: The cutoff distance (in units of \AA) used for building the neighbor list for each configuration (see below), which should be a positive number.
+\item Lines 3-5: The weighting factors (dimensionless) for force, energy, and virial. They should be non-negative numbers. It is good to make their sum to be 1, although the code does not complain if this is not the case.
+\item Lines 6-14: The lower (the first number in each line) and upper (the second number in each line) bounds of the potential parameters for the minimal Tersoff potential. The order of the parameters are the same as those in Table II of \cite{fan2019arxiv}, where one can find the units of the parameters. 
 \end{itemize}
 
 
@@ -178,11 +188,11 @@ Here,
 \begin{verbatim}
     ax ay az bx by bz cx cy cz
 \end{verbatim} 
-In the remaining \verb"N_i" lines, each line contains 7 numbers, corresponding to the atom type (not used in this version and can be set to 0), position components, and force components:
+These numbers are in units of \AA. In the remaining \verb"N_i" lines, each line contains 7 numbers, corresponding to the atom type (not used in this version and can be set to 0), position components (in units of \AA), and force components (in units of eV/\AA):
 \begin{verbatim}
     type x y z fx fy fz
 \end{verbatim} 
-\item Data for one energy/virial configuration occupy \verb"N_i + 2" lines. The first line should have 7 numbers. The first one is the total energy of the current configuration. The remaining 6 numbers are the $xx$, $yy$, $zz$, $xy$, $yz$, and $zx$ components of the virial tensor of the current configuration. The second line gives the cell vectors, similar to the first line for the force configurations. The remaining \verb"N_i" lines are similar to those in the force configurations, but each line only has 4 numbers, which are the atom type and positions components.
+\item Data for one energy/virial configuration occupy \verb"N_i + 2" lines. The first line should have 7 numbers. The first one is the total energy (in units of eV) of the current configuration. The remaining 6 numbers are the $xx$, $yy$, $zz$, $xy$, $yz$, and $zx$ components of the virial tensor (in units of eV) of the current configuration. The second line gives the cell vectors, similar to the first line for the force configurations. The remaining \verb"N_i" lines are similar to those in the force configurations, but each line only has 4 numbers, which are the atom type and positions components.
 \end{itemize}
 
 
@@ -202,15 +212,15 @@ To find the best solution for one simulation, just check the last line.
 
 \subsection{The force.out file}
 
-There are 6 columns. The first three columns are the $x$, $y$, and $z$ force components in the force configurations calculated from the best solution. The last three columns are the corresponding forces from \verb"train.in". The first \verb"N_1" rows correspond to the \verb"N_1" atoms in the first force configuration; the next \verb"N_2" rows correspond to the \verb"N_2" atoms in the second force configuration; and so on. Remember that the number of force configurations \verb"Nc_force" is specified in \verb"train.in".
+There are 6 columns. The first three columns are the $x$, $y$, and $z$ force components (in units of eV/\AA) in the force configurations calculated from the best solution. The last three columns are the corresponding forces (in units of eV/\AA) from \verb"train.in". The first \verb"N_1" rows correspond to the \verb"N_1" atoms in the first force configuration; the next \verb"N_2" rows correspond to the \verb"N_2" atoms in the second force configuration; and so on. Remember that the number of force configurations \verb"Nc_force" is specified in \verb"train.in".
 
 \subsection{The energy.out file}
 
-There are 2 columns. The first column gives the energies calculated from the best solution. The second column gives the corresponding energies from \verb"train.in". Each row corresponds to one energy/virial configuration in \verb"train.in". Remember that the number of energy/virial configurations is \verb"Nc - Nc_force", which should be the number of rows in \verb"energy.out".
+There are 2 columns. The first column gives the energies (in units of eV) calculated from the best solution. The second column gives the corresponding energies (in units of eV) from \verb"train.in". Each row corresponds to one energy/virial configuration in \verb"train.in". Remember that the number of energy/virial configurations is \verb"Nc - Nc_force", which should be the number of rows in \verb"energy.out".
 
 \subsection{The virial.out file}
 
-There are 2 columns. The first column gives the virials calculated from the best solution. The second column gives the corresponding virials from \verb"train.in". The number of rows is \verb"(Nc - Nc_force) x 6". The first 1/6 corresponds to the $xx$ component of the viral in the same order as the energy data in \verb"energy.out", followed by the $yy$, $zz$, $xy$, $yz$, and $zx$ components.
+There are 2 columns. The first column gives the virials (in units of eV) calculated from the best solution. The second column gives the corresponding virials (in units of eV) from \verb"train.in". The number of rows is \verb"(Nc - Nc_force) x 6". The first 1/6 corresponds to the $xx$ component of the viral in the same order as the energy data in \verb"energy.out", followed by the $yy$, $zz$, $xy$, $yz$, and $zx$ components.
 
 \bibliographystyle{plainnat}
 
