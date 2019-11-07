@@ -40,7 +40,7 @@ urlcolor=Blue           % color of external links
   \large
   {
   Author: \\
-  Zheyong Fan (Aalto University)\\
+  Zheyong Fan (Bohai University and Aalto University)\\
   }
   \vspace*{1.0cm}
 \end{center}
@@ -56,6 +56,11 @@ urlcolor=Blue           % color of external links
 \verb"GPUGA" was developed for \cite{fan2019arxiv}. If you use \verb"GPUGA" in your published work, we kindly ask you to cite this paper.
 
 This is version 1.0, and it can only be used to fit the minimal Tersoff potential as proposed in \cite{fan2019arxiv}. We aim to implement more empirical potentials for version 2.0.
+
+All the potentials considered in \verb"GPUGA" will be implemented in the \verb"GPUMD" package, which can be found here:
+
+\url{https://github.com/brucefan1983}
+
 
 \section{Feedbacks}
 
@@ -80,7 +85,7 @@ The code has only been tested in linux operating systems and we assume that the 
 
 \subsection{Compiling}
 
-After downloading and unpacking \verb"GPUGA", one can four folders:  \verb"src",  \verb"examples",  \verb"tools", and \verb"doc". The folder \verb"src" contains all the source files. The folder \verb"examples" contains all the examples. The folder \verb"tools" contains a Matlab script for plotting Fig. 3 in \cite{fan2019arxiv}. The folder \verb"doc" contains the pdf file you are reading and the source files generating it.
+After downloading and unpacking \verb"GPUGA", one can see four folders:  \verb"src",  \verb"examples",  \verb"tools", and \verb"doc". The folder \verb"src" contains all the source files. The folder \verb"examples" contains all the examples. The folder \verb"tools" contains a Matlab script for plotting Fig. 3 in \cite{fan2019arxiv}. The folder \verb"doc" contains the pdf file you are reading and the source files generating it.
 
 To compile the code, go to the \verb"src" folder and type
 \begin{verbatim}
@@ -126,9 +131,9 @@ potential_type 1
 cutoff         3.0
 weight_force   0.05
 weight_energy  0.15
-weight_stress  0.8
+weight_virial  0.8
 D0             2.9 3.3
-a              1.3 1.5
+alpha          1.3 1.5
 r0             2.2 2.4
 S              2 2
 n              0.5 0.8
@@ -139,9 +144,9 @@ R2             3.2 3.2
 \end{verbatim}
 At each line, there is one character string and one or two numbers. To do new experiments, just keep the strings unchanged and modify the numbers. Here are some explanations:
 \begin{itemize}
-\item Line 1: The type of the potential to be fitted, which can only be 1  (means the minimum Tersoff potential \cite{fan2019arxiv}) in this version.
+\item Line 1: The type of the potential to be fitted, which can only be 1  (means the minimal Tersoff potential \cite{fan2019arxiv}) in this version.
 \item Line 2: The cutoff distance used for building the neighbor list for each configuration (see below), which should be a positive number.
-\item Lines 3-5: The weighting factors for force, energy, and stress. They should be non-negative numbers. It is good to make their sum to be 1, although the code does not complain if this is not the case.
+\item Lines 3-5: The weighting factors for force, energy, and virial. They should be non-negative numbers. It is good to make their sum to be 1, although the code does not complain if this is not the case.
 \item Lines 6-14: The lower (the first number in each line) and upper (the second number in each line) bounds of the potential parameters for the minimal Tersoff potential. The order of the parameters are the same as those in Table II of \cite{fan2019arxiv}.
 \end{itemize}
 
@@ -201,11 +206,11 @@ There are 6 columns. The first three columns are the $x$, $y$, and $z$ force com
 
 \subsection{The energy.out file}
 
-There are 2 columns. The first column gives the energies calculated from the best solution. The second column gives the corresponding energies from \verb"train.in". Each row corresponds to one energy/virial configuration \verb"train.in". Remember that the number of energy/virial configurations is \verb"Nc - Nc_force".
+There are 2 columns. The first column gives the energies calculated from the best solution. The second column gives the corresponding energies from \verb"train.in". Each row corresponds to one energy/virial configuration in \verb"train.in". Remember that the number of energy/virial configurations is \verb"Nc - Nc_force", which should be the number of rows in \verb"energy.out".
 
 \subsection{The virial.out file}
 
-There are 2 columns. The first column gives the virials calculated from the best solution. The second column gives the corresponding virials from \verb"train.in". The number of rows is a multiple of 6 and the first 1/6 corresponds to the $xx$ component of the viral in the same order as the energy data in \verb"energy.out", followed by the $yy$, $zz$, $xy$, $yz$, and $zx$ components.
+There are 2 columns. The first column gives the virials calculated from the best solution. The second column gives the corresponding virials from \verb"train.in". The number of rows is \verb"(Nc - Nc_force) x 6". The first 1/6 corresponds to the $xx$ component of the viral in the same order as the energy data in \verb"energy.out", followed by the $yy$, $zz$, $xy$, $yz$, and $zx$ components.
 
 \bibliographystyle{plainnat}
 
