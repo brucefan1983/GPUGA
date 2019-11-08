@@ -68,7 +68,7 @@ void print_welcome_information(void)
     printf("***************************************************************\n");
     printf("*                 Welcome to use GPUGA                        *\n");
     printf("*     (Graphics Processing Units Genetic Algorithm)           *\n");
-    printf("*                      Version 0.1                            *\n");
+    printf("*                      Version 1.0                            *\n");
     printf("* Author:                                                     *\n");
     printf("*     Zheyong Fan <brucenju@gmail.com>                        *\n");
     printf("***************************************************************\n");
