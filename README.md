@@ -17,6 +17,7 @@ Graphics Processing Units Genetic Algorithm
 * The example corresponds to the case study for diamond silicon in the preprint below.
 
 ## Citation
+If you use `GPUGA` in your published work, we kindly ask you to cite the following paper which describes the central algorithms used in `GPUGA`:
 * Zheyong Fan, Yanzhou Wang, Xiaokun Gu, Ping Qian, Yanjing Su, Tapio Ala-Nissila, A minimal Tersoff potential for diamond silicon with improved descriptions of elastic and phonon transport properties, https://arxiv.org/abs/1909.11474
 
 ## Author:
