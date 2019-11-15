@@ -2,7 +2,7 @@
     Purpose:
         Converting DFT data to train.in for GPUGA
     Compile:
-        g++ -O3 main.cpp
+        g++ -O3 construct_train_in.cpp
     Run:
         ./a.out < input.txt
     Author:
