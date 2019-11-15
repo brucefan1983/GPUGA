@@ -4,7 +4,7 @@
 | folder          | description                                   |
 |---------------- |-----------------------------------------------|
 | plot_g_and_b    | produces figure 3 of Ref. [1]  |
-| construct_train.in    | a code used by myself to convert some DFT data to train.in  |
+| construct_train.in    | a code used by myself to convert some DFT data to `train.in`  |
 
 
 # References
