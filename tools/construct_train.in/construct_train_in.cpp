@@ -2,7 +2,7 @@
     Purpose:
         Converting DFT data to train.in for GPUGA
     Compile:
-        g++ -O3 construct_train_in.cpp
+        g++ -O3 main.cpp
     Run:
         ./a.out < input.txt
     Author:
@@ -49,7 +49,8 @@ const int NB = 4;                 // number of cells in direction b
 const int NC = 3;                 // number of cells in direction c
 const int NABC = NA * NB * NC;    // total number of cells
 const bool STRESS_IN_KBAR = true; // true for stress in kbar from VASP
-                                  // false for virial in eV from VASP
+const float DELTA_E = 1.31684;    // energy shift (eV/atom)
+
 FILE *fid_train;
 char dft_files[MAX_NC][200];
 int Nc_force, Nc_energy, Nc;
@@ -168,7 +169,8 @@ void get_energy_and_virial(void)
             PRINT_ERROR(count, 1);
         }
 
-        energy *= NABC;
+        energy = ((energy / Na[n]) + DELTA_E) * Na[n] * NABC;
+        
         for (int d = 0; d < 6; ++d) virial[d] *= NABC;
         if (STRESS_IN_KBAR)
         {
@@ -216,4 +218,5 @@ void get_energy_and_virial(void)
         fclose(fid_in);
     }
 }
+
 
