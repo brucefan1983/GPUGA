@@ -3,7 +3,7 @@ Graphics Processing Units Genetic Algorithm
 
 ## What is `GPUGA`?
 * `GPUGA` stands for Graphics Processing Units Genetic Algorithm. It is a code for empirical potential fitting using the genetic algorithm (GA).
-* Using even a gaming GPU card, fitting an empirical potential using `GPUGA` only takes **about one minute**!
+* Using my laptop with a GeForce RTX 2070 GPU card, fitting an empirical potential using `GPUGA` only takes **about one minute**!
 
 ## Prerequisites
 * You need to have a GPU card with compute capability no less than 3.5 and a `CUDA` toolkit which supports your GPU card installed.
