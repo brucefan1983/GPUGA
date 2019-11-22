@@ -123,12 +123,23 @@ void Fitness::read_train_in(char* input_dir)
             if (pe_ref[n] < energy_minimum) energy_minimum = pe_ref[n];
         }
 
-        // box
+        // box (transpose of VASP input matrix)
+        float h_tmp[9];
         for (int k = 0; k < 9; ++k)
         {
-            count = fscanf(fid, "%f", &h[k + 18 * n]);
+            count = fscanf(fid, "%f", &h_tmp[k]);
             if (count != 1) { print_error("reading error for train.in.\n"); }
         }
+        h[0 + 18 * n] = h_tmp[0];
+        h[3 + 18 * n] = h_tmp[1];
+        h[6 + 18 * n] = h_tmp[2];
+        h[1 + 18 * n] = h_tmp[3];
+        h[4 + 18 * n] = h_tmp[4]; 
+        h[7 + 18 * n] = h_tmp[5];
+        h[2 + 18 * n] = h_tmp[6];
+        h[5 + 18 * n] = h_tmp[7]; 
+        h[8 + 18 * n] = h_tmp[8];
+
         get_inverse(h + 18 * n);
 
         // type, position, force
