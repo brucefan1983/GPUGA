@@ -82,7 +82,7 @@ static __device__ void find_fr_and_frp
 {
 
     fr = d0 / (s - 1.0f) * exp(-sqrt(2.0f * s) * a * (d12 - r0));
-    frp = -2.0f * a * fr;
+    frp = -sqrt(2.0f * s) * a * fr;
 }
 
 
@@ -90,7 +90,7 @@ static __device__ void find_fa_and_fap
 (float d0, float a, float r0, float s, float d12, float &fa, float &fap)
 {
     fa = s * d0 / (s - 1.0f) * exp(-sqrt(2.0f / s) * a * (d12 - r0));
-    fap = -a * fa;
+    fap = -sqrt(2.0f / s) * a * fa;
 }
 
 
