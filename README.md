@@ -19,7 +19,7 @@ Graphics Processing Units Genetic Algorithm
 ## Citation
 If you use `GPUGA` in your published work, we kindly ask you to cite the following paper which describes the central algorithms used in `GPUGA`:
 * Zheyong Fan, Yanzhou Wang, Xiaokun Gu, Ping Qian, Yanjing Su, Tapio Ala-Nissila, A minimal Tersoff potential for diamond silicon with improved descriptions of elastic and phonon transport properties, https://arxiv.org/abs/1909.11474
-To be published in JPCM.
+Accepted to JPCM: https://iopscience.iop.org/article/10.1088/1361-648X/ab5c5f
 
 ## Author:
 * Zheyong Fan (Bohai University and Aalto University)
