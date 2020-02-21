@@ -14,12 +14,13 @@ Graphics Processing Units Genetic Algorithm
 
 ## Run GPUGA
 * To run the provided example, go to the directory where you can see `src` and type `src/gpuga < examples/input.txt`
-* The example corresponds to the case study for diamond silicon in the preprint below.
+* The example corresponds to the case study for diamond silicon in the paper below.
 
 ## Citation
 If you use `GPUGA` in your published work, we kindly ask you to cite the following paper which describes the central algorithms used in `GPUGA`:
-* Zheyong Fan, Yanzhou Wang, Xiaokun Gu, Ping Qian, Yanjing Su, Tapio Ala-Nissila, A minimal Tersoff potential for diamond silicon with improved descriptions of elastic and phonon transport properties, https://arxiv.org/abs/1909.11474
-Accepted to JPCM: https://iopscience.iop.org/article/10.1088/1361-648X/ab5c5f
+* Zheyong Fan, Yanzhou Wang, Xiaokun Gu, Ping Qian, Yanjing Su, and Tapio Ala-Nissila,
+[A minimal Tersoff potential for diamond silicon with improved descriptions of elastic and phonon transport properties](https://doi.org/10.1088/1361-648X/ab5c5f),
+J. Phys.: Condens. Matter **32**, 135901 (2020).
 
 ## Author:
 * Zheyong Fan (Bohai University and Aalto University)
