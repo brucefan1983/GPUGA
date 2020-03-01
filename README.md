@@ -25,6 +25,4 @@ J. Phys.: Condens. Matter **32**, 135901 (2020).
 ## Author:
 * Zheyong Fan (Bohai University and Aalto University)
   * brucenju(at)gmail.com
-  * zheyong.fan(at)aalto.fi
-  * zheyongfan(at)163.com
   
