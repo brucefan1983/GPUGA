@@ -1,15 +1,74 @@
-CC = nvcc
-CFLAGS = -std=c++11 -O3 -arch=sm_50 --use_fast_math
-SOURCES = main.cu gpuga.cu ga.cu fitness.cu read_file.cu error.cu potential.cu neighbor.cu
-_OBJ = main.o gpuga.o ga.o fitness.o read_file.o error.o potential.o neighbor.o
-HEADERS = gpuga.cuh ga.cuh fitness.cuh read_file.cuh error.cuh mic.cuh neighbor.cuh potential.cuh
-ODIR = obj
-OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
-all: gpuga
-$(ODIR)/%.o: %.cu $(HEADERS)
-	$(CC) $(CFLAGS) -c $< -o $@
-gpuga: $(OBJ)
-	$(CC) $^ -o $@
-clean:
-	rm $(ODIR)/*o gpuga
+###########################################################
+# Note: 
+# 2) Add -DDEBUG to CFLAGS if you want to have the same
+#    outputs for the same inputs and remove it otherwise.
+# 3) You can modify -arch=sm_35 according to 
+#    your GPU architecture.
+###########################################################
 
+
+###########################################################
+# some flags
+###########################################################
+CC = nvcc
+ifdef OS # For Windows with the cl.exe compiler
+CFLAGS = -O3 -arch=sm_35 --use_fast_math -Xcompiler "/wd 4819" -DDEBUG
+else # For linux
+CFLAGS = -std=c++11 -O3 -arch=sm_35 --use_fast_math
+endif
+INC = -I./
+LDFLAGS = 
+LIBS =
+
+
+###########################################################
+# source files
+###########################################################
+SOURCES = $(wildcard *.cu)
+
+
+###########################################################
+# object files
+###########################################################
+ifdef OS # For Windows with the cl.exe compiler
+OBJ = $(SOURCES:.cu=.obj)
+else
+OBJ = $(SOURCES:.cu=.o)
+endif
+
+
+###########################################################
+# headers
+###########################################################
+HEADERS = $(wildcard *.cuh)
+
+
+###########################################################
+# executables
+###########################################################
+all: gpuga
+gpuga: $(OBJ)
+	$(CC) $(LDFLAGS) $^ -o $@ $(LIBS)
+	
+
+###########################################################
+# rules for building object files
+###########################################################
+ifdef OS # for Windows
+%.obj: %.cu $(HEADERS)
+	$(CC) $(CFLAGS) $(INC) -c $< -o $@
+else # for Linux
+%.o: %.cu $(HEADERS)
+	$(CC) $(CFLAGS) $(INC) -c $< -o $@
+endif
+
+
+###########################################################
+# clean up
+###########################################################
+clean:
+ifdef OS
+	del *.obj *.exp *.lib *.exe
+else
+	rm *.o gpuga
+endif
