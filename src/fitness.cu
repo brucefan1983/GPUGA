@@ -19,6 +19,7 @@ Get the fitness
 
 #include "error.cuh"
 #include "fitness.cuh"
+#include "minimal_tersoff.cuh"
 #include "neighbor.cuh"
 #include "read_file.cuh"
 
@@ -27,7 +28,7 @@ Fitness::Fitness(char* input_dir)
   read_potential(input_dir);
   read_train_in(input_dir);
   neighbor.compute(Nc, N, max_Na, Na, Na_sum, r, h);
-  potential.initialize(N, max_Na);
+  potential->initialize(N, max_Na);
   MY_MALLOC(error_cpu, float, Nc);
   CHECK(cudaMalloc((void**)&error_gpu, sizeof(float) * Nc));
 }
@@ -251,6 +252,7 @@ void Fitness::read_potential(char* input_dir)
   if (potential_type == 1) {
     number_of_variables = 9;
     printf("Use one-element mini-Tersoff potential with %d parameters.\n", number_of_variables);
+    potential = std::make_unique<Minimal_Tersoff>();
   } else if (potential_type == 2) {
     number_of_variables = 37;
     printf("Use two-element mini-Tersoff potential with %d parameters.\n", number_of_variables);
@@ -317,8 +319,8 @@ void Fitness::compute(int population_size, float* population, float* fitness)
       float b = parameters_max[m] - a;
       parameters[m] = a + b * individual[m];
     }
-    potential.update_potential(parameters);
-    potential.find_force(Nc, N, Na, Na_sum, max_Na, type, h, &neighbor, r, force, virial, pe);
+    potential->update_potential(parameters);
+    potential->find_force(Nc, N, Na, Na_sum, max_Na, type, h, &neighbor, r, force, virial, pe);
     fitness[n] = weight.energy * get_fitness_energy();
     fitness[n] += weight.stress * get_fitness_stress();
     fitness[n] += weight.force * get_fitness_force();
@@ -348,8 +350,8 @@ void Fitness::predict(char* input_dir, float* elite)
     float b = parameters_max[m] - a;
     parameters[m] = a + b * elite[m];
   }
-  potential.update_potential(parameters);
-  potential.find_force(Nc, N, Na, Na_sum, max_Na, type, h, &neighbor, r, force, virial, pe);
+  potential->update_potential(parameters);
+  potential->find_force(Nc, N, Na, Na_sum, max_Na, type, h, &neighbor, r, force, virial, pe);
   MY_FREE(parameters);
 
   CHECK(cudaDeviceSynchronize()); // needed for CC < 6.0

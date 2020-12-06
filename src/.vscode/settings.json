@@ -2,6 +2,7 @@
     "files.associations": {
         "*.cu": "cpp",
         "*.cuh": "cpp",
-        "random": "cpp"
+        "random": "cpp",
+        "memory": "cpp"
     }
 }

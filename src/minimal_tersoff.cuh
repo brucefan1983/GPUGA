@@ -15,9 +15,10 @@
 
 #pragma once
 #include "gpu_vector.cuh"
+#include "potential.cuh"
 class Neighbor;
 
-class Minimal_Tersoff
+class Minimal_Tersoff : public Potential
 {
 public:
   struct Pot_Para {

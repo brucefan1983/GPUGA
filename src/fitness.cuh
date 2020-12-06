@@ -14,8 +14,9 @@
 */
 
 #pragma once
-#include "minimal_tersoff.cuh"
 #include "neighbor.cuh"
+#include "potential.cuh"
+#include <memory>
 #include <stdio.h>
 
 struct Weight {
@@ -73,6 +74,7 @@ protected:
 
   // other classes
   Neighbor neighbor;
-  Minimal_Tersoff potential;
+  std::unique_ptr<Potential> potential;
+  // Minimal_Tersoff potential;
   Weight weight;
 };
