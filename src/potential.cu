@@ -153,15 +153,15 @@ static __global__ void find_force_tersoff_step1(
     const float* __restrict__ h = g_box + 18 * blockIdx.x;
     int neighbor_number = g_neighbor_number[n1];
 
-    float x1 = LDG(g_x, n1);
-    float y1 = LDG(g_y, n1);
-    float z1 = LDG(g_z, n1);
+    float x1 = g_x[n1];
+    float y1 = g_y[n1];
+    float z1 = g_z[n1];
     for (int i1 = 0; i1 < neighbor_number; ++i1) {
       int n2 = g_neighbor_list[n1 + number_of_particles * i1];
 
-      float x12 = LDG(g_x, n2) - x1;
-      float y12 = LDG(g_y, n2) - y1;
-      float z12 = LDG(g_z, n2) - z1;
+      float x12 = g_x[n2] - x1;
+      float y12 = g_y[n2] - y1;
+      float z12 = g_z[n2] - z1;
       dev_apply_mic(h, x12, y12, z12);
       float d12 = sqrt(x12 * x12 + y12 * y12 + z12 * z12);
       float zeta = 0.0f;
@@ -171,9 +171,9 @@ static __global__ void find_force_tersoff_step1(
           continue;
         } // ensure that n3 != n2
 
-        float x13 = LDG(g_x, n3) - x1;
-        float y13 = LDG(g_y, n3) - y1;
-        float z13 = LDG(g_z, n3) - z1;
+        float x13 = g_x[n3] - x1;
+        float y13 = g_y[n3] - y1;
+        float z13 = g_z[n3] - z1;
         dev_apply_mic(h, x13, y13, z13);
         float d13 = sqrt(x13 * x13 + y13 * y13 + z13 * z13);
         float cos123 = (x12 * x13 + y12 * y13 + z12 * z13) / (d12 * d13);
@@ -219,17 +219,17 @@ static __global__ void find_force_tersoff_step2(
     const float* __restrict__ h = g_box + 18 * blockIdx.x;
     int neighbor_number = g_neighbor_number[n1];
 
-    float x1 = LDG(g_x, n1);
-    float y1 = LDG(g_y, n1);
-    float z1 = LDG(g_z, n1);
+    float x1 = g_x[n1];
+    float y1 = g_y[n1];
+    float z1 = g_z[n1];
     float pot_energy = 0.0f;
     for (int i1 = 0; i1 < neighbor_number; ++i1) {
       int index = i1 * number_of_particles + n1;
       int n2 = g_neighbor_list[index];
 
-      float x12 = LDG(g_x, n2) - x1;
-      float y12 = LDG(g_y, n2) - y1;
-      float z12 = LDG(g_z, n2) - z1;
+      float x12 = g_x[n2] - x1;
+      float y12 = g_y[n2] - y1;
+      float z12 = g_z[n2] - z1;
       dev_apply_mic(h, x12, y12, z12);
       float d12 = sqrt(x12 * x12 + y12 * y12 + z12 * z12);
       float d12inv = 1.0f / d12;
@@ -246,7 +246,7 @@ static __global__ void find_force_tersoff_step2(
       find_fr_and_frp(d0, a, r0, s, d12, fr12, frp12);
 
       // (i,j) part
-      float b12 = LDG(g_b, index);
+      float b12 = g_b[index];
       float factor3 = (fcp12 * (fr12 - b12 * fa12) + fc12 * (frp12 - b12 * fap12)) * d12inv;
       float f12x = x12 * factor3 * 0.5f;
       float f12y = y12 * factor3 * 0.5f;
@@ -256,7 +256,7 @@ static __global__ void find_force_tersoff_step2(
       pot_energy += fc12 * (fr12 - b12 * fa12) * 0.5f;
 
       // (i,j,k) part
-      float bp12 = LDG(g_bp, index);
+      float bp12 = g_bp[index];
       for (int i2 = 0; i2 < neighbor_number; ++i2) {
         int index_2 = n1 + number_of_particles * i2;
         int n3 = g_neighbor_list[index_2];
@@ -264,15 +264,15 @@ static __global__ void find_force_tersoff_step2(
           continue;
         }
 
-        float x13 = LDG(g_x, n3) - x1;
-        float y13 = LDG(g_y, n3) - y1;
-        float z13 = LDG(g_z, n3) - z1;
+        float x13 = g_x[n3] - x1;
+        float y13 = g_y[n3] - y1;
+        float z13 = g_z[n3] - z1;
         dev_apply_mic(h, x13, y13, z13);
         float d13 = sqrt(x13 * x13 + y13 * y13 + z13 * z13);
         float fc13, fa13;
         find_fc(pot_para.ters[R1], pot_para.ters[R2], pot_para.ters[PI_FACTOR], d13, fc13);
         find_fa(d0, a, r0, s, d13, fa13);
-        float bp13 = LDG(g_bp, index_2);
+        float bp13 = g_bp[index_2];
         float one_over_d12d13 = 1.0f / (d12 * d13);
         float cos123 = (x12 * x13 + y12 * y13 + z12 * z13) * one_over_d12d13;
         float cos123_over_d12d12 = cos123 * d12inv * d12inv;
@@ -333,23 +333,23 @@ static __global__ void find_force_tersoff_step3(
     float s_virial_zx = 0.0f;
     const float* __restrict__ h = g_box + 18 * blockIdx.x;
     int neighbor_number = g_neighbor_number[n1];
-    float x1 = LDG(g_x, n1);
-    float y1 = LDG(g_y, n1);
-    float z1 = LDG(g_z, n1);
+    float x1 = g_x[n1];
+    float y1 = g_y[n1];
+    float z1 = g_z[n1];
 
     for (int i1 = 0; i1 < neighbor_number; ++i1) {
       int index = i1 * number_of_particles + n1;
       int n2 = g_neighbor_list[index];
       int neighbor_number_2 = g_neighbor_number[n2];
 
-      float x12 = LDG(g_x, n2) - x1;
-      float y12 = LDG(g_y, n2) - y1;
-      float z12 = LDG(g_z, n2) - z1;
+      float x12 = g_x[n2] - x1;
+      float y12 = g_y[n2] - y1;
+      float z12 = g_z[n2] - z1;
       dev_apply_mic(h, x12, y12, z12);
 
-      float f12x = LDG(g_f12x, index);
-      float f12y = LDG(g_f12y, index);
-      float f12z = LDG(g_f12z, index);
+      float f12x = g_f12x[index];
+      float f12y = g_f12y[index];
+      float f12z = g_f12z[index];
       int offset = 0;
       for (int k = 0; k < neighbor_number_2; ++k) {
         if (n1 == g_neighbor_list[n2 + number_of_particles * k]) {
@@ -358,9 +358,9 @@ static __global__ void find_force_tersoff_step3(
         }
       }
       index = offset * number_of_particles + n2;
-      float f21x = LDG(g_f12x, index);
-      float f21y = LDG(g_f12y, index);
-      float f21z = LDG(g_f12z, index);
+      float f21x = g_f12x[index];
+      float f21y = g_f12y[index];
+      float f21z = g_f12z[index];
 
       // per atom force
       s_fx += f12x - f21x;

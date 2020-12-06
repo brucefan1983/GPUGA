@@ -1,2 +1,2 @@
 1
-examples/si_diamond
+tests/si_diamond
