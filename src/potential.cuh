@@ -14,6 +14,7 @@
 */
 
 #pragma once
+#include "gpu_vector.cuh"
 class Neighbor;
 
 struct Pot_Para {
@@ -24,12 +25,11 @@ class Potential
 {
 public:
   void initialize(int, int);
-  ~Potential(void);
   void update_potential(float*);
   void
   find_force(int, int, int*, int*, int, int*, float*, Neighbor*, float*, float*, float*, float*);
 
 private:
-  float *b, *bp, *f12x, *f12y, *f12z;
+  GPU_Vector<float> b, bp, f12x, f12y, f12z;
   Pot_Para pot_para;
 };

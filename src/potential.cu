@@ -39,21 +39,11 @@ const int MINUS_HALF_OVER_N = 10;
 
 void Potential::initialize(int N, int MAX_ATOM_NUMBER)
 {
-  int mem_size = sizeof(float) * N * MAX_ATOM_NUMBER;
-  CHECK(cudaMalloc((void**)&b, mem_size));
-  CHECK(cudaMalloc((void**)&bp, mem_size));
-  CHECK(cudaMalloc((void**)&f12x, mem_size));
-  CHECK(cudaMalloc((void**)&f12y, mem_size));
-  CHECK(cudaMalloc((void**)&f12z, mem_size));
-}
-
-Potential::~Potential(void)
-{
-  CHECK(cudaFree(b));
-  CHECK(cudaFree(bp));
-  CHECK(cudaFree(f12x));
-  CHECK(cudaFree(f12y));
-  CHECK(cudaFree(f12z));
+  b.resize(N * MAX_ATOM_NUMBER);
+  bp.resize(N * MAX_ATOM_NUMBER);
+  f12x.resize(N * MAX_ATOM_NUMBER);
+  f12y.resize(N * MAX_ATOM_NUMBER);
+  f12z.resize(N * MAX_ATOM_NUMBER);
 }
 
 void Potential::update_potential(float* potential_parameters)
@@ -404,14 +394,15 @@ void Potential::find_force(
   float* pe)
 {
   find_force_tersoff_step1<<<Nc, max_Na>>>(
-    N, Na, Na_sum, neighbor->NN, neighbor->NL, type, pot_para, r, r + N, r + N * 2, h, b, bp);
+    N, Na, Na_sum, neighbor->NN, neighbor->NL, type, pot_para, r, r + N, r + N * 2, h, b.data(),
+    bp.data());
   CUDA_CHECK_KERNEL
   find_force_tersoff_step2<<<Nc, max_Na>>>(
-    N, Na, Na_sum, neighbor->NN, neighbor->NL, type, pot_para, b, bp, r, r + N, r + N * 2, h, pe,
-    f12x, f12y, f12z);
+    N, Na, Na_sum, neighbor->NN, neighbor->NL, type, pot_para, b.data(), bp.data(), r, r + N,
+    r + N * 2, h, pe, f12x.data(), f12y.data(), f12z.data());
   CUDA_CHECK_KERNEL
   find_force_tersoff_step3<<<Nc, max_Na>>>(
-    N, Na, Na_sum, neighbor->NN, neighbor->NL, f12x, f12y, f12z, r, r + N, r + N * 2, h, f, f + N,
-    f + N * 2, virial);
+    N, Na, Na_sum, neighbor->NN, neighbor->NL, f12x.data(), f12y.data(), f12z.data(), r, r + N,
+    r + N * 2, h, f, f + N, f + N * 2, virial);
   CUDA_CHECK_KERNEL
 }
