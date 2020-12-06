@@ -13,15 +13,11 @@
     along with GPUGA.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 #pragma once
-
 
 class GPUGA
 {
 public:
-    GPUGA(char*);
-    ~GPUGA(void);
+  GPUGA(char*);
+  ~GPUGA(void);
 };
-
-

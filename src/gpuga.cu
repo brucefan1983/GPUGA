@@ -13,27 +13,21 @@
     along with GPUGA.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 /*----------------------------------------------------------------------------80
 The driver class for GPUGA
 ------------------------------------------------------------------------------*/
 
-
-#include "gpuga.cuh"
 #include "fitness.cuh"
 #include "ga.cuh"
-
+#include "gpuga.cuh"
 
 GPUGA::GPUGA(char* input_dir)
 {
-    Fitness fitness(input_dir);
-    GA ga(input_dir, &fitness);
+  Fitness fitness(input_dir);
+  GA ga(input_dir, &fitness);
 }
-
 
 GPUGA::~GPUGA(void)
 {
-    // nothing
+  // nothing
 }
-
-

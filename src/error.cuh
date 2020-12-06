@@ -13,56 +13,44 @@
     along with GPUGA.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 #pragma once
 #include <stdio.h>
 
+#define MY_MALLOC(p, t, n)                                                                         \
+  p = (t*)malloc(sizeof(t) * (n));                                                                 \
+  if (p == NULL) {                                                                                 \
+    printf("Failed to allocate!\n");                                                               \
+    exit(EXIT_FAILURE);                                                                            \
+  }
 
-#define MY_MALLOC(p, t, n) p = (t *) malloc(sizeof(t) * (n));                  \
-                           if(p == NULL)                                       \
-                           {                                                   \
-                               printf("Failed to allocate!\n");                \
-                               exit(EXIT_FAILURE);                             \
-                           }
+#define MY_FREE(p)                                                                                 \
+  if (p != NULL) {                                                                                 \
+    free(p);                                                                                       \
+    p = NULL;                                                                                      \
+  } else {                                                                                         \
+    printf("Try to free NULL!\n");                                                                 \
+    exit(EXIT_FAILURE);                                                                            \
+  }
 
+#define CHECK(call)                                                                                \
+  {                                                                                                \
+    const cudaError_t error_code = call;                                                           \
+    if (error_code != cudaSuccess) {                                                               \
+      fprintf(stderr, "CUDA Error:\n");                                                            \
+      fprintf(stderr, "    File:       %s\n", __FILE__);                                           \
+      fprintf(stderr, "    Line:       %d\n", __LINE__);                                           \
+      fprintf(stderr, "    Error code: %d\n", error_code);                                         \
+      fprintf(stderr, "    Error text: %s\n", cudaGetErrorString(error_code));                     \
+      exit(1);                                                                                     \
+    }                                                                                              \
+  }
 
-#define MY_FREE(p) if(p != NULL)                                               \
-                   {                                                           \
-                       free(p);                                                \
-                       p = NULL;                                               \
-                   }                                                           \
-                   else                                                        \
-                   {                                                           \
-                       printf("Try to free NULL!\n");                          \
-                       exit(EXIT_FAILURE);                                     \
-                   }
+#define CUDA_CHECK_KERNEL                                                                          \
+  {                                                                                                \
+    CHECK(cudaGetLastError())                                                                      \
+  }
 
-
-#define CHECK(call)                                                            \
-{                                                                              \
-    const cudaError_t error_code = call;                                       \
-    if (error_code != cudaSuccess)                                             \
-    {                                                                          \
-        fprintf(stderr, "CUDA Error:\n");                                      \
-        fprintf(stderr, "    File:       %s\n", __FILE__);                     \
-        fprintf(stderr, "    Line:       %d\n", __LINE__);                     \
-        fprintf(stderr, "    Error code: %d\n", error_code);                   \
-        fprintf(stderr, "    Error text: %s\n",                                \
-            cudaGetErrorString(error_code));                                   \
-        exit(1);                                                               \
-    }                                                                          \
-}
-
-
-#define CUDA_CHECK_KERNEL                                                      \
-{                                                                              \
-    CHECK(cudaGetLastError())                                                  \
-}
-
-
-void print_error (const char *str);
+void print_error(const char* str);
 void print_line_1(void);
 void print_line_2(void);
-FILE* my_fopen(const char *filename, const char *mode);
-
-
+FILE* my_fopen(const char* filename, const char* mode);

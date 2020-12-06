@@ -13,32 +13,23 @@
     along with GPUGA.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 #pragma once
 class Neighbor;
 
-
-struct Pot_Para
-{
-    float ters[13];
+struct Pot_Para {
+  float ters[13];
 };
 
 class Potential
 {
 public:
-    void initialize(int, int);
-    ~Potential(void);
-    void update_potential(float*);
-    void find_force
-    (
-        int, int, int*, int*, int, int*, float*, Neighbor*,
-        float*, float*, float*, float*
-    );
+  void initialize(int, int);
+  ~Potential(void);
+  void update_potential(float*);
+  void
+  find_force(int, int, int*, int*, int, int*, float*, Neighbor*, float*, float*, float*, float*);
 
 private:
-    float *b, *bp, *f12x, *f12y, *f12z;
-    Pot_Para pot_para;
+  float *b, *bp, *f12x, *f12y, *f12z;
+  Pot_Para pot_para;
 };
-
-
-
