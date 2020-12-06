@@ -14,8 +14,8 @@
 */
 
 #pragma once
+#include "minimal_tersoff.cuh"
 #include "neighbor.cuh"
-#include "potential.cuh"
 #include <stdio.h>
 
 struct Weight {

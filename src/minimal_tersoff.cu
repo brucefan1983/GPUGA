@@ -20,8 +20,8 @@ Calculate force, energy, and virial
 #include "error.cuh"
 #include "gpu_vector.cuh"
 #include "mic.cuh"
+#include "minimal_tersoff.cuh"
 #include "neighbor.cuh"
-#include "potential.cuh"
 
 const float PI = 3.141592653589793;
 
