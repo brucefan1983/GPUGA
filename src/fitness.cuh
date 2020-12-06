@@ -73,6 +73,6 @@ protected:
 
   // other classes
   Neighbor neighbor;
-  Potential potential;
+  Minimal_Tersoff potential;
   Weight weight;
 };

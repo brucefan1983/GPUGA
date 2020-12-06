@@ -18,6 +18,7 @@ Calculate force, energy, and virial
 ------------------------------------------------------------------------------*/
 
 #include "error.cuh"
+#include "gpu_vector.cuh"
 #include "mic.cuh"
 #include "neighbor.cuh"
 #include "potential.cuh"
@@ -37,7 +38,7 @@ const int R2 = 8;
 const int PI_FACTOR = 9;
 const int MINUS_HALF_OVER_N = 10;
 
-void Potential::initialize(int N, int MAX_ATOM_NUMBER)
+void Minimal_Tersoff::initialize(int N, int MAX_ATOM_NUMBER)
 {
   b.resize(N * MAX_ATOM_NUMBER);
   bp.resize(N * MAX_ATOM_NUMBER);
@@ -46,7 +47,7 @@ void Potential::initialize(int N, int MAX_ATOM_NUMBER)
   f12z.resize(N * MAX_ATOM_NUMBER);
 }
 
-void Potential::update_potential(float* potential_parameters)
+void Minimal_Tersoff::update_potential(float* potential_parameters)
 {
   pot_para.ters[D0] = potential_parameters[0];
   pot_para.ters[A] = potential_parameters[1];
@@ -128,7 +129,7 @@ static __global__ void find_force_tersoff_step1(
   int* g_neighbor_number,
   int* g_neighbor_list,
   int* g_type,
-  Pot_Para pot_para,
+  Minimal_Tersoff::Pot_Para pot_para,
   const float* __restrict__ g_x,
   const float* __restrict__ g_y,
   const float* __restrict__ g_z,
@@ -190,7 +191,7 @@ static __global__ void find_force_tersoff_step2(
   int* g_neighbor_number,
   int* g_neighbor_list,
   int* g_type,
-  Pot_Para pot_para,
+  Minimal_Tersoff::Pot_Para pot_para,
   const float* __restrict__ g_b,
   const float* __restrict__ g_bp,
   const float* __restrict__ g_x,
@@ -379,7 +380,7 @@ static __global__ void find_force_tersoff_step3(
   }
 }
 
-void Potential::find_force(
+void Minimal_Tersoff::find_force(
   int Nc,
   int N,
   int* Na,

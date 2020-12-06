@@ -17,13 +17,13 @@
 #include "gpu_vector.cuh"
 class Neighbor;
 
-struct Pot_Para {
-  float ters[13];
-};
-
-class Potential
+class Minimal_Tersoff
 {
 public:
+  struct Pot_Para {
+    float ters[11];
+  };
+
   void initialize(int, int);
   void update_potential(float*);
   void
