@@ -7,7 +7,7 @@ Graphics Processing Units Genetic Algorithm
 
 ## Prerequisites
 * You need to have a GPU card with compute capability no less than 3.5 and a `CUDA` toolkit which supports your GPU card installed.
-* Work in both Windows and Linux.
+* Works in both Windows and Linux.
 
 ## Compile GPUGA
 * Go to the `src` directory and type `make`. When the compilation finishes, an executable named `gpuga` will be generated in the `src` directory. 
