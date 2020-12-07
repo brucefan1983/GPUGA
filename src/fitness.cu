@@ -19,37 +19,20 @@ Get the fitness
 
 #include "error.cuh"
 #include "fitness.cuh"
+#include "gpu_vector.cuh"
 #include "minimal_tersoff.cuh"
 #include "neighbor.cuh"
 #include "read_file.cuh"
+#include <vector>
 
 Fitness::Fitness(char* input_dir)
 {
   read_potential(input_dir);
   read_train_in(input_dir);
-  neighbor.compute(Nc, N, max_Na, Na, Na_sum, r, h);
+  neighbor.compute(Nc, N, max_Na, Na.data(), Na_sum.data(), r.data(), h.data());
   potential->initialize(N, max_Na);
-  MY_MALLOC(error_cpu, float, Nc);
-  CHECK(cudaMalloc((void**)&error_gpu, sizeof(float) * Nc));
-}
-
-Fitness::~Fitness(void)
-{
-  CHECK(cudaFree(h));
-  CHECK(cudaFree(pe_ref));
-  CHECK(cudaFree(virial_ref));
-  cudaFree(Na);
-  cudaFree(Na_sum);
-  cudaFree(type);
-  cudaFree(r);
-  cudaFree(force_ref);
-  cudaFree(pe);
-  cudaFree(virial);
-  cudaFree(force);
-  CHECK(cudaFree(error_gpu));
-  MY_FREE(error_cpu);
-  MY_FREE(parameters_min);
-  MY_FREE(parameters_max);
+  error_cpu.resize(Nc);
+  error_gpu.resize(Nc);
 }
 
 static void get_inverse(float* cpu_h)
@@ -84,19 +67,19 @@ void Fitness::read_train_in(char* input_dir)
 
   // get Nc and Nc_force
   read_Nc(fid);
-  CHECK(cudaMallocManaged((void**)&h, sizeof(float) * Nc * 18));
-  CHECK(cudaMallocManaged((void**)&pe_ref, sizeof(float) * Nc));
-  CHECK(cudaMallocManaged((void**)&virial_ref, sizeof(float) * Nc * 6));
-  CHECK(cudaMallocManaged((void**)&Na, sizeof(int) * Nc));
-  CHECK(cudaMallocManaged((void**)&Na_sum, sizeof(int) * Nc));
+  h.resize(Nc * 18, Memory_Type::managed);
+  pe_ref.resize(Nc, Memory_Type::managed);
+  virial_ref.resize(Nc * 6, Memory_Type::managed);
+  Na.resize(Nc, Memory_Type::managed);
+  Na_sum.resize(Nc, Memory_Type::managed);
 
   read_Na(fid);
-  CHECK(cudaMallocManaged((void**)&type, sizeof(int) * N));
-  CHECK(cudaMallocManaged((void**)&r, sizeof(float) * N * 3));
-  CHECK(cudaMallocManaged((void**)&force, sizeof(float) * N * 3));
-  CHECK(cudaMallocManaged((void**)&force_ref, sizeof(float) * N * 3));
-  CHECK(cudaMallocManaged((void**)&pe, sizeof(float) * N));
-  CHECK(cudaMallocManaged((void**)&virial, sizeof(float) * N * 6));
+  type.resize(N, Memory_Type::managed);
+  r.resize(N * 3, Memory_Type::managed);
+  force.resize(N * 3, Memory_Type::managed);
+  force_ref.resize(N * 3, Memory_Type::managed);
+  pe.resize(N, Memory_Type::managed);
+  virial.resize(N * 6, Memory_Type::managed);
 
   float energy_minimum = 0.0;
   potential_square_sum = 0.0;
@@ -137,7 +120,7 @@ void Fitness::read_train_in(char* input_dir)
     h[5 + 18 * n] = h_tmp[7];
     h[8 + 18 * n] = h_tmp[8];
 
-    get_inverse(h + 18 * n);
+    get_inverse(h.data() + 18 * n);
 
     // type, position, force
     for (int k = 0; k < Na[n]; ++k) {
@@ -260,8 +243,9 @@ void Fitness::read_potential(char* input_dir)
     print_error("unsupported potential type.\n");
   }
 
-  MY_MALLOC(parameters_min, float, number_of_variables);
-  MY_MALLOC(parameters_max, float, number_of_variables);
+  parameters_min.resize(number_of_variables);
+  parameters_max.resize(number_of_variables);
+  parameters.resize(number_of_variables);
 
   count = fscanf(fid, "%s%f", name, &neighbor.cutoff);
   if (count != 2) {
@@ -309,9 +293,6 @@ void Fitness::read_potential(char* input_dir)
 
 void Fitness::compute(int population_size, float* population, float* fitness)
 {
-  float* parameters;
-  MY_MALLOC(parameters, float, number_of_variables);
-
   for (int n = 0; n < population_size; ++n) {
     float* individual = population + n * number_of_variables;
     for (int m = 0; m < number_of_variables; ++m) {
@@ -319,14 +300,14 @@ void Fitness::compute(int population_size, float* population, float* fitness)
       float b = parameters_max[m] - a;
       parameters[m] = a + b * individual[m];
     }
-    potential->update_potential(parameters);
-    potential->find_force(Nc, N, Na, Na_sum, max_Na, type, h, &neighbor, r, force, virial, pe);
+    potential->update_potential(parameters.data());
+    potential->find_force(
+      Nc, N, Na.data(), Na_sum.data(), max_Na, type.data(), h.data(), &neighbor, r.data(),
+      force.data(), virial.data(), pe.data());
     fitness[n] = weight.energy * get_fitness_energy();
     fitness[n] += weight.stress * get_fitness_stress();
     fitness[n] += weight.force * get_fitness_force();
   }
-
-  MY_FREE(parameters);
 }
 
 void Fitness::predict_energy_or_stress(FILE* fid, float* data, float* ref)
@@ -351,7 +332,9 @@ void Fitness::predict(char* input_dir, float* elite)
     parameters[m] = a + b * elite[m];
   }
   potential->update_potential(parameters);
-  potential->find_force(Nc, N, Na, Na_sum, max_Na, type, h, &neighbor, r, force, virial, pe);
+  potential->find_force(
+    Nc, N, Na.data(), Na_sum.data(), max_Na, type.data(), h.data(), &neighbor, r.data(),
+    force.data(), virial.data(), pe.data());
   MY_FREE(parameters);
 
   CHECK(cudaDeviceSynchronize()); // needed for CC < 6.0
@@ -371,19 +354,19 @@ void Fitness::predict(char* input_dir, float* elite)
   strcpy(file_energy, input_dir);
   strcat(file_energy, "/energy.out");
   FILE* fid_energy = my_fopen(file_energy, "w");
-  predict_energy_or_stress(fid_energy, pe, pe_ref);
+  predict_energy_or_stress(fid_energy, pe.data(), pe_ref.data());
   fclose(fid_energy);
 
   char file_virial[200];
   strcpy(file_virial, input_dir);
   strcat(file_virial, "/virial.out");
   FILE* fid_virial = my_fopen(file_virial, "w");
-  predict_energy_or_stress(fid_virial, virial, virial_ref);
-  predict_energy_or_stress(fid_virial, virial + N, virial_ref + Nc);
-  predict_energy_or_stress(fid_virial, virial + N * 2, virial_ref + Nc * 2);
-  predict_energy_or_stress(fid_virial, virial + N * 3, virial_ref + Nc * 3);
-  predict_energy_or_stress(fid_virial, virial + N * 4, virial_ref + Nc * 4);
-  predict_energy_or_stress(fid_virial, virial + N * 5, virial_ref + Nc * 5);
+  predict_energy_or_stress(fid_virial, virial.data(), virial_ref.data());
+  predict_energy_or_stress(fid_virial, virial.data() + N, virial_ref.data() + Nc);
+  predict_energy_or_stress(fid_virial, virial.data() + N * 2, virial_ref.data() + Nc * 2);
+  predict_energy_or_stress(fid_virial, virial.data() + N * 3, virial_ref.data() + Nc * 3);
+  predict_energy_or_stress(fid_virial, virial.data() + N * 4, virial_ref.data() + Nc * 4);
+  predict_energy_or_stress(fid_virial, virial.data() + N * 5, virial_ref.data() + Nc * 5);
   fclose(fid_virial);
 }
 
@@ -435,9 +418,9 @@ static __global__ void gpu_sum_force_error(
 float Fitness::get_fitness_force(void)
 {
   gpu_sum_force_error<<<1, 512, sizeof(float) * 512>>>(
-    N_force, force, force + N, force + N * 2, force_ref, force_ref + N, force_ref + N * 2,
-    error_gpu);
-  CHECK(cudaMemcpy(error_cpu, error_gpu, sizeof(float), cudaMemcpyDeviceToHost));
+    N_force, force.data(), force.data() + N, force.data() + N * 2, force_ref.data(),
+    force_ref.data() + N, force_ref.data() + N * 2, error_gpu.data());
+  CHECK(cudaMemcpy(error_cpu.data(), error_gpu.data(), sizeof(float), cudaMemcpyDeviceToHost));
   return sqrt(error_cpu[0] / force_square_sum);
 }
 
@@ -491,9 +474,9 @@ float Fitness::get_fitness_energy(void)
 {
   int block_size = get_block_size(max_Na);
   gpu_sum_pe_error<<<Nc, block_size, sizeof(float) * block_size>>>(
-    Na, Na_sum, pe, pe_ref, error_gpu);
+    Na.data(), Na_sum.data(), pe.data(), pe_ref.data(), error_gpu.data());
   int mem = sizeof(float) * Nc;
-  CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
+  CHECK(cudaMemcpy(error_cpu.data(), error_gpu.data(), mem, cudaMemcpyDeviceToHost));
   float error_ave = 0.0;
   for (int n = Nc_force; n < Nc; ++n) {
     error_ave += error_cpu[n];
@@ -508,43 +491,43 @@ float Fitness::get_fitness_stress(void)
   int block_size = get_block_size(max_Na);
 
   gpu_sum_pe_error<<<Nc, block_size, sizeof(float) * block_size>>>(
-    Na, Na_sum, virial, virial_ref, error_gpu);
-  CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
+    Na.data(), Na_sum.data(), virial.data(), virial_ref.data(), error_gpu.data());
+  CHECK(cudaMemcpy(error_cpu.data(), error_gpu.data(), mem, cudaMemcpyDeviceToHost));
   for (int n = Nc_force; n < Nc; ++n) {
     error_ave += error_cpu[n];
   }
 
   gpu_sum_pe_error<<<Nc, block_size, sizeof(float) * block_size>>>(
-    Na, Na_sum, virial + N, virial_ref + Nc, error_gpu);
-  CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
+    Na.data(), Na_sum.data(), virial.data() + N, virial_ref.data() + Nc, error_gpu.data());
+  CHECK(cudaMemcpy(error_cpu.data(), error_gpu.data(), mem, cudaMemcpyDeviceToHost));
   for (int n = Nc_force; n < Nc; ++n) {
     error_ave += error_cpu[n];
   }
 
   gpu_sum_pe_error<<<Nc, block_size, sizeof(float) * block_size>>>(
-    Na, Na_sum, virial + N * 2, virial_ref + Nc * 2, error_gpu);
-  CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
+    Na.data(), Na_sum.data(), virial.data() + N * 2, virial_ref.data() + Nc * 2, error_gpu.data());
+  CHECK(cudaMemcpy(error_cpu.data(), error_gpu.data(), mem, cudaMemcpyDeviceToHost));
   for (int n = Nc_force; n < Nc; ++n) {
     error_ave += error_cpu[n];
   }
 
   gpu_sum_pe_error<<<Nc, block_size, sizeof(float) * block_size>>>(
-    Na, Na_sum, virial + N * 3, virial_ref + Nc * 3, error_gpu);
-  CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
+    Na.data(), Na_sum.data(), virial.data() + N * 3, virial_ref.data() + Nc * 3, error_gpu.data());
+  CHECK(cudaMemcpy(error_cpu.data(), error_gpu.data(), mem, cudaMemcpyDeviceToHost));
   for (int n = Nc_force; n < Nc; ++n) {
     error_ave += error_cpu[n];
   }
 
   gpu_sum_pe_error<<<Nc, block_size, sizeof(float) * block_size>>>(
-    Na, Na_sum, virial + N * 4, virial_ref + Nc * 4, error_gpu);
-  CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
+    Na.data(), Na_sum.data(), virial.data() + N * 4, virial_ref.data() + Nc * 4, error_gpu.data());
+  CHECK(cudaMemcpy(error_cpu.data(), error_gpu.data(), mem, cudaMemcpyDeviceToHost));
   for (int n = Nc_force; n < Nc; ++n) {
     error_ave += error_cpu[n];
   }
 
   gpu_sum_pe_error<<<Nc, block_size, sizeof(float) * block_size>>>(
-    Na, Na_sum, virial + N * 5, virial_ref + Nc * 5, error_gpu);
-  CHECK(cudaMemcpy(error_cpu, error_gpu, mem, cudaMemcpyDeviceToHost));
+    Na.data(), Na_sum.data(), virial.data() + N * 5, virial_ref.data() + Nc * 5, error_gpu.data());
+  CHECK(cudaMemcpy(error_cpu.data(), error_gpu.data(), mem, cudaMemcpyDeviceToHost));
   for (int n = Nc_force; n < Nc; ++n) {
     error_ave += error_cpu[n];
   }
