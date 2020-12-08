@@ -46,6 +46,21 @@ void Minimal_Tersoff_Plus_2body::update_potential(const float* potential_paramet
   // pot_para.lj[SIGMA] = potential_parameters[10];
 }
 
+static __device__ void
+find_fr_and_frp(float d0, float a, float r0, float s, float d12, float& fr, float& frp)
+{
+
+  fr = d0 / (s - 1.0f) * exp(-sqrt(2.0f * s) * a * (d12 - r0));
+  frp = -sqrt(2.0f * s) * a * fr;
+}
+
+static __device__ void
+find_fa_and_fap(float d0, float a, float r0, float s, float d12, float& fa, float& fap)
+{
+  fa = s * d0 / (s - 1.0f) * exp(-sqrt(2.0f / s) * a * (d12 - r0));
+  fap = -sqrt(2.0f / s) * a * fa;
+}
+
 static __global__ void find_force_2body(
   int number_of_particles,
   int* Na,
@@ -59,7 +74,12 @@ static __global__ void find_force_2body(
   const float* __restrict__ g_x,
   const float* __restrict__ g_y,
   const float* __restrict__ g_z,
-  const float* __restrict__ g_box)
+  const float* __restrict__ g_box,
+  float* g_fx,
+  float* g_fy,
+  float* g_fz,
+  float* g_virial,
+  float* g_pe)
 {
   int N1 = Na_sum[blockIdx.x];
   int N2 = N1 + Na[blockIdx.x];
@@ -73,6 +93,17 @@ static __global__ void find_force_2body(
     float z1 = g_z[n1];
 
     int count = 0;
+    float pe = 0.0f;
+    float fx = 0.0f;
+    float fy = 0.0f;
+    float fz = 0.0f;
+    float virial_xx = 0.0f;
+    float virial_yy = 0.0f;
+    float virial_zz = 0.0f;
+    float virial_xy = 0.0f;
+    float virial_yz = 0.0f;
+    float virial_zx = 0.0f;
+
     for (int i1 = 0; i1 < neighbor_number; ++i1) {
       int n2 = g_neighbor_list[n1 + number_of_particles * i1];
 
@@ -80,13 +111,45 @@ static __global__ void find_force_2body(
       float y12 = g_y[n2] - y1;
       float z12 = g_z[n2] - z1;
       dev_apply_mic(h, x12, y12, z12);
-      float distance_square = x12 * x12 + y12 * y12 + z12 * z12;
+      float d12 = sqrt(x12 * x12 + y12 * y12 + z12 * z12);
 
-      if (distance_square < 3.0 * 3.0) { // TODO
+      if (d12 < 3.0) { // TODO: use R2 later (but use 3.0 for testing purpose)
         g_neighbor_list_tersoff[count++ * number_of_particles + n1] = n2;
+      } else {
+        float fa12, fap12, fr12, frp12;
+        float d0 = pot_para.ters[D0];
+        float a = pot_para.ters[A];
+        float r0 = pot_para.ters[R0];
+        float s = pot_para.ters[S];
+        find_fa_and_fap(d0, a, r0, s, d12, fa12, fap12);
+        find_fr_and_frp(d0, a, r0, s, d12, fr12, frp12);
+
+        float f12 = (frp12 - fap12) / d12;
+        fx += x12 * f12;
+        fy += y12 * f12;
+        fz += z12 * f12;
+        virial_xx -= x12 * x12 * f12 * 0.5f;
+        virial_yy -= y12 * y12 * f12 * 0.5f;
+        virial_zz -= z12 * z12 * f12 * 0.5f;
+        virial_xy -= x12 * y12 * f12 * 0.5f;
+        virial_yz -= y12 * z12 * f12 * 0.5f;
+        virial_zx -= z12 * x12 * f12 * 0.5f;
+        pe += (fr12 - fa12) * 0.5f;
       }
     }
     g_neighbor_number_tersoff[n1] = count;
+
+    /*
+    g_fx[n1] = fx;
+    g_fy[n1] = fy;
+    g_fz[n1] = fz;
+    g_virial[n1 + number_of_particles * 0] = virial_xx;
+    g_virial[n1 + number_of_particles * 1] = virial_yy;
+    g_virial[n1 + number_of_particles * 2] = virial_zz;
+    g_virial[n1 + number_of_particles * 3] = virial_xy;
+    g_virial[n1 + number_of_particles * 4] = virial_yz;
+    g_virial[n1 + number_of_particles * 5] = virial_zx;
+    g_pe[n1] = pe;*/
   }
 }
 
@@ -104,7 +167,7 @@ void Minimal_Tersoff_Plus_2body::find_force(
   GPU_Vector<float>& virial,
   GPU_Vector<float>& pe)
 {
-
+  // to be deleted (only for testing)
   f.fill(0.0);
   virial.fill(0.0);
   pe.fill(0.0);
@@ -112,7 +175,7 @@ void Minimal_Tersoff_Plus_2body::find_force(
   // 2body
   find_force_2body<<<Nc, max_Na>>>(
     N, Na, Na_sum, neighbor->NN, neighbor->NL, NN_tersoff.data(), NL_tersoff.data(), type, pot_para,
-    r, r + N, r + N * 2, h);
+    r, r + N, r + N * 2, h, f.data(), f.data() + N, f.data() + N * 2, virial.data(), pe.data());
   CUDA_CHECK_KERNEL
 
   // tersoff

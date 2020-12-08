@@ -95,7 +95,7 @@ static __device__ void find_g(float beta, float h, float cos, float& g)
 }
 
 // step 1: pre-compute all the bond-order functions and their derivatives
-__global__ void find_force_tersoff_step1(
+static __global__ void find_force_tersoff_step1(
   int number_of_particles,
   int* Na,
   int* Na_sum,
@@ -157,7 +157,7 @@ __global__ void find_force_tersoff_step1(
 }
 
 // step 2: calculate all the partial forces dU_i/dr_ij
-__global__ void find_force_tersoff_step2(
+static __global__ void find_force_tersoff_step2(
   int number_of_particles,
   int* Na,
   int* Na_sum,
@@ -264,7 +264,7 @@ __global__ void find_force_tersoff_step2(
   }
 }
 
-__global__ void find_force_tersoff_step3(
+static __global__ void find_force_tersoff_step3(
   int number_of_particles,
   int* Na,
   int* Na_sum,
