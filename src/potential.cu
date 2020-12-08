@@ -352,3 +352,37 @@ __global__ void find_force_tersoff_step3(
     g_virial[n1 + number_of_particles * 5] = s_virial_zx;
   }
 }
+
+void find_force_tersoff(
+  const Pot_Para& pot_para,
+  int Nc,
+  int N,
+  int* Na,
+  int* Na_sum,
+  int max_Na,
+  int* type,
+  float* h,
+  int* NN,
+  int* NL,
+  GPU_Vector<float>& b,
+  GPU_Vector<float>& bp,
+  GPU_Vector<float>& f12x,
+  GPU_Vector<float>& f12y,
+  GPU_Vector<float>& f12z,
+  float* r,
+  GPU_Vector<float>& f,
+  GPU_Vector<float>& virial,
+  GPU_Vector<float>& pe)
+{
+  find_force_tersoff_step1<<<Nc, max_Na>>>(
+    N, Na, Na_sum, NN, NL, type, pot_para, r, r + N, r + N * 2, h, b.data(), bp.data());
+  CUDA_CHECK_KERNEL
+  find_force_tersoff_step2<<<Nc, max_Na>>>(
+    N, Na, Na_sum, NN, NL, type, pot_para, b.data(), bp.data(), r, r + N, r + N * 2, h, pe.data(),
+    f12x.data(), f12y.data(), f12z.data());
+  CUDA_CHECK_KERNEL
+  find_force_tersoff_step3<<<Nc, max_Na>>>(
+    N, Na, Na_sum, NN, NL, f12x.data(), f12y.data(), f12z.data(), r, r + N, r + N * 2, h, f.data(),
+    f.data() + N, f.data() + N * 2, virial.data());
+  CUDA_CHECK_KERNEL
+}

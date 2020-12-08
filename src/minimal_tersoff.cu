@@ -51,16 +51,7 @@ void Minimal_Tersoff::find_force(
   GPU_Vector<float>& virial,
   GPU_Vector<float>& pe)
 {
-  find_force_tersoff_step1<<<Nc, max_Na>>>(
-    N, Na, Na_sum, neighbor->NN, neighbor->NL, type, pot_para, r, r + N, r + N * 2, h, b.data(),
-    bp.data());
-  CUDA_CHECK_KERNEL
-  find_force_tersoff_step2<<<Nc, max_Na>>>(
-    N, Na, Na_sum, neighbor->NN, neighbor->NL, type, pot_para, b.data(), bp.data(), r, r + N,
-    r + N * 2, h, pe.data(), f12x.data(), f12y.data(), f12z.data());
-  CUDA_CHECK_KERNEL
-  find_force_tersoff_step3<<<Nc, max_Na>>>(
-    N, Na, Na_sum, neighbor->NN, neighbor->NL, f12x.data(), f12y.data(), f12z.data(), r, r + N,
-    r + N * 2, h, f.data(), f.data() + N, f.data() + N * 2, virial.data());
-  CUDA_CHECK_KERNEL
+  find_force_tersoff(
+    pot_para, Nc, N, Na, Na_sum, max_Na, type, h, neighbor->NN, neighbor->NL, b, bp, f12x, f12y,
+    f12z, r, f, virial, pe);
 }

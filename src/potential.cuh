@@ -112,3 +112,24 @@ __global__ void find_force_tersoff_step3(
   float* g_fy,
   float* g_fz,
   float* g_virial);
+
+void find_force_tersoff(
+  const Pot_Para& pot_para,
+  int Nc,
+  int N,
+  int* Na,
+  int* Na_sum,
+  int max_Na,
+  int* type,
+  float* h,
+  int* NN,
+  int* NL,
+  GPU_Vector<float>& b,
+  GPU_Vector<float>& bp,
+  GPU_Vector<float>& f12x,
+  GPU_Vector<float>& f12y,
+  GPU_Vector<float>& f12z,
+  float* r,
+  GPU_Vector<float>& f,
+  GPU_Vector<float>& virial,
+  GPU_Vector<float>& pe);
