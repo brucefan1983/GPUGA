@@ -14,6 +14,7 @@
 */
 
 #pragma once
+#include "gpu_vector.cuh"
 
 class Neighbor;
 
@@ -44,7 +45,18 @@ public:
   virtual void initialize(int, int) = 0;
   virtual void update_potential(const float*) = 0;
   virtual void find_force(
-    int, int, int*, int*, int, int*, float*, Neighbor*, float*, float*, float*, float*) = 0;
+    int,
+    int,
+    int*,
+    int*,
+    int,
+    int*,
+    float*,
+    Neighbor*,
+    float*,
+    GPU_Vector<float>&,
+    GPU_Vector<float>&,
+    GPU_Vector<float>&) = 0;
 };
 
 void update_minimal_tersoff_parameters(const float* potential_parameters, Pot_Para& pot_para);

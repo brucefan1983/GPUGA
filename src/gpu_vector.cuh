@@ -163,16 +163,10 @@ public:
   // give "value" to each element
   void fill(const T value)
   {
-    if (memory_type_ == Memory_Type::global) {
-      const int block_size = 128;
-      const int grid_size = (size_ + block_size - 1) / block_size;
-      gpu_fill<<<grid_size, block_size>>>(size_, value, data_);
-      CUDA_CHECK_KERNEL
-    } else // managed (or unified) memory
-    {
-      for (int i = 0; i < size_; ++i)
-        data_[i] = value;
-    }
+    const int block_size = 128;
+    const int grid_size = (size_ + block_size - 1) / block_size;
+    gpu_fill<<<grid_size, block_size>>>(size_, value, data_);
+    CUDA_CHECK_KERNEL
   }
 
   // the [] operator

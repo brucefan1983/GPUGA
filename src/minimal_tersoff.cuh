@@ -23,8 +23,19 @@ class Minimal_Tersoff : public Potential
 public:
   void initialize(int, int);
   void update_potential(const float*);
-  void
-  find_force(int, int, int*, int*, int, int*, float*, Neighbor*, float*, float*, float*, float*);
+  void find_force(
+    int,
+    int,
+    int*,
+    int*,
+    int,
+    int*,
+    float*,
+    Neighbor*,
+    float*,
+    GPU_Vector<float>&,
+    GPU_Vector<float>&,
+    GPU_Vector<float>&);
 
 private:
   GPU_Vector<float> b, bp, f12x, f12y, f12z;

@@ -306,8 +306,8 @@ void Fitness::compute(int population_size, float* population, float* fitness)
     }
     potential->update_potential(parameters.data());
     potential->find_force(
-      Nc, N, Na.data(), Na_sum.data(), max_Na, type.data(), h.data(), &neighbor, r.data(),
-      force.data(), virial.data(), pe.data());
+      Nc, N, Na.data(), Na_sum.data(), max_Na, type.data(), h.data(), &neighbor, r.data(), force,
+      virial, pe);
     fitness[n] = weight.energy * get_fitness_energy();
     fitness[n] += weight.stress * get_fitness_stress();
     fitness[n] += weight.force * get_fitness_force();
@@ -337,8 +337,8 @@ void Fitness::predict(char* input_dir, float* elite)
   }
   potential->update_potential(parameters);
   potential->find_force(
-    Nc, N, Na.data(), Na_sum.data(), max_Na, type.data(), h.data(), &neighbor, r.data(),
-    force.data(), virial.data(), pe.data());
+    Nc, N, Na.data(), Na_sum.data(), max_Na, type.data(), h.data(), &neighbor, r.data(), force,
+    virial, pe);
   MY_FREE(parameters);
 
   CHECK(cudaDeviceSynchronize()); // needed for CC < 6.0

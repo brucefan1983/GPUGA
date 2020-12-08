@@ -100,9 +100,9 @@ void Minimal_Tersoff_Plus_2body::find_force(
   float* h,
   Neighbor* neighbor,
   float* r,
-  float* f,
-  float* virial,
-  float* pe)
+  GPU_Vector<float>& f,
+  GPU_Vector<float>& virial,
+  GPU_Vector<float>& pe)
 {
   // 2body
   find_force_2body<<<Nc, max_Na>>>(
@@ -117,10 +117,10 @@ void Minimal_Tersoff_Plus_2body::find_force(
   CUDA_CHECK_KERNEL
   find_force_tersoff_step2<<<Nc, max_Na>>>(
     N, Na, Na_sum, NN_tersoff.data(), NL_tersoff.data(), type, pot_para, b.data(), bp.data(), r,
-    r + N, r + N * 2, h, pe, f12x.data(), f12y.data(), f12z.data());
+    r + N, r + N * 2, h, pe.data(), f12x.data(), f12y.data(), f12z.data());
   CUDA_CHECK_KERNEL
   find_force_tersoff_step3<<<Nc, max_Na>>>(
     N, Na, Na_sum, NN_tersoff.data(), NL_tersoff.data(), f12x.data(), f12y.data(), f12z.data(), r,
-    r + N, r + N * 2, h, f, f + N, f + N * 2, virial);
+    r + N, r + N * 2, h, f.data(), f.data() + N, f.data() + N * 2, virial.data());
   CUDA_CHECK_KERNEL
 }
