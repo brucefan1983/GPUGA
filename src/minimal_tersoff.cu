@@ -51,6 +51,10 @@ void Minimal_Tersoff::find_force(
   GPU_Vector<float>& virial,
   GPU_Vector<float>& pe)
 {
+  f.fill(0.0);
+  virial.fill(0.0);
+  pe.fill(0.0);
+
   find_force_tersoff(
     pot_para, Nc, N, Na, Na_sum, max_Na, type, h, neighbor->NN, neighbor->NL, b, bp, f12x, f12y,
     f12z, r, f, virial, pe);

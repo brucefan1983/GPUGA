@@ -104,6 +104,11 @@ void Minimal_Tersoff_Plus_2body::find_force(
   GPU_Vector<float>& virial,
   GPU_Vector<float>& pe)
 {
+
+  f.fill(0.0);
+  virial.fill(0.0);
+  pe.fill(0.0);
+
   // 2body
   find_force_2body<<<Nc, max_Na>>>(
     N, Na, Na_sum, neighbor->NN, neighbor->NL, NN_tersoff.data(), NL_tersoff.data(), type, pot_para,
