@@ -21,10 +21,6 @@ class Neighbor;
 class Minimal_Tersoff_Plus_2body : public Potential
 {
 public:
-  struct Pot_Para {
-    float ters[11];
-  };
-
   void initialize(int, int);
   void update_potential(float*);
   void

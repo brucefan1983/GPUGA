@@ -17,6 +17,10 @@
 
 class Neighbor;
 
+struct Pot_Para {
+  float ters[11];
+};
+
 class Potential
 {
 public:
