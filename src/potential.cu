@@ -20,6 +20,21 @@ Calculate force, energy, and virial for minimal-Tersoff
 #include "mic.cuh"
 #include "potential.cuh"
 
+void update_minimal_tersoff_parameters(const float* potential_parameters, Pot_Para& pot_para)
+{
+  pot_para.ters[D0] = potential_parameters[0];
+  pot_para.ters[A] = potential_parameters[1];
+  pot_para.ters[R0] = potential_parameters[2];
+  pot_para.ters[S] = potential_parameters[3];
+  pot_para.ters[EN] = potential_parameters[4];
+  pot_para.ters[BETA] = potential_parameters[5];
+  pot_para.ters[H] = potential_parameters[6];
+  pot_para.ters[R1] = potential_parameters[7];
+  pot_para.ters[R2] = potential_parameters[8];
+  pot_para.ters[PI_FACTOR] = PI / (pot_para.ters[R2] - pot_para.ters[R1]);
+  pot_para.ters[MINUS_HALF_OVER_N] = -0.5 / pot_para.ters[EN];
+}
+
 static __device__ void
 find_fr_and_frp(float d0, float a, float r0, float s, float d12, float& fr, float& frp)
 {

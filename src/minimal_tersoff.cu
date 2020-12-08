@@ -32,19 +32,9 @@ void Minimal_Tersoff::initialize(int N, int MAX_ATOM_NUMBER)
   f12z.resize(N * MAX_ATOM_NUMBER);
 }
 
-void Minimal_Tersoff::update_potential(float* potential_parameters)
+void Minimal_Tersoff::update_potential(const float* potential_parameters)
 {
-  pot_para.ters[D0] = potential_parameters[0];
-  pot_para.ters[A] = potential_parameters[1];
-  pot_para.ters[R0] = potential_parameters[2];
-  pot_para.ters[S] = potential_parameters[3];
-  pot_para.ters[EN] = potential_parameters[4];
-  pot_para.ters[BETA] = potential_parameters[5];
-  pot_para.ters[H] = potential_parameters[6];
-  pot_para.ters[R1] = potential_parameters[7];
-  pot_para.ters[R2] = potential_parameters[8];
-  pot_para.ters[PI_FACTOR] = PI / (pot_para.ters[R2] - pot_para.ters[R1]);
-  pot_para.ters[MINUS_HALF_OVER_N] = -0.5 / pot_para.ters[EN];
+  update_minimal_tersoff_parameters(potential_parameters, pot_para);
 }
 
 void Minimal_Tersoff::find_force(

@@ -22,7 +22,7 @@ class Minimal_Tersoff : public Potential
 {
 public:
   void initialize(int, int);
-  void update_potential(float*);
+  void update_potential(const float*);
   void
   find_force(int, int, int*, int*, int, int*, float*, Neighbor*, float*, float*, float*, float*);
 

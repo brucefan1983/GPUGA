@@ -19,6 +19,7 @@ class Neighbor;
 
 struct Pot_Para {
   float ters[11];
+  float lj[2];
 };
 
 const float PI = 3.141592653589793;
@@ -41,10 +42,12 @@ class Potential
 public:
   virtual ~Potential() = default;
   virtual void initialize(int, int) = 0;
-  virtual void update_potential(float*) = 0;
+  virtual void update_potential(const float*) = 0;
   virtual void find_force(
     int, int, int*, int*, int, int*, float*, Neighbor*, float*, float*, float*, float*) = 0;
 };
+
+void update_minimal_tersoff_parameters(const float* potential_parameters, Pot_Para& pot_para);
 
 __global__ void find_force_tersoff_step1(
   int number_of_particles,

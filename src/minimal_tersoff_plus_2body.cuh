@@ -22,11 +22,12 @@ class Minimal_Tersoff_Plus_2body : public Potential
 {
 public:
   void initialize(int, int);
-  void update_potential(float*);
+  void update_potential(const float*);
   void
   find_force(int, int, int*, int*, int, int*, float*, Neighbor*, float*, float*, float*, float*);
 
 private:
   GPU_Vector<float> b, bp, f12x, f12y, f12z;
+  GPU_Vector<int> NN_tersoff, NL_tersoff;
   Pot_Para pot_para;
 };

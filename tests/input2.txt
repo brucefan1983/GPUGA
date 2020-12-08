@@ -1,0 +1,2 @@
+1
+tests/si_diamond_long
