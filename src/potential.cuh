@@ -21,6 +21,21 @@ struct Pot_Para {
   float ters[11];
 };
 
+const float PI = 3.141592653589793;
+
+// Easy labels for indexing
+const int D0 = 0;
+const int A = 1;
+const int R0 = 2;
+const int S = 3;
+const int EN = 4;
+const int BETA = 5;
+const int H = 6;
+const int R1 = 7;
+const int R2 = 8;
+const int PI_FACTOR = 9;
+const int MINUS_HALF_OVER_N = 10;
+
 class Potential
 {
 public:
@@ -30,3 +45,55 @@ public:
   virtual void find_force(
     int, int, int*, int*, int, int*, float*, Neighbor*, float*, float*, float*, float*) = 0;
 };
+
+__global__ void find_force_tersoff_step1(
+  int number_of_particles,
+  int* Na,
+  int* Na_sum,
+  int* g_neighbor_number,
+  int* g_neighbor_list,
+  int* g_type,
+  Pot_Para pot_para,
+  const float* __restrict__ g_x,
+  const float* __restrict__ g_y,
+  const float* __restrict__ g_z,
+  const float* __restrict__ g_box,
+  float* g_b,
+  float* g_bp);
+
+__global__ void find_force_tersoff_step2(
+  int number_of_particles,
+  int* Na,
+  int* Na_sum,
+  int* g_neighbor_number,
+  int* g_neighbor_list,
+  int* g_type,
+  Pot_Para pot_para,
+  const float* __restrict__ g_b,
+  const float* __restrict__ g_bp,
+  const float* __restrict__ g_x,
+  const float* __restrict__ g_y,
+  const float* __restrict__ g_z,
+  const float* __restrict__ g_box,
+  float* g_potential,
+  float* g_f12x,
+  float* g_f12y,
+  float* g_f12z);
+
+__global__ void find_force_tersoff_step3(
+  int number_of_particles,
+  int* Na,
+  int* Na_sum,
+  int* g_neighbor_number,
+  int* g_neighbor_list,
+  const float* __restrict__ g_f12x,
+  const float* __restrict__ g_f12y,
+  const float* __restrict__ g_f12z,
+  const float* __restrict__ g_x,
+  const float* __restrict__ g_y,
+  const float* __restrict__ g_z,
+  const float* __restrict__ g_box,
+  float* g_fx,
+  float* g_fy,
+  float* g_fz,
+  float* g_virial);
