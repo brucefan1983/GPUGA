@@ -20,7 +20,6 @@ class Neighbor;
 
 struct Pot_Para {
   float ters[11];
-  float lj[2];
 };
 
 const float PI = 3.141592653589793;

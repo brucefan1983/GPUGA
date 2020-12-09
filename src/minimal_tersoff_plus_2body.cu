@@ -23,9 +23,6 @@ Calculate force, energy, and virial for minimal-Tersoff + two-body
 #include "minimal_tersoff_plus_2body.cuh"
 #include "neighbor.cuh"
 
-const int EPSILON = 0;
-const int SIGMA = 1;
-
 void Minimal_Tersoff_Plus_2body::initialize(int N, int MAX_ATOM_NUMBER)
 {
   b.resize(N * MAX_ATOM_NUMBER);
@@ -113,7 +110,7 @@ static __global__ void find_force_2body(
       dev_apply_mic(h, x12, y12, z12);
       float d12 = sqrt(x12 * x12 + y12 * y12 + z12 * z12);
 
-      if (d12 < 3.0) { // TODO: use R2 later (but use 3.0 for testing purpose)
+      if (d12 < pot_para.ters[R1]) {
         g_neighbor_list_tersoff[count++ * number_of_particles + n1] = n2;
       } else {
         float fa12, fap12, fr12, frp12;
@@ -139,8 +136,7 @@ static __global__ void find_force_2body(
     }
     g_neighbor_number_tersoff[n1] = count;
 
-    /*
-    g_fx[n1] = fx;
+    /*g_fx[n1] = fx;
     g_fy[n1] = fy;
     g_fz[n1] = fz;
     g_virial[n1 + number_of_particles * 0] = virial_xx;
