@@ -4,7 +4,7 @@
     Compile:
         g++ -O3 expand222.cpp
     Run:
-        ./a.out < input.txt
+        ./a.out
     Author:
         Zheyong Fan <brucenju(at)gmail.com>
 */
