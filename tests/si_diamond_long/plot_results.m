@@ -9,7 +9,7 @@ load virial.out;
 load force.out;
 
 % normalized by the number of atoms
-num_atoms=64; % I used 64 atoms in all the deformed configurations
+num_atoms=64*8; % I used 64 atoms in all the deformed configurations
 energy=energy/num_atoms; % eV/atom
 virial=virial/num_atoms; % eV/atom
 
