@@ -264,7 +264,7 @@ void Fitness::read_potential(char* input_dir)
         number_of_variables = 10;
         printf
         (
-            "Use one-element mini-Tersoff potential with %d parameters.\n",
+            "Use one-element lattice-inv potential with %d parameters.\n",
             number_of_variables
         );
     }
@@ -273,7 +273,7 @@ void Fitness::read_potential(char* input_dir)
         number_of_variables = 37;  //no LK
         printf
         (
-            "Use two-element mini-Tersoff potential with %d parameters.\n",
+            "Use two-element lattice-inv potential with %d parameters.\n",
             number_of_variables
         );
     }
