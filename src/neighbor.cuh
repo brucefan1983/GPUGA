@@ -13,13 +13,18 @@
     along with GPUGA.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+
 #pragma once
+
 
 class Neighbor
 {
 public:
-  int *NN, *NL;
-  ~Neighbor(void);
-  void compute(int, int, int, int*, int*, float*, float*);
-  float cutoff = 0;
+    int *NN, *NL, *NN_global, *NL_global;
+    ~Neighbor(void);
+    void compute(int, int, int, int*, int*, float*, float*);
+    float cutoff = 0;
+	float cutoff_local = 0;
 };
+
+

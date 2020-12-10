@@ -7,22 +7,23 @@ Graphics Processing Units Genetic Algorithm
 
 ## Prerequisites
 * You need to have a GPU card with compute capability no less than 3.5 and a `CUDA` toolkit which supports your GPU card installed.
-* Works in both Windows and Linux.
+* I have only tested the code in linux operating system.
 
 ## Compile GPUGA
 * Go to the `src` directory and type `make`. When the compilation finishes, an executable named `gpuga` will be generated in the `src` directory. 
 
 ## Run GPUGA
 * To run the provided example, go to the directory where you can see `src` and type `src/gpuga < examples/input.txt`
-* The example corresponds to the case study for diamond silicon in the paper below.
+* The example corresponds to the case study for diamond silicon in the preprint below.
 
 ## Citation
 If you use `GPUGA` in your published work, we kindly ask you to cite the following paper which describes the central algorithms used in `GPUGA`:
-* Zheyong Fan, Yanzhou Wang, Xiaokun Gu, Ping Qian, Yanjing Su, and Tapio Ala-Nissila,
-[A minimal Tersoff potential for diamond silicon with improved descriptions of elastic and phonon transport properties](https://doi.org/10.1088/1361-648X/ab5c5f),
-J. Phys.: Condens. Matter **32**, 135901 (2020).
+* Zheyong Fan, Yanzhou Wang, Xiaokun Gu, Ping Qian, Yanjing Su, Tapio Ala-Nissila, A minimal Tersoff potential for diamond silicon with improved descriptions of elastic and phonon transport properties, https://arxiv.org/abs/1909.11474
+Accepted to JPCM: https://iopscience.iop.org/article/10.1088/1361-648X/ab5c5f
 
 ## Author:
 * Zheyong Fan (Bohai University and Aalto University)
   * brucenju(at)gmail.com
+  * zheyong.fan(at)aalto.fi
+  * zheyongfan(at)163.com
   

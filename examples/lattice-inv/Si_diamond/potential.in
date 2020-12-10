@@ -1,0 +1,17 @@
+potential_type 1
+cutoff         10.0
+cutoff_local   3.0
+weight_force   0.05
+weight_energy  0.15
+weight_virial  0.8
+D0             0.9 1.0
+alpha          1.27 1.29
+r0             2.93 2.94
+S              2 2
+n              1 1
+beta           2.0 3.0
+h              -0.333333 -0.333333
+R1             10.0 10.0
+R2             11.0 11.0
+LK             0.3  0.4
+
