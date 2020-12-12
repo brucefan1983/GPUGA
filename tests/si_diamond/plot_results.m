@@ -1,12 +1,12 @@
-clear; %close all;
+clear; close all;
 
 load a.txt; % lattice constant (Angstrom)
 N=size(a,1); % number of configurations for one deformation type
 
 % get the outputs from GPUGA:
-load energy.out;
-load virial.out;
-load force.out;
+load energy1.out; energy=energy1;
+load virial1.out; virial=virial1;
+load force1.out; force=force1;
 
 % normalized by the number of atoms
 num_atoms=64; % I used 64 atoms in all the deformed configurations

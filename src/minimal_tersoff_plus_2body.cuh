@@ -22,7 +22,7 @@ class Minimal_Tersoff_Plus_2body : public Potential
 {
 public:
   void initialize(int, int);
-  void update_potential(const float*);
+  void update_potential(const std::vector<float>&);
   void find_force(
     int,
     int,

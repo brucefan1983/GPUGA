@@ -20,17 +20,13 @@ Calculate force, energy, and virial for minimal-Tersoff
 #include "mic.cuh"
 #include "potential.cuh"
 
-void update_minimal_tersoff_parameters(const float* potential_parameters, Pot_Para& pot_para)
+void update_minimal_tersoff_parameters(
+  const std::vector<float>& potential_parameters, Pot_Para& pot_para)
 {
-  pot_para.ters[D0] = potential_parameters[0];
-  pot_para.ters[A] = potential_parameters[1];
-  pot_para.ters[R0] = potential_parameters[2];
-  pot_para.ters[S] = potential_parameters[3];
-  pot_para.ters[EN] = potential_parameters[4];
-  pot_para.ters[BETA] = potential_parameters[5];
-  pot_para.ters[H] = potential_parameters[6];
-  pot_para.ters[R1] = potential_parameters[7];
-  pot_para.ters[R2] = potential_parameters[8];
+  for (int i = 0; i < potential_parameters.size(); ++i)
+    pot_para.ters[i] = potential_parameters[i];
+  if (potential_parameters.size() < 10)
+    pot_para.ters[GAMMA] = 1.0f;
   pot_para.ters[PI_FACTOR] = PI / (pot_para.ters[R2] - pot_para.ters[R1]);
   pot_para.ters[MINUS_HALF_OVER_N] = -0.5 / pot_para.ters[EN];
 }
@@ -150,8 +146,15 @@ static __global__ void find_force_tersoff_step1(
       float bzn, b_ijj;
       bzn = pow(zeta, pot_para.ters[EN]);
       b_ijj = pow(1.0f + bzn, pot_para.ters[MINUS_HALF_OVER_N]);
-      g_b[i1 * number_of_particles + n1] = b_ijj;
-      g_bp[i1 * number_of_particles + n1] = -b_ijj * bzn * 0.5f / ((1.0f + bzn) * zeta);
+
+      if (zeta < 1.0e-16) // avoid division by 0
+      {
+        g_b[i1 * number_of_particles + n1] = 1.0;
+        g_bp[i1 * number_of_particles + n1] = 0.0;
+      } else {
+        g_b[i1 * number_of_particles + n1] = b_ijj;
+        g_bp[i1 * number_of_particles + n1] = -b_ijj * bzn * 0.5f / ((1.0f + bzn) * zeta);
+      }
     }
   }
 }
@@ -270,6 +273,7 @@ static __global__ void find_force_tersoff_step3(
   int* Na_sum,
   int* g_neighbor_number,
   int* g_neighbor_list,
+  Pot_Para pot_para,
   const float* __restrict__ g_f12x,
   const float* __restrict__ g_f12y,
   const float* __restrict__ g_f12z,
@@ -340,9 +344,9 @@ static __global__ void find_force_tersoff_step3(
       s_virial_zx -= z12 * (f12x - f21x) * 0.5f;
     }
     // save force
-    g_fx[n1] += s_fx;
-    g_fy[n1] += s_fy;
-    g_fz[n1] += s_fz;
+    g_fx[n1] = s_fx * pot_para.ters[GAMMA];
+    g_fy[n1] = s_fy * pot_para.ters[GAMMA];
+    g_fz[n1] = s_fz * pot_para.ters[GAMMA];
     // save virial
     g_virial[n1] += s_virial_xx;
     g_virial[n1 + number_of_particles] += s_virial_yy;
@@ -382,7 +386,7 @@ void find_force_tersoff(
     f12x.data(), f12y.data(), f12z.data());
   CUDA_CHECK_KERNEL
   find_force_tersoff_step3<<<Nc, max_Na>>>(
-    N, Na, Na_sum, NN, NL, f12x.data(), f12y.data(), f12z.data(), r, r + N, r + N * 2, h, f.data(),
-    f.data() + N, f.data() + N * 2, virial.data());
+    N, Na, Na_sum, NN, NL, pot_para, f12x.data(), f12y.data(), f12z.data(), r, r + N, r + N * 2, h,
+    f.data(), f.data() + N, f.data() + N * 2, virial.data());
   CUDA_CHECK_KERNEL
 }

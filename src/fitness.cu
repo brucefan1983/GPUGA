@@ -304,7 +304,7 @@ void Fitness::compute(int population_size, float* population, float* fitness)
       float b = parameters_max[m] - a;
       parameters[m] = a + b * individual[m];
     }
-    potential->update_potential(parameters.data());
+    potential->update_potential(parameters);
     potential->find_force(
       Nc, N, Na.data(), Na_sum.data(), max_Na, type.data(), h.data(), &neighbor, r.data(), force,
       virial, pe);
@@ -328,8 +328,6 @@ void Fitness::predict_energy_or_stress(FILE* fid, float* data, float* ref)
 
 void Fitness::predict(char* input_dir, float* elite)
 {
-  float* parameters;
-  MY_MALLOC(parameters, float, number_of_variables);
   for (int m = 0; m < number_of_variables; ++m) {
     float a = parameters_min[m];
     float b = parameters_max[m] - a;
@@ -339,7 +337,6 @@ void Fitness::predict(char* input_dir, float* elite)
   potential->find_force(
     Nc, N, Na.data(), Na_sum.data(), max_Na, type.data(), h.data(), &neighbor, r.data(), force,
     virial, pe);
-  MY_FREE(parameters);
 
   CHECK(cudaDeviceSynchronize()); // needed for CC < 6.0
 

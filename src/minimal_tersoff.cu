@@ -32,7 +32,7 @@ void Minimal_Tersoff::initialize(int N, int MAX_ATOM_NUMBER)
   f12z.resize(N * MAX_ATOM_NUMBER);
 }
 
-void Minimal_Tersoff::update_potential(const float* potential_parameters)
+void Minimal_Tersoff::update_potential(const std::vector<float>& potential_parameters)
 {
   update_minimal_tersoff_parameters(potential_parameters, pot_para);
 }

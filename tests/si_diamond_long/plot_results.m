@@ -1,27 +1,25 @@
-clear; %close all;
+clear; close all;
 
 load a.txt; % lattice constant (Angstrom)
 N=size(a,1); % number of configurations for one deformation type
 
 % get the outputs from GPUGA:
-load energy.out;
-load virial.out;
-load force.out;
+load energy1.out; energy=energy1;
+load virial1.out; virial=virial1;
+load force1.out; force=force1;
 
 % normalized by the number of atoms
 num_atoms=512; % I used 512 atoms in all the deformed configurations
 energy=energy/num_atoms; % eV/atom
 virial=virial/num_atoms; % eV/atom
 
-% exclude a few polytypes in the figure
-M=4; % number of configurations for some polytypes
-energy=energy(M+1:end,:);
-virial_xx=virial(0*end/6+M+1:1*end/6,:);
-virial_yy=virial(1*end/6+M+1:2*end/6,:);
-virial_zz=virial(2*end/6+M+1:3*end/6,:);
-virial_xy=virial(3*end/6+M+1:4*end/6,:);
-virial_yz=virial(4*end/6+M+1:5*end/6,:);
-virial_zx=virial(5*end/6+M+1:6*end/6,:);
+% get the virial components
+virial_xx=virial(0*end/6+1:1*end/6,:);
+virial_yy=virial(1*end/6+1:2*end/6,:);
+virial_zz=virial(2*end/6+1:3*end/6,:);
+virial_xy=virial(3*end/6+1:4*end/6,:);
+virial_yz=virial(4*end/6+1:5*end/6,:);
+virial_zx=virial(5*end/6+1:6*end/6,:);
 
 figure; % Figure 2 in the paper
 

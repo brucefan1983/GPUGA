@@ -34,18 +34,9 @@ void Minimal_Tersoff_Plus_2body::initialize(int N, int MAX_ATOM_NUMBER)
   NL_tersoff.resize(N * MAX_ATOM_NUMBER);
 }
 
-void Minimal_Tersoff_Plus_2body::update_potential(const float* potential_parameters)
+void Minimal_Tersoff_Plus_2body::update_potential(const std::vector<float>& potential_parameters)
 {
   update_minimal_tersoff_parameters(potential_parameters, pot_para);
-  pot_para.dispersion = potential_parameters[9];
-}
-
-static __device__ void find_u_and_up(float c, float d12, float d12inv, float& u, float& up)
-{
-  float d12inv_2 = d12inv * d12inv;
-  float d12inv_6 = d12inv_2 * d12inv_2 * d12inv_2;
-  u = -c * d12inv_6;
-  up = -6.0f * u * d12inv;
 }
 
 static __device__ void
@@ -118,11 +109,14 @@ static __global__ void find_force_2body(
       if (d12 < pot_para.ters[R1]) {
         g_neighbor_list_tersoff[count++ * number_of_particles + n1] = n2;
       } else {
-        float d12inv = 1.0f / d12;
-        float u, up;
-        find_u_and_up(pot_para.dispersion, d12, d12inv, u, up);
-
-        float f12 = up * d12inv;
+        float d0 = pot_para.ters[D0];
+        float a = pot_para.ters[A];
+        float r0 = pot_para.ters[R0];
+        float s = pot_para.ters[S];
+        float fr, frp, fa, fap;
+        find_fr_and_frp(d0, a, r0, s, d12, fr, frp);
+        find_fa_and_fap(d0, a, r0, s, d12, fa, fap);
+        float f12 = (frp - fap) / d12;
         fx += x12 * f12;
         fy += y12 * f12;
         fz += z12 * f12;
@@ -132,14 +126,14 @@ static __global__ void find_force_2body(
         virial_xy -= x12 * y12 * f12 * 0.5f;
         virial_yz -= y12 * z12 * f12 * 0.5f;
         virial_zx -= z12 * x12 * f12 * 0.5f;
-        pe += u * 0.5f;
+        pe += (fr - fa) * 0.5f;
       }
     }
     g_neighbor_number_tersoff[n1] = count;
 
-    g_fx[n1] = fx;
-    g_fy[n1] = fy;
-    g_fz[n1] = fz;
+    g_fx[n1] = fx * pot_para.ters[GAMMA];
+    g_fy[n1] = fy * pot_para.ters[GAMMA];
+    g_fz[n1] = fz * pot_para.ters[GAMMA];
     g_virial[n1 + number_of_particles * 0] = virial_xx;
     g_virial[n1 + number_of_particles * 1] = virial_yy;
     g_virial[n1 + number_of_particles * 2] = virial_zz;
