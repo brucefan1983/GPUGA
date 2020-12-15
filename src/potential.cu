@@ -344,9 +344,9 @@ static __global__ void find_force_tersoff_step3(
       s_virial_zx -= z12 * (f12x - f21x) * 0.5f;
     }
     // save force
-    g_fx[n1] = s_fx * pot_para.ters[GAMMA];
-    g_fy[n1] = s_fy * pot_para.ters[GAMMA];
-    g_fz[n1] = s_fz * pot_para.ters[GAMMA];
+    g_fx[n1] += s_fx * pot_para.ters[GAMMA];
+    g_fy[n1] += s_fy * pot_para.ters[GAMMA];
+    g_fz[n1] += s_fz * pot_para.ters[GAMMA];
     // save virial
     g_virial[n1] += s_virial_xx;
     g_virial[n1 + number_of_particles] += s_virial_yy;
