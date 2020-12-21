@@ -18,7 +18,7 @@
 #include "potential.cuh"
 class Neighbor;
 
-class Minimal_Tersoff_Plus_2body : public Potential
+class LIMB : public Potential
 {
 public:
   void initialize(int, int);

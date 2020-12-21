@@ -20,8 +20,8 @@ Get the fitness
 #include "error.cuh"
 #include "fitness.cuh"
 #include "gpu_vector.cuh"
+#include "limb.cuh"
 #include "minimal_tersoff.cuh"
-#include "minimal_tersoff_plus_2body.cuh"
 #include "neighbor.cuh"
 #include "read_file.cuh"
 #include <vector>
@@ -239,10 +239,8 @@ void Fitness::read_potential(char* input_dir)
     potential = std::make_unique<Minimal_Tersoff>();
   } else if (potential_type == 2) {
     number_of_variables = 10;
-    printf(
-      "Use one-element long-ranged-mini-Tersoff potential with %d parameters.\n",
-      number_of_variables);
-    potential = std::make_unique<Minimal_Tersoff_Plus_2body>();
+    printf("Use one-element LIMB potential with %d parameters.\n", number_of_variables);
+    potential = std::make_unique<LIMB>();
   } else {
     print_error("unsupported potential type.\n");
   }

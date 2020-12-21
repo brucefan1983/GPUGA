@@ -14,16 +14,16 @@
 */
 
 /*----------------------------------------------------------------------------80
-Calculate force, energy, and virial for minimal-Tersoff + two-body
+Calculate force, energy, and virial for LIMB (Lattice inversion based many-body)
 ------------------------------------------------------------------------------*/
 
 #include "error.cuh"
 #include "gpu_vector.cuh"
+#include "limb.cuh"
 #include "mic.cuh"
-#include "minimal_tersoff_plus_2body.cuh"
 #include "neighbor.cuh"
 
-void Minimal_Tersoff_Plus_2body::initialize(int N, int MAX_ATOM_NUMBER)
+void LIMB::initialize(int N, int MAX_ATOM_NUMBER)
 {
   b.resize(N * MAX_ATOM_NUMBER);
   bp.resize(N * MAX_ATOM_NUMBER);
@@ -34,7 +34,7 @@ void Minimal_Tersoff_Plus_2body::initialize(int N, int MAX_ATOM_NUMBER)
   NL_tersoff.resize(N * MAX_ATOM_NUMBER);
 }
 
-void Minimal_Tersoff_Plus_2body::update_potential(const std::vector<float>& potential_parameters)
+void LIMB::update_potential(const std::vector<float>& potential_parameters)
 {
   update_minimal_tersoff_parameters(potential_parameters, pot_para);
 }
@@ -144,7 +144,7 @@ static __global__ void find_force_2body(
   }
 }
 
-void Minimal_Tersoff_Plus_2body::find_force(
+void LIMB::find_force(
   int Nc,
   int N,
   int* Na,
