@@ -23,10 +23,8 @@ Calculate force, energy, and virial for minimal-Tersoff
 void update_minimal_tersoff_parameters(
   const std::vector<float>& potential_parameters, Pot_Para& pot_para)
 {
-  for (int i = 0; i < potential_parameters.size(); ++i)
+  for (int i = 0; i < 9; ++i)
     pot_para.ters[i] = potential_parameters[i];
-  if (potential_parameters.size() < 10)
-    pot_para.ters[GAMMA] = 1.0f;
   pot_para.ters[PI_FACTOR] = PI / (pot_para.ters[R2] - pot_para.ters[R1]);
   pot_para.ters[MINUS_HALF_OVER_N] = -0.5 / pot_para.ters[EN];
 }

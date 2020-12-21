@@ -37,6 +37,7 @@ void LIMB::initialize(int N, int MAX_ATOM_NUMBER)
 void LIMB::update_potential(const std::vector<float>& potential_parameters)
 {
   update_minimal_tersoff_parameters(potential_parameters, pot_para);
+  pot_para.ters[GAMMA] = potential_parameters[GAMMA];
 }
 
 static __device__ void

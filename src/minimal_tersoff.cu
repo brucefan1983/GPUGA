@@ -35,6 +35,7 @@ void Minimal_Tersoff::initialize(int N, int MAX_ATOM_NUMBER)
 void Minimal_Tersoff::update_potential(const std::vector<float>& potential_parameters)
 {
   update_minimal_tersoff_parameters(potential_parameters, pot_para);
+  pot_para.ters[GAMMA] = 1.0f;
 }
 
 void Minimal_Tersoff::find_force(
