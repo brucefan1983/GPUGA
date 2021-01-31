@@ -23,18 +23,6 @@ Calculate force, energy, and virial for RI (rigid-ion) potential
 #include "neighbor.cuh"
 #include "ri.cuh"
 
-// Easy labels for indexing
-const int Q0 = 0;
-const int A00 = 1;
-const int B00 = 2;
-const int C00 = 3;
-const int A11 = 4;
-const int B11 = 5;
-const int C11 = 6;
-const int A01 = 7;
-const int B01 = 8;
-const int C01 = 9;
-
 #define RI_ALPHA 0.2f
 #define RI_ALPHA_SQ 0.04f
 #define RI_PI_FACTOR 0.225675833419103f // ALPHA * 2 / SQRT(PI)
@@ -47,27 +35,28 @@ void RI::initialize(int N, int MAX_ATOM_NUMBER)
 
 void RI::update_potential(const std::vector<float>& potential_parameters)
 {
-  float q0 = potential_parameters[Q0];
-  ri_para.cutoff = 10.0f;
+  float q0 = potential_parameters[0];
+  ri_para.a[0] = potential_parameters[1];
+  ri_para.a[1] = potential_parameters[2];
+  ri_para.a[2] = potential_parameters[3];
+  ri_para.b[0] = 1.0f / potential_parameters[4]; // from rho to b
+  ri_para.b[1] = 1.0f / potential_parameters[5]; // from rho to b
+  ri_para.b[2] = 1.0f / potential_parameters[6]; // from rho to b
+  ri_para.c[0] = potential_parameters[7];
+  ri_para.c[1] = potential_parameters[8];
+  ri_para.c[2] = potential_parameters[9];
+  ri_para.cutoff = potential_parameters[10];
+
   ri_para.qq[0] = q0 * q0 * K_C;
   ri_para.qq[1] = -2.0f * q0 * q0 * K_C;
   ri_para.qq[2] = 4.0f * q0 * q0 * K_C;
-  ri_para.a[0] = potential_parameters[A00];
-  ri_para.a[1] = potential_parameters[A01];
-  ri_para.a[2] = potential_parameters[A11];
-  ri_para.b[0] = 1.0f / potential_parameters[B00]; // from rho to b
-  ri_para.b[1] = 1.0f / potential_parameters[B01]; // from rho to b
-  ri_para.b[2] = 1.0f / potential_parameters[B11]; // from rho to b
-  ri_para.c[0] = potential_parameters[C00];
-  ri_para.c[1] = potential_parameters[C01];
-  ri_para.c[2] = potential_parameters[C11];
   ri_para.v_rc = erfc(RI_ALPHA * ri_para.cutoff) / ri_para.cutoff;
   ri_para.dv_rc = -erfc(RI_ALPHA * ri_para.cutoff) / (ri_para.cutoff * ri_para.cutoff);
   ri_para.dv_rc -=
     RI_PI_FACTOR * exp(-RI_ALPHA_SQ * ri_para.cutoff * ri_para.cutoff) / ri_para.cutoff;
 }
 
-// get U_ij and (d U_ij / d r_ij) / r_ij (the RI potential)
+// get U_ij and (d U_ij / d r_ij) / r_ij
 static __device__ void find_p2_and_f2(int type12, RI_Para ri_para, float d12, float& p2, float& f2)
 {
   float d12sq = d12 * d12;

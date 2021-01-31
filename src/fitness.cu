@@ -235,7 +235,7 @@ void Fitness::read_potential(char* input_dir)
     print_error("reading error for potential.in.");
   }
   if (potential_type == 0) {
-    number_of_variables = 10;
+    number_of_variables = 11;
     printf("Use two-element RI potential with %d parameters.\n", number_of_variables);
     potential = std::make_unique<RI>();
   }
