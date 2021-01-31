@@ -238,8 +238,7 @@ void Fitness::read_potential(char* input_dir)
     number_of_variables = 11;
     printf("Use two-element RI potential with %d parameters.\n", number_of_variables);
     potential = std::make_unique<RI>();
-  }
-  if (potential_type == 1) {
+  } else if (potential_type == 1) {
     number_of_variables = 9;
     printf("Use one-element mini-Tersoff potential with %d parameters.\n", number_of_variables);
     potential = std::make_unique<Minimal_Tersoff>();
