@@ -47,9 +47,9 @@ void RI::update_potential(const std::vector<float>& potential_parameters)
   ri_para.c[2] = potential_parameters[9];
   ri_para.cutoff = potential_parameters[10];
 
-  ri_para.qq[0] = q0 * q0 * K_C;
-  ri_para.qq[1] = -2.0f * q0 * q0 * K_C;
-  ri_para.qq[2] = 4.0f * q0 * q0 * K_C;
+  ri_para.qq[0] = q0 * q0 * K_C;         // Hf-Hf
+  ri_para.qq[1] = -0.5f * q0 * q0 * K_C; // Hf-O
+  ri_para.qq[2] = 0.25f * q0 * q0 * K_C; // O-O
   ri_para.v_rc = erfc(RI_ALPHA * ri_para.cutoff) / ri_para.cutoff;
   ri_para.dv_rc = -erfc(RI_ALPHA * ri_para.cutoff) / (ri_para.cutoff * ri_para.cutoff);
   ri_para.dv_rc -=
