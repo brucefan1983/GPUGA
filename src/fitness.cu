@@ -24,6 +24,7 @@ Get the fitness
 #include "minimal_tersoff.cuh"
 #include "neighbor.cuh"
 #include "read_file.cuh"
+#include "ri.cuh"
 #include <vector>
 
 Fitness::Fitness(char* input_dir)
@@ -232,6 +233,11 @@ void Fitness::read_potential(char* input_dir)
   int count = fscanf(fid, "%s%d", name, &potential_type);
   if (count != 2) {
     print_error("reading error for potential.in.");
+  }
+  if (potential_type == 0) {
+    number_of_variables = 10;
+    printf("Use two-element RI potential with %d parameters.\n", number_of_variables);
+    potential = std::make_unique<RI>();
   }
   if (potential_type == 1) {
     number_of_variables = 9;
