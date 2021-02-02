@@ -38,6 +38,8 @@ const int R2 = 8;
 const int PI_FACTOR = 10;
 const int MINUS_HALF_OVER_N = 11;
 
+Minimal_Tersoff::Minimal_Tersoff(int num_types) { num_types_ = num_types; }
+
 void Minimal_Tersoff::initialize(int N, int MAX_ATOM_NUMBER)
 {
   b.resize(N * MAX_ATOM_NUMBER);

@@ -240,7 +240,11 @@ void Fitness::read_potential(char* input_dir)
   } else if (potential_type == 1) {
     number_of_variables = 9;
     printf("Use one-element mini-Tersoff potential with %d parameters.\n", number_of_variables);
-    potential = std::make_unique<Minimal_Tersoff>();
+    potential = std::make_unique<Minimal_Tersoff>(1);
+  } else if (potential_type == 2) {
+    number_of_variables = 9;
+    printf("Use two-element mini-Tersoff potential with %d parameters.\n", number_of_variables);
+    potential = std::make_unique<Minimal_Tersoff>(2);
   } else {
     print_error("unsupported potential type.\n");
   }

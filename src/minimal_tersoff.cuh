@@ -25,6 +25,7 @@ struct Pot_Para {
 class Minimal_Tersoff : public Potential
 {
 public:
+  Minimal_Tersoff(int num_types);
   void initialize(int, int);
   void update_potential(const std::vector<float>&);
   void find_force(
@@ -42,6 +43,7 @@ public:
     GPU_Vector<float>&);
 
 private:
+  int num_types_;
   GPU_Vector<float> b, bp, f12x, f12y, f12z;
   Pot_Para pot_para;
 };
