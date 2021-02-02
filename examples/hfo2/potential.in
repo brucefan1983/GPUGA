@@ -1,20 +1,22 @@
 potential_type 0
 cutoff         10.0
-weight_force   0.2
-weight_energy  0.4
-weight_virial  0.4
-Q0             4 4
+weight_force   0.0
+weight_energy  0.5
+weight_virial  0.5
+Q0             2.5 3
 A00            0 0
-A01            1454.6 1454.6
-A11            22764.3 22764.3
+A01            500 2000
+A11            10000 20000
 rho00          1 1
-rho01          0.350 0.350
-rho11          0.149 0.149
+rho01          0.3 0.4
+rho11          0.1 0.15
 C00            0 0
 C01            0 0
-C11            20.4 20.4
+C11            0 20
 cutoff         10 10
 
+# best solution so far:
+1000 0.428914 2.76926 0 1453.1 11558.1 1 0.30779 0.129491 0 0 12.7186 10
 
 # G. V. Lewis and C. R. A. Catlow, J. Phys. C 18, 1149 (1985). 
 Q0             4 4
@@ -27,4 +29,4 @@ rho11          0.149 0.149
 C00            0 0
 C01            0 0
 C11            20.4 20.4
-
+cutoff         10 10
