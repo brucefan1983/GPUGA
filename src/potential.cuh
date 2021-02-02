@@ -19,26 +19,6 @@
 
 class Neighbor;
 
-struct Pot_Para {
-  float ters[12];
-};
-
-const float PI = 3.141592653589793;
-
-// Easy labels for indexing
-const int D0 = 0;
-const int A = 1;
-const int R0 = 2;
-const int S = 3;
-const int EN = 4;
-const int BETA = 5;
-const int H = 6;
-const int R1 = 7;
-const int R2 = 8;
-const int GAMMA = 9;
-const int PI_FACTOR = 10;
-const int MINUS_HALF_OVER_N = 11;
-
 class Potential
 {
 public:
@@ -59,27 +39,3 @@ public:
     GPU_Vector<float>&,
     GPU_Vector<float>&) = 0;
 };
-
-void update_minimal_tersoff_parameters(
-  const std::vector<float>& potential_parameters, Pot_Para& pot_para);
-
-void find_force_tersoff(
-  const Pot_Para& pot_para,
-  int Nc,
-  int N,
-  int* Na,
-  int* Na_sum,
-  int max_Na,
-  int* type,
-  float* h,
-  int* NN,
-  int* NL,
-  GPU_Vector<float>& b,
-  GPU_Vector<float>& bp,
-  GPU_Vector<float>& f12x,
-  GPU_Vector<float>& f12y,
-  GPU_Vector<float>& f12z,
-  float* r,
-  GPU_Vector<float>& f,
-  GPU_Vector<float>& virial,
-  GPU_Vector<float>& pe);

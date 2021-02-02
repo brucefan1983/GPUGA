@@ -18,6 +18,10 @@
 #include "potential.cuh"
 class Neighbor;
 
+struct Pot_Para {
+  float ters[12];
+};
+
 class Minimal_Tersoff : public Potential
 {
 public:
