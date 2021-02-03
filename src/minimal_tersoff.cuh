@@ -19,7 +19,7 @@
 class Neighbor;
 
 struct Pot_Para {
-  float ters[12];
+  float D0[2], A[2], R0[2], S[2], EN, BETA, H, R1, R2, PI_FACTOR, MINUS_HALF_OVER_N;
 };
 
 class Minimal_Tersoff : public Potential

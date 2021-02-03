@@ -25,19 +25,6 @@ Calculate force, energy, and virial
 
 const float PI = 3.141592653589793;
 
-// Easy labels for indexing
-const int D0 = 0;
-const int A = 1;
-const int R0 = 2;
-const int S = 3;
-const int EN = 4;
-const int BETA = 5;
-const int H = 6;
-const int R1 = 7;
-const int R2 = 8;
-const int PI_FACTOR = 10;
-const int MINUS_HALF_OVER_N = 11;
-
 Minimal_Tersoff::Minimal_Tersoff(int num_types) { num_types_ = num_types; }
 
 void Minimal_Tersoff::initialize(int N, int MAX_ATOM_NUMBER)
@@ -51,10 +38,25 @@ void Minimal_Tersoff::initialize(int N, int MAX_ATOM_NUMBER)
 
 void Minimal_Tersoff::update_potential(const std::vector<float>& potential_parameters)
 {
-  for (int i = 0; i < 9; ++i)
-    pot_para.ters[i] = potential_parameters[i];
-  pot_para.ters[PI_FACTOR] = PI / (pot_para.ters[R2] - pot_para.ters[R1]);
-  pot_para.ters[MINUS_HALF_OVER_N] = -0.5 / pot_para.ters[EN];
+  pot_para.D0[0] = potential_parameters[0];
+  pot_para.A[0] = potential_parameters[1];
+  pot_para.R0[0] = potential_parameters[2];
+  pot_para.S[0] = potential_parameters[3];
+  int offset = 0;
+  if (num_types_ == 2) {
+    offset = 4;
+    pot_para.D0[1] = potential_parameters[4];
+    pot_para.A[1] = potential_parameters[5];
+    pot_para.R0[1] = potential_parameters[6];
+    pot_para.S[1] = potential_parameters[7];
+  }
+  pot_para.EN = potential_parameters[4 + offset];
+  pot_para.BETA = potential_parameters[5 + offset];
+  pot_para.H = potential_parameters[6 + offset];
+  pot_para.R1 = potential_parameters[7 + offset];
+  pot_para.R2 = potential_parameters[8 + offset];
+  pot_para.PI_FACTOR = PI / (pot_para.R2 - pot_para.R1);
+  pot_para.MINUS_HALF_OVER_N = -0.5 / pot_para.EN;
 }
 
 static __device__ void
@@ -165,13 +167,13 @@ static __global__ void find_force_tersoff_step1(
         float cos123 = (x12 * x13 + y12 * y13 + z12 * z13) / (d12 * d13);
         float fc13, g123;
 
-        find_fc(pot_para.ters[R1], pot_para.ters[R2], pot_para.ters[PI_FACTOR], d13, fc13);
-        find_g(pot_para.ters[BETA], pot_para.ters[H], cos123, g123);
+        find_fc(pot_para.R1, pot_para.R2, pot_para.PI_FACTOR, d13, fc13);
+        find_g(pot_para.BETA, pot_para.H, cos123, g123);
         zeta += fc13 * g123;
       }
       float bzn, b_ijj;
-      bzn = pow(zeta, pot_para.ters[EN]);
-      b_ijj = pow(1.0f + bzn, pot_para.ters[MINUS_HALF_OVER_N]);
+      bzn = pow(zeta, pot_para.EN);
+      b_ijj = pow(1.0f + bzn, pot_para.MINUS_HALF_OVER_N);
 
       if (zeta < 1.0e-16f) // avoid division by 0
       {
@@ -211,6 +213,7 @@ static __global__ void find_force_tersoff_step2(
   if (n1 < N2) {
     const float* __restrict__ h = g_box + 18 * blockIdx.x;
     int neighbor_number = g_neighbor_number[n1];
+    int type1 = g_type[n1];
 
     float x1 = g_x[n1];
     float y1 = g_y[n1];
@@ -219,6 +222,7 @@ static __global__ void find_force_tersoff_step2(
     for (int i1 = 0; i1 < neighbor_number; ++i1) {
       int index = i1 * number_of_particles + n1;
       int n2 = g_neighbor_list[index];
+      int type12 = type1 + g_type[n2];
 
       float x12 = g_x[n2] - x1;
       float y12 = g_y[n2] - y1;
@@ -228,13 +232,12 @@ static __global__ void find_force_tersoff_step2(
       float d12inv = 1.0f / d12;
       float fc12, fcp12, fa12, fap12, fr12, frp12;
 
-      float d0 = pot_para.ters[D0];
-      float a = pot_para.ters[A];
-      float r0 = pot_para.ters[R0];
-      float s = pot_para.ters[S];
+      float d0 = pot_para.D0[type12];
+      float a = pot_para.A[type12];
+      float r0 = pot_para.R0[type12];
+      float s = pot_para.S[type12];
 
-      find_fc_and_fcp(
-        pot_para.ters[R1], pot_para.ters[R2], pot_para.ters[PI_FACTOR], d12, fc12, fcp12);
+      find_fc_and_fcp(pot_para.R1, pot_para.R2, pot_para.PI_FACTOR, d12, fc12, fcp12);
       find_fa_and_fap(d0, a, r0, s, d12, fa12, fap12);
       find_fr_and_frp(d0, a, r0, s, d12, fr12, frp12);
 
@@ -263,14 +266,14 @@ static __global__ void find_force_tersoff_step2(
         dev_apply_mic(h, x13, y13, z13);
         float d13 = sqrt(x13 * x13 + y13 * y13 + z13 * z13);
         float fc13, fa13;
-        find_fc(pot_para.ters[R1], pot_para.ters[R2], pot_para.ters[PI_FACTOR], d13, fc13);
+        find_fc(pot_para.R1, pot_para.R2, pot_para.PI_FACTOR, d13, fc13);
         find_fa(d0, a, r0, s, d13, fa13);
         float bp13 = g_bp[index_2];
         float one_over_d12d13 = 1.0f / (d12 * d13);
         float cos123 = (x12 * x13 + y12 * y13 + z12 * z13) * one_over_d12d13;
         float cos123_over_d12d12 = cos123 * d12inv * d12inv;
         float g123, gp123;
-        find_g_and_gp(pot_para.ters[BETA], pot_para.ters[H], cos123, g123, gp123);
+        find_g_and_gp(pot_para.BETA, pot_para.H, cos123, g123, gp123);
 
         // derivatives with cosine
         float dc = -fc12 * bp12 * fa12 * fc13 * gp123 - fc12 * bp13 * fa13 * fc13 * gp123;
@@ -299,7 +302,6 @@ static __global__ void find_force_tersoff_step3(
   int* Na_sum,
   int* g_neighbor_number,
   int* g_neighbor_list,
-  Pot_Para pot_para,
   const float* __restrict__ g_f12x,
   const float* __restrict__ g_f12y,
   const float* __restrict__ g_f12z,
@@ -406,7 +408,7 @@ void Minimal_Tersoff::find_force(
     r + N * 2, h, pe.data(), f12x.data(), f12y.data(), f12z.data());
   CUDA_CHECK_KERNEL
   find_force_tersoff_step3<<<Nc, max_Na>>>(
-    N, Na, Na_sum, neighbor->NN, neighbor->NL, pot_para, f12x.data(), f12y.data(), f12z.data(), r,
-    r + N, r + N * 2, h, f.data(), f.data() + N, f.data() + N * 2, virial.data());
+    N, Na, Na_sum, neighbor->NN, neighbor->NL, f12x.data(), f12y.data(), f12z.data(), r, r + N,
+    r + N * 2, h, f.data(), f.data() + N, f.data() + N * 2, virial.data());
   CUDA_CHECK_KERNEL
 }
