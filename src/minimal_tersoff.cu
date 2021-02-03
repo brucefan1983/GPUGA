@@ -222,7 +222,7 @@ static __global__ void find_force_tersoff_step2(
     for (int i1 = 0; i1 < neighbor_number; ++i1) {
       int index = i1 * number_of_particles + n1;
       int n2 = g_neighbor_list[index];
-      int type12 = type1 + g_type[n2];
+      int type2 = g_type[n2];
 
       float x12 = g_x[n2] - x1;
       float y12 = g_y[n2] - y1;
@@ -232,14 +232,20 @@ static __global__ void find_force_tersoff_step2(
       float d12inv = 1.0f / d12;
       float fc12, fcp12, fa12, fap12, fr12, frp12;
 
-      float d0 = pot_para.D0[type12];
-      float a = pot_para.A[type12];
-      float r0 = pot_para.R0[type12];
-      float s = pot_para.S[type12];
+      float d0_12 = pot_para.D0[0];
+      float a_12 = pot_para.A[0];
+      float r0_12 = pot_para.R0[0];
+      float s_12 = pot_para.S[0];
+      if (type1 != type2) {
+        float d0_12 = pot_para.D0[1];
+        float a_12 = pot_para.A[1];
+        float r0_12 = pot_para.R0[1];
+        float s_12 = pot_para.S[1];
+      }
 
       find_fc_and_fcp(pot_para.R1, pot_para.R2, pot_para.PI_FACTOR, d12, fc12, fcp12);
-      find_fa_and_fap(d0, a, r0, s, d12, fa12, fap12);
-      find_fr_and_frp(d0, a, r0, s, d12, fr12, frp12);
+      find_fa_and_fap(d0_12, a_12, r0_12, s_12, d12, fa12, fap12);
+      find_fr_and_frp(d0_12, a_12, r0_12, s_12, d12, fr12, frp12);
 
       // (i,j) part
       float b12 = g_b[index];
@@ -259,6 +265,7 @@ static __global__ void find_force_tersoff_step2(
         if (n3 == n2) {
           continue;
         }
+        int type3 = g_type[n3];
 
         float x13 = g_x[n3] - x1;
         float y13 = g_y[n3] - y1;
@@ -267,7 +274,19 @@ static __global__ void find_force_tersoff_step2(
         float d13 = sqrt(x13 * x13 + y13 * y13 + z13 * z13);
         float fc13, fa13;
         find_fc(pot_para.R1, pot_para.R2, pot_para.PI_FACTOR, d13, fc13);
-        find_fa(d0, a, r0, s, d13, fa13);
+
+        float d0_13 = pot_para.D0[0];
+        float a_13 = pot_para.A[0];
+        float r0_13 = pot_para.R0[0];
+        float s_13 = pot_para.S[0];
+        if (type1 != type3) {
+          float d0_13 = pot_para.D0[1];
+          float a_13 = pot_para.A[1];
+          float r0_13 = pot_para.R0[1];
+          float s_13 = pot_para.S[1];
+        }
+
+        find_fa(d0_13, a_13, r0_13, s_13, d13, fa13);
         float bp13 = g_bp[index_2];
         float one_over_d12d13 = 1.0f / (d12 * d13);
         float cos123 = (x12 * x13 + y12 * y13 + z12 * z13) * one_over_d12d13;
