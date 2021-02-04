@@ -44,4 +44,6 @@ public:
 
 private:
   RI_Para ri_para;
+  GPU_Vector<float> b, bp, f12x, f12y, f12z;
+  GPU_Vector<int> NN_tersoff, NL_tersoff;
 };

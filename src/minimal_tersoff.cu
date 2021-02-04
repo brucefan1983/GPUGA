@@ -237,10 +237,10 @@ static __global__ void find_force_tersoff_step2(
       float r0_12 = pot_para.R0[0];
       float s_12 = pot_para.S[0];
       if (type1 != type2) {
-        float d0_12 = pot_para.D0[1];
-        float a_12 = pot_para.A[1];
-        float r0_12 = pot_para.R0[1];
-        float s_12 = pot_para.S[1];
+        d0_12 = pot_para.D0[1];
+        a_12 = pot_para.A[1];
+        r0_12 = pot_para.R0[1];
+        s_12 = pot_para.S[1];
       }
 
       find_fc_and_fcp(pot_para.R1, pot_para.R2, pot_para.PI_FACTOR, d12, fc12, fcp12);
@@ -280,10 +280,10 @@ static __global__ void find_force_tersoff_step2(
         float r0_13 = pot_para.R0[0];
         float s_13 = pot_para.S[0];
         if (type1 != type3) {
-          float d0_13 = pot_para.D0[1];
-          float a_13 = pot_para.A[1];
-          float r0_13 = pot_para.R0[1];
-          float s_13 = pot_para.S[1];
+          d0_13 = pot_para.D0[1];
+          a_13 = pot_para.A[1];
+          r0_13 = pot_para.R0[1];
+          s_13 = pot_para.S[1];
         }
 
         find_fa(d0_13, a_13, r0_13, s_13, d13, fa13);

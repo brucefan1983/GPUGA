@@ -31,7 +31,13 @@ const float PI = 3.141592653589793f;
 
 void RI::initialize(int N, int MAX_ATOM_NUMBER)
 {
-  // nothing
+  b.resize(N * MAX_ATOM_NUMBER);
+  bp.resize(N * MAX_ATOM_NUMBER);
+  f12x.resize(N * MAX_ATOM_NUMBER);
+  f12y.resize(N * MAX_ATOM_NUMBER);
+  f12z.resize(N * MAX_ATOM_NUMBER);
+  NN_tersoff.resize(N);
+  NL_tersoff.resize(N * MAX_ATOM_NUMBER);
 }
 
 void RI::update_potential(const std::vector<float>& potential_parameters)
@@ -106,6 +112,8 @@ static __global__ void find_force_2body(
   int* Na_sum,
   int* g_neighbor_number,
   int* g_neighbor_list,
+  int* g_neighbor_number_tersoff,
+  int* g_neighbor_list_tersoff,
   int* g_type,
   RI_Para ri_para,
   const float* __restrict__ g_x,
@@ -141,6 +149,8 @@ static __global__ void find_force_2body(
     float virial_yz = 0.0f;
     float virial_zx = 0.0f;
 
+    int count = 0;
+
     for (int i1 = 0; i1 < neighbor_number; ++i1) {
       int n2 = g_neighbor_list[n1 + number_of_particles * i1];
       int type12 = type1 + g_type[n2];
@@ -150,6 +160,10 @@ static __global__ void find_force_2body(
       float z12 = g_z[n2] - z1;
       dev_apply_mic(h, x12, y12, z12);
       float d12 = sqrt(x12 * x12 + y12 * y12 + z12 * z12);
+
+      if (d12 < ri_para.R2) {
+        g_neighbor_list_tersoff[count++ * number_of_particles + n1] = n2;
+      }
 
       float p2, f2;
       find_p2_and_f2(type12, ri_para, d12, p2, f2);
@@ -165,6 +179,8 @@ static __global__ void find_force_2body(
       virial_zx -= z12 * x12 * f2 * 0.5f;
       pe += p2 * 0.5f;
     }
+
+    g_neighbor_number_tersoff[n1] = count;
 
     g_fx[n1] = fx;
     g_fy[n1] = fy;
@@ -194,7 +210,7 @@ void RI::find_force(
   GPU_Vector<float>& pe)
 {
   find_force_2body<<<Nc, max_Na>>>(
-    N, Na, Na_sum, neighbor->NN, neighbor->NL, type, ri_para, r, r + N, r + N * 2, h, f.data(),
-    f.data() + N, f.data() + N * 2, virial.data(), pe.data());
+    N, Na, Na_sum, neighbor->NN, neighbor->NL, NN_tersoff.data(), NL_tersoff.data(), type, ri_para,
+    r, r + N, r + N * 2, h, f.data(), f.data() + N, f.data() + N * 2, virial.data(), pe.data());
   CUDA_CHECK_KERNEL
 }
