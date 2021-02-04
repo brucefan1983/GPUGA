@@ -1,0 +1,6 @@
+maximum_generation  1000
+population_size     400
+parent_number       200
+mutation_rate       0.2
+
+
