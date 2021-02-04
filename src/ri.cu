@@ -66,7 +66,7 @@ static __device__ void find_p2_and_f2(int type12, RI_Para ri_para, float d12, fl
   float d12inv7 = d12inv6 * d12inv;
   float exponential = exp(-d12 * ri_para.b[type12]); // b = 1/rho
   float erfc_r = erfc(RI_ALPHA * d12) * d12inv;
-  p2 = ri_para.a[type12] * exponential - ri_para.c[type12] * d12inv3 * d12inv3;
+  p2 = ri_para.a[type12] * exponential - ri_para.c[type12] * d12inv6;
   p2 += ri_para.qq[type12] * (erfc_r - ri_para.v_rc - ri_para.dv_rc * (d12 - ri_para.cutoff));
   f2 = 6.0f * ri_para.c[type12] * d12inv7 - ri_para.a[type12] * exponential * ri_para.b[type12];
   f2 -= ri_para.qq[type12] *
