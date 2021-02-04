@@ -20,6 +20,7 @@ class Neighbor;
 
 struct RI_Para {
   float a[3], b[3], c[3], qq[3], v_rc, dv_rc, cutoff;
+  float D0, A, R0, S, EN, BETA, H, R1, R2, PI_FACTOR, MINUS_HALF_OVER_N;
 };
 
 class RI : public Potential

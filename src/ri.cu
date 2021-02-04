@@ -23,6 +23,7 @@ Calculate force, energy, and virial for RI (rigid-ion) potential
 #include "neighbor.cuh"
 #include "ri.cuh"
 
+const float PI = 3.141592653589793f;
 #define RI_ALPHA 0.2f
 #define RI_ALPHA_SQ 0.04f
 #define RI_PI_FACTOR 0.225675833419103f // ALPHA * 2 / SQRT(PI)
@@ -53,7 +54,21 @@ void RI::update_potential(const std::vector<float>& potential_parameters)
   ri_para.b[2] = 1.0f / potential_parameters[8]; // from rho to b
   ri_para.c[2] = potential_parameters[9];
 
+  // long-range cutoff
   ri_para.cutoff = potential_parameters[10];
+
+  // Tersoff potential for Hf-O bonds
+  ri_para.D0 = potential_parameters[11];
+  ri_para.A = potential_parameters[12];
+  ri_para.R0 = potential_parameters[13];
+  ri_para.S = potential_parameters[14];
+  ri_para.EN = potential_parameters[15];
+  ri_para.BETA = potential_parameters[16];
+  ri_para.H = potential_parameters[17];
+  ri_para.R1 = potential_parameters[18];
+  ri_para.R2 = potential_parameters[19];
+  ri_para.PI_FACTOR = PI / (ri_para.R2 - ri_para.R1);
+  ri_para.MINUS_HALF_OVER_N = -0.5f / ri_para.EN;
 
   // can be generalized later:
   ri_para.qq[0] = q0 * q0 * K_C;         // Hf-Hf
