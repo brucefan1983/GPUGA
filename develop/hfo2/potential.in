@@ -3,16 +3,16 @@ cutoff         10.0
 weight_force   0.0
 weight_energy  0.5
 weight_virial  0.5
-Q0             2.5 3
+Q0             2.76926 2.76926
 A00            0 0
-A01            500 2000
-A11            10000 20000
 rho00          1 1
-rho01          0.3 0.4
-rho11          0.1 0.15
 C00            0 0
+A01            1453.1 1453.1
+rho01          0.30779 0.30779
 C01            0 0
-C11            0 20
+A11            11558.1 11558.1
+rho11          0.129491 0.129491
+C11            12.7186 12.7186
 cutoff         10 10
 
 # best solution so far:

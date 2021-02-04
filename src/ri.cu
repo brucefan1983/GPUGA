@@ -35,21 +35,32 @@ void RI::initialize(int N, int MAX_ATOM_NUMBER)
 
 void RI::update_potential(const std::vector<float>& potential_parameters)
 {
+  // charge for cation
   float q0 = potential_parameters[0];
+
+  // cation-cation
   ri_para.a[0] = potential_parameters[1];
-  ri_para.a[1] = potential_parameters[2];
-  ri_para.a[2] = potential_parameters[3];
-  ri_para.b[0] = 1.0f / potential_parameters[4]; // from rho to b
+  ri_para.b[0] = 1.0f / potential_parameters[2]; // from rho to b
+  ri_para.c[0] = potential_parameters[3];
+
+  // cation-anion
+  ri_para.a[1] = potential_parameters[4];
   ri_para.b[1] = 1.0f / potential_parameters[5]; // from rho to b
-  ri_para.b[2] = 1.0f / potential_parameters[6]; // from rho to b
-  ri_para.c[0] = potential_parameters[7];
-  ri_para.c[1] = potential_parameters[8];
+  ri_para.c[1] = potential_parameters[6];
+
+  // anion-anion
+  ri_para.a[2] = potential_parameters[7];
+  ri_para.b[2] = 1.0f / potential_parameters[8]; // from rho to b
   ri_para.c[2] = potential_parameters[9];
+
   ri_para.cutoff = potential_parameters[10];
 
+  // can be generalized later:
   ri_para.qq[0] = q0 * q0 * K_C;         // Hf-Hf
   ri_para.qq[1] = -0.5f * q0 * q0 * K_C; // Hf-O
   ri_para.qq[2] = 0.25f * q0 * q0 * K_C; // O-O
+
+  // pre-computed data for speeding up
   ri_para.v_rc = erfc(RI_ALPHA * ri_para.cutoff) / ri_para.cutoff;
   ri_para.dv_rc = -erfc(RI_ALPHA * ri_para.cutoff) / (ri_para.cutoff * ri_para.cutoff);
   ri_para.dv_rc -=
