@@ -1,4 +1,4 @@
-maximum_generation  100
+maximum_generation  1000
 population_size     200
 parent_number       100
 mutation_rate       0.2
