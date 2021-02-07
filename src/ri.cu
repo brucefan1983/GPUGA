@@ -31,55 +31,41 @@ const float PI = 3.141592653589793f;
 
 void RI::initialize(int N, int MAX_ATOM_NUMBER)
 {
-  b.resize(N * MAX_ATOM_NUMBER);
-  bp.resize(N * MAX_ATOM_NUMBER);
-  f12x.resize(N * MAX_ATOM_NUMBER);
-  f12y.resize(N * MAX_ATOM_NUMBER);
-  f12z.resize(N * MAX_ATOM_NUMBER);
-  NN_tersoff.resize(N);
-  NL_tersoff.resize(N * MAX_ATOM_NUMBER);
+  // nothing
 }
 
 void RI::update_potential(const std::vector<float>& potential_parameters)
 {
   // charge for cation
   float q0 = potential_parameters[0];
-
-  // cation-cation
-  ri_para.a[0] = potential_parameters[1];
-  ri_para.b[0] = 1.0f / potential_parameters[2]; // from rho to b
-  ri_para.c[0] = potential_parameters[3];
-
-  // cation-anion
-  ri_para.a[1] = potential_parameters[4];
-  ri_para.b[1] = 1.0f / potential_parameters[5]; // from rho to b
-  ri_para.c[1] = potential_parameters[6];
-
-  // anion-anion
-  ri_para.a[2] = potential_parameters[7];
-  ri_para.b[2] = 1.0f / potential_parameters[8]; // from rho to b
-  ri_para.c[2] = potential_parameters[9];
-
-  // long-range cutoff
-  ri_para.cutoff = potential_parameters[10];
-
-  // Tersoff potential for Hf-O bonds
-  ri_para.D0 = potential_parameters[11];
-  ri_para.A = potential_parameters[12];
-  ri_para.R0 = potential_parameters[13];
-  ri_para.S = potential_parameters[14];
-  ri_para.EN = potential_parameters[15];
-  ri_para.BETA = potential_parameters[16];
-  ri_para.H = potential_parameters[17];
-  ri_para.R1 = potential_parameters[18];
-  ri_para.R2 = potential_parameters[19];
-  ri_para.PI_FACTOR = PI / (ri_para.R2 - ri_para.R1);
-  ri_para.MINUS_HALF_OVER_N = -0.5f / ri_para.EN;
-
   // can be generalized later:
   ri_para.qq[0] = q0 * q0 * K_C;         // Hf-Hf
   ri_para.qq[1] = -0.5f * q0 * q0 * K_C; // Hf-O
   ri_para.qq[2] = 0.25f * q0 * q0 * K_C; // O-O
+
+  // cation-cation Buckingham
+  ri_para.a[0] = potential_parameters[1];
+  ri_para.b[0] = 1.0f / potential_parameters[2]; // from rho to b
+  ri_para.c[0] = potential_parameters[3];
+
+  // cation-anion Buckingham
+  ri_para.a[1] = potential_parameters[4];
+  ri_para.b[1] = 1.0f / potential_parameters[5]; // from rho to b
+  ri_para.c[1] = potential_parameters[6];
+
+  // anion-anion Buckingham
+  ri_para.a[2] = potential_parameters[7];
+  ri_para.b[2] = 1.0f / potential_parameters[8]; // from rho to b
+  ri_para.c[2] = potential_parameters[9];
+
+  // cutoff distance for all the components
+  ri_para.cutoff = potential_parameters[10];
+
+  // generalized Morse for cation-anion bonds
+  ri_para.d0 = potential_parameters[11];
+  ri_para.alpha = potential_parameters[12];
+  ri_para.r0 = potential_parameters[13];
+  ri_para.s = potential_parameters[14];
 
   // pre-computed data for speeding up
   ri_para.v_rc = erfc(RI_ALPHA * ri_para.cutoff) / ri_para.cutoff;
@@ -98,11 +84,29 @@ static __device__ void find_p2_and_f2(int type12, RI_Para ri_para, float d12, fl
   float d12inv7 = d12inv6 * d12inv;
   float exponential = exp(-d12 * ri_para.b[type12]); // b = 1/rho
   float erfc_r = erfc(RI_ALPHA * d12) * d12inv;
+
+  // Buckingham
   p2 = ri_para.a[type12] * exponential - ri_para.c[type12] * d12inv6;
-  p2 += ri_para.qq[type12] * (erfc_r - ri_para.v_rc - ri_para.dv_rc * (d12 - ri_para.cutoff));
   f2 = 6.0f * ri_para.c[type12] * d12inv7 - ri_para.a[type12] * exponential * ri_para.b[type12];
+
+  // Coulomb
+  p2 += ri_para.qq[type12] * (erfc_r - ri_para.v_rc - ri_para.dv_rc * (d12 - ri_para.cutoff));
   f2 -= ri_para.qq[type12] *
         (erfc_r * d12inv + RI_PI_FACTOR * d12inv * exp(-RI_ALPHA_SQ * d12sq) + ri_para.dv_rc);
+
+  // generalized Morse
+  if (type12 == 1) {
+    float fr = ri_para.d0 / (ri_para.s - 1.0f) *
+               exp(-sqrt(2.0f * ri_para.s) * ri_para.alpha * (d12 - ri_para.r0));
+    float frp = -sqrt(2.0f * ri_para.s) * ri_para.alpha * fr;
+    float fa = ri_para.s * ri_para.d0 / (ri_para.s - 1.0f) *
+               exp(-sqrt(2.0f / ri_para.s) * ri_para.alpha * (d12 - ri_para.r0));
+    float fap = -sqrt(2.0f / ri_para.s) * ri_para.alpha * fa;
+    p2 += fr - fa;
+    f2 += frp - fap;
+  }
+
+  // from d U_ij / d r_ij to (d U_ij / d r_ij) / r_ij
   f2 *= d12inv;
 }
 
@@ -112,8 +116,6 @@ static __global__ void find_force_2body(
   int* Na_sum,
   int* g_neighbor_number,
   int* g_neighbor_list,
-  int* g_neighbor_number_tersoff,
-  int* g_neighbor_list_tersoff,
   int* g_type,
   RI_Para ri_para,
   const float* __restrict__ g_x,
@@ -149,8 +151,6 @@ static __global__ void find_force_2body(
     float virial_yz = 0.0f;
     float virial_zx = 0.0f;
 
-    int count = 0;
-
     for (int i1 = 0; i1 < neighbor_number; ++i1) {
       int n2 = g_neighbor_list[n1 + number_of_particles * i1];
       int type12 = type1 + g_type[n2];
@@ -160,10 +160,6 @@ static __global__ void find_force_2body(
       float z12 = g_z[n2] - z1;
       dev_apply_mic(h, x12, y12, z12);
       float d12 = sqrt(x12 * x12 + y12 * y12 + z12 * z12);
-
-      if (d12 < ri_para.R2) {
-        g_neighbor_list_tersoff[count++ * number_of_particles + n1] = n2;
-      }
 
       float p2, f2;
       find_p2_and_f2(type12, ri_para, d12, p2, f2);
@@ -179,8 +175,6 @@ static __global__ void find_force_2body(
       virial_zx -= z12 * x12 * f2 * 0.5f;
       pe += p2 * 0.5f;
     }
-
-    g_neighbor_number_tersoff[n1] = count;
 
     g_fx[n1] = fx;
     g_fy[n1] = fy;
@@ -210,7 +204,7 @@ void RI::find_force(
   GPU_Vector<float>& pe)
 {
   find_force_2body<<<Nc, max_Na>>>(
-    N, Na, Na_sum, neighbor->NN, neighbor->NL, NN_tersoff.data(), NL_tersoff.data(), type, ri_para,
-    r, r + N, r + N * 2, h, f.data(), f.data() + N, f.data() + N * 2, virial.data(), pe.data());
+    N, Na, Na_sum, neighbor->NN, neighbor->NL, type, ri_para, r, r + N, r + N * 2, h, f.data(),
+    f.data() + N, f.data() + N * 2, virial.data(), pe.data());
   CUDA_CHECK_KERNEL
 }

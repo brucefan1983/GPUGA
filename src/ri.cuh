@@ -19,8 +19,9 @@
 class Neighbor;
 
 struct RI_Para {
-  float a[3], b[3], c[3], qq[3], v_rc, dv_rc, cutoff;
-  float D0, A, R0, S, EN, BETA, H, R1, R2, PI_FACTOR, MINUS_HALF_OVER_N;
+  float a[3], b[3], c[3];           // Buckingham
+  float qq[3], v_rc, dv_rc, cutoff; // Coulomb
+  float d0, alpha, r0, s;           // generalized Morse (as in Tersoff)
 };
 
 class RI : public Potential
@@ -44,6 +45,4 @@ public:
 
 private:
   RI_Para ri_para;
-  GPU_Vector<float> b, bp, f12x, f12y, f12z;
-  GPU_Vector<int> NN_tersoff, NL_tersoff;
 };

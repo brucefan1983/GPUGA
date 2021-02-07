@@ -1,41 +1,66 @@
 potential_type 0
 cutoff         10.0
-weight_force   0.0
-weight_energy  0.5
+weight_force   0.1
+weight_energy  0.4
 weight_virial  0.5
-Q0             2.76926 2.76926
+Q0             2.2 2.6
 A00            0 0
 rho00          1 1
 C00            0 0
-A01            1453.1 1453.1
-rho01          0.30779 0.30779
+A01            100 20000
+rho01          0.1 0.4
+C01            0 200
+A11            100 20000
+rho11          0.1 0.5
+C11            0 200
+cutoff         10 10
+D0             0 1
+alpha          0 3
+r0             1 3
+S              1 3
+
+
+
+# J. P. Trinastic, R. Hamdan, Y. Wu, L. Zhang, and Hai-Ping Cheng, J. Chem. Phys. 139, 154506 (2013).
+potential_type 0
+cutoff         10.0
+weight_force   0.0
+weight_energy  0.5
+weight_virial  0.5
+Q0             2.4 2.4
+A00            0 0
+rho00          1 1
+C00            0 0
+A01            12372.16 12372.16
+rho01          0.2286 0.2286
+C01            81.36 81.36
+A11            1388.77 1388.77
+rho11          0.36231 0.3623
+C11            175.00 175.00
+cutoff         10 10
+D0             0.3474 0.3474
+alpha          1.6230 1.6230
+r0             2.0480 2.0480
+S              2 2
+
+# G. V. Lewis and C. R. A. Catlow, J. Phys. C 18, 1149 (1985). 
+potential_type 0
+cutoff         10.0
+weight_force   0.0
+weight_energy  0.5
+weight_virial  0.5
+Q0             4 4
+A00            0 0
+rho00          1 1
+C00            0 0
+A01            1454.6 1454.6
+rho01          0.350 0.350
 C01            0 0
-A11            11558.1 11558.1
-rho11          0.129491 0.129491
-C11            12.7186 12.7186
+A11            22764.3 22764.3
+rho11          0.149 0.149
+C11            20.4 20.4
 cutoff         10 10
 D0             0 0
 alpha          0 0
 r0             0 0
 S              0 0
-n              0 0
-beta           0 0
-h              0 0  
-R1             0 0
-R2             0 0
-
-# best solution so far:
-1000 0.428914 2.76926 0 1453.1 11558.1 1 0.30779 0.129491 0 0 12.7186 10
-
-# G. V. Lewis and C. R. A. Catlow, J. Phys. C 18, 1149 (1985). 
-Q0             4 4
-A00            0 0
-A01            1454.6 1454.6
-A11            22764.3 22764.3
-rho00          1 1
-rho01          0.350 0.350
-rho11          0.149 0.149
-C00            0 0
-C01            0 0
-C11            20.4 20.4
-cutoff         10 10
