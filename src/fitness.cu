@@ -22,6 +22,7 @@ Get the fitness
 #include "gpu_vector.cuh"
 #include "minimal_tersoff.cuh"
 #include "neighbor.cuh"
+#include "nn2b.cuh"
 #include "read_file.cuh"
 #include "ri.cuh"
 #include <vector>
@@ -245,6 +246,16 @@ void Fitness::read_potential(char* input_dir)
     number_of_variables = 13;
     printf("Use two-element mini-Tersoff potential with %d parameters.\n", number_of_variables);
     potential = std::make_unique<Minimal_Tersoff>(2);
+  } else if (potential_type == 3) {
+    int num_neurons_per_layer = 0;
+    count = fscanf(fid, "%s%d", name, &num_neurons_per_layer);
+    if (count != 2) {
+      print_error("reading error for potential.in.");
+    }
+    printf("num_neurons_per_layer is %d.\n", num_neurons_per_layer);
+    number_of_variables = num_neurons_per_layer * 3 + 2;
+    printf("Use the NN2B potential with %d parameters.\n", number_of_variables);
+    potential = std::make_unique<NN2B>(num_neurons_per_layer);
   } else {
     print_error("unsupported potential type.\n");
   }

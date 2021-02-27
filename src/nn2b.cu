@@ -14,99 +14,55 @@
 */
 
 /*----------------------------------------------------------------------------80
-Calculate force, energy, and virial for RI (rigid-ion) potential
+NN2B: The general 2-body potential based on neural network (NN)
 ------------------------------------------------------------------------------*/
 
 #include "error.cuh"
 #include "gpu_vector.cuh"
 #include "mic.cuh"
 #include "neighbor.cuh"
-#include "ri.cuh"
+#include "nn2b.cuh"
 
-#define RI_ALPHA 0.2f
-#define RI_ALPHA_SQ 0.04f
-#define RI_PI_FACTOR 0.225675833419103f // ALPHA * 2 / SQRT(PI)
-#define K_C 14.399645f                  // 1/(4*PI*epsilon_0)
+NN2B::NN2B(int num_neurons_per_layer) { para.num_neurons_per_layer = num_neurons_per_layer; };
 
-void RI::initialize(int N, int MAX_ATOM_NUMBER)
+void NN2B::initialize(int N, int MAX_ATOM_NUMBER)
 {
   // nothing
 }
 
-void RI::update_potential(const std::vector<float>& potential_parameters)
+void NN2B::update_potential(const std::vector<float>& potential_parameters)
 {
-  // charge for cation
-  float q0 = potential_parameters[0];
-  // can be generalized later:
-  ri_para.qq[0] = q0 * q0 * K_C;         // Hf-Hf
-  ri_para.qq[1] = -0.5f * q0 * q0 * K_C; // Hf-O
-  ri_para.qq[2] = 0.25f * q0 * q0 * K_C; // O-O
-
-  // cation-cation Buckingham
-  ri_para.a[0] = potential_parameters[1];
-  ri_para.b[0] = 1.0f / potential_parameters[2]; // from rho to b
-  ri_para.c[0] = potential_parameters[3];
-
-  // cation-anion Buckingham
-  ri_para.a[1] = potential_parameters[4];
-  ri_para.b[1] = 1.0f / potential_parameters[5]; // from rho to b
-  ri_para.c[1] = potential_parameters[6];
-
-  // anion-anion Buckingham
-  ri_para.a[2] = potential_parameters[7];
-  ri_para.b[2] = 1.0f / potential_parameters[8]; // from rho to b
-  ri_para.c[2] = potential_parameters[9];
-
-  // cutoff distance for all the components
-  ri_para.cutoff = potential_parameters[10];
-
-  // generalized Morse for cation-anion bonds
-  ri_para.d0 = potential_parameters[11];
-  ri_para.alpha = potential_parameters[12];
-  ri_para.r0 = potential_parameters[13];
-  ri_para.s = potential_parameters[14];
-
-  // pre-computed data for speeding up
-  ri_para.v_rc = erfc(RI_ALPHA * ri_para.cutoff) / ri_para.cutoff;
-  ri_para.dv_rc = -erfc(RI_ALPHA * ri_para.cutoff) / (ri_para.cutoff * ri_para.cutoff);
-  ri_para.dv_rc -=
-    RI_PI_FACTOR * exp(-RI_ALPHA_SQ * ri_para.cutoff * ri_para.cutoff) / ri_para.cutoff;
+  for (int n = 0; n < para.num_neurons_per_layer; ++n) {
+    para.w0[n] = potential_parameters[n];
+    para.b0[n] = potential_parameters[n + para.num_neurons_per_layer];
+    para.w1[n] = potential_parameters[n + para.num_neurons_per_layer * 2];
+    para.b1 = potential_parameters[0 + para.num_neurons_per_layer * 3];
+    para.scaling = potential_parameters[1 + para.num_neurons_per_layer * 3];
+  }
 }
 
 // get U_ij and (d U_ij / d r_ij) / r_ij
-static __device__ void find_p2_and_f2(int type12, RI_Para ri_para, float d12, float& p2, float& f2)
+static __device__ void find_p2_and_f2(NN2B::Para para, float d12, float& p2, float& f2)
 {
-  float d12sq = d12 * d12;
-  float d12inv = 1.0f / d12;
-  float d12inv3 = d12inv * d12inv * d12inv;
-  float d12inv6 = d12inv3 * d12inv3;
-  float d12inv7 = d12inv6 * d12inv;
-  float exponential = exp(-d12 * ri_para.b[type12]); // b = 1/rho
-  float erfc_r = erfc(RI_ALPHA * d12) * d12inv;
-
-  // Buckingham
-  p2 = ri_para.a[type12] * exponential - ri_para.c[type12] * d12inv6;
-  f2 = 6.0f * ri_para.c[type12] * d12inv7 - ri_para.a[type12] * exponential * ri_para.b[type12];
-
-  // Coulomb
-  p2 += ri_para.qq[type12] * (erfc_r - ri_para.v_rc - ri_para.dv_rc * (d12 - ri_para.cutoff));
-  f2 -= ri_para.qq[type12] *
-        (erfc_r * d12inv + RI_PI_FACTOR * d12inv * exp(-RI_ALPHA_SQ * d12sq) + ri_para.dv_rc);
-
-  // generalized Morse
-  if (type12 == 1) {
-    float fr = ri_para.d0 / (ri_para.s - 1.0f) *
-               exp(-sqrt(2.0f * ri_para.s) * ri_para.alpha * (d12 - ri_para.r0));
-    float frp = -sqrt(2.0f * ri_para.s) * ri_para.alpha * fr;
-    float fa = ri_para.s * ri_para.d0 / (ri_para.s - 1.0f) *
-               exp(-sqrt(2.0f / ri_para.s) * ri_para.alpha * (d12 - ri_para.r0));
-    float fap = -sqrt(2.0f / ri_para.s) * ri_para.alpha * fa;
-    p2 += fr - fa;
-    f2 += frp - fap;
+  // from the input layer to the hidden layer
+  float x1[30] = {0.0f}; // hidden layer nuerons
+  // float y1[30] = {0.0f}; // derivatives of the hidden layer nuerons
+  for (int n = 0; n < para.num_neurons_per_layer; ++n) {
+    x1[n] = tanh(para.w0[n] * d12 - para.b0[n]);
+    // y1[n] = (1.0f - x1[n] * x1[n]) * para.w0[n];
   }
 
+  // from the hidden layer to the output layer
+  for (int n = 0; n < para.num_neurons_per_layer; ++n) {
+    p2 += para.w1[n] * x1[n];
+    // f2 += para.w1[n] * y1[n];
+    f2 += para.w1[n] * (1.0f - x1[n] * x1[n]) * para.w0[n];
+  }
+  p2 = para.scaling * (p2 - para.b1);
+  f2 *= para.scaling;
+
   // from d U_ij / d r_ij to (d U_ij / d r_ij) / r_ij
-  f2 *= d12inv;
+  f2 /= d12;
 }
 
 static __global__ void find_force_2body(
@@ -116,7 +72,7 @@ static __global__ void find_force_2body(
   int* g_neighbor_number,
   int* g_neighbor_list,
   int* g_type,
-  RI_Para ri_para,
+  NN2B::Para para,
   const float* __restrict__ g_x,
   const float* __restrict__ g_y,
   const float* __restrict__ g_z,
@@ -133,7 +89,6 @@ static __global__ void find_force_2body(
   if (n1 < N2) {
     const float* __restrict__ h = g_box + 18 * blockIdx.x;
     int neighbor_number = g_neighbor_number[n1];
-    int type1 = g_type[n1];
 
     float x1 = g_x[n1];
     float y1 = g_y[n1];
@@ -152,7 +107,6 @@ static __global__ void find_force_2body(
 
     for (int i1 = 0; i1 < neighbor_number; ++i1) {
       int n2 = g_neighbor_list[n1 + number_of_particles * i1];
-      int type12 = type1 + g_type[n2];
 
       float x12 = g_x[n2] - x1;
       float y12 = g_y[n2] - y1;
@@ -160,8 +114,8 @@ static __global__ void find_force_2body(
       dev_apply_mic(h, x12, y12, z12);
       float d12 = sqrt(x12 * x12 + y12 * y12 + z12 * z12);
 
-      float p2, f2;
-      find_p2_and_f2(type12, ri_para, d12, p2, f2);
+      float p2 = 0.0f, f2 = 0.0f;
+      find_p2_and_f2(para, d12, p2, f2);
 
       fx += x12 * f2;
       fy += y12 * f2;
@@ -188,7 +142,7 @@ static __global__ void find_force_2body(
   }
 }
 
-void RI::find_force(
+void NN2B::find_force(
   int Nc,
   int N,
   int* Na,
@@ -203,7 +157,7 @@ void RI::find_force(
   GPU_Vector<float>& pe)
 {
   find_force_2body<<<Nc, max_Na>>>(
-    N, Na, Na_sum, neighbor->NN, neighbor->NL, type, ri_para, r, r + N, r + N * 2, h, f.data(),
+    N, Na, Na_sum, neighbor->NN, neighbor->NL, type, para, r, r + N, r + N * 2, h, f.data(),
     f.data() + N, f.data() + N * 2, virial.data(), pe.data());
   CUDA_CHECK_KERNEL
 }
