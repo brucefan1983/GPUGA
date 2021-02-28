@@ -23,11 +23,14 @@ class NN2B : public Potential
 public:
   struct Para {
     int num_neurons_per_layer;
+    // from the input layer to the first hidden layer:
     float w0[30];
-    float w1[30];
     float b0[30];
+    // from the last hidden layer to the output layer:
+    float w1[30];
     float b1;
-    float scaling;
+    // global scaling
+    float scaling = 1.0f;
   };
 
   NN2B(int num_neurons_per_layer);

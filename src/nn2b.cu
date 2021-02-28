@@ -37,7 +37,6 @@ void NN2B::update_potential(const std::vector<float>& potential_parameters)
     para.b0[n] = potential_parameters[n + para.num_neurons_per_layer];
     para.w1[n] = potential_parameters[n + para.num_neurons_per_layer * 2];
     para.b1 = potential_parameters[0 + para.num_neurons_per_layer * 3];
-    para.scaling = potential_parameters[1 + para.num_neurons_per_layer * 3];
   }
 }
 

@@ -253,7 +253,7 @@ void Fitness::read_potential(char* input_dir)
       print_error("reading error for potential.in.");
     }
     printf("num_neurons_per_layer is %d.\n", num_neurons_per_layer);
-    number_of_variables = num_neurons_per_layer * 3 + 2;
+    number_of_variables = num_neurons_per_layer * 3 + 1;
     printf("Use the NN2B potential with %d parameters.\n", number_of_variables);
     potential = std::make_unique<NN2B>(num_neurons_per_layer);
   } else {
@@ -298,11 +298,16 @@ void Fitness::read_potential(char* input_dir)
   printf("weight for stress is %g.\n", weight.stress);
 
   for (int n = 0; n < number_of_variables; ++n) {
-    count = fscanf(fid, "%s%f%f", name, &parameters_min[n], &parameters_max[n]);
-    if (count != 3) {
-      print_error("reading error for potential.in.");
+    if (potential_type < 3) {
+      count = fscanf(fid, "%s%f%f", name, &parameters_min[n], &parameters_max[n]);
+      if (count != 3) {
+        print_error("reading error for potential.in.");
+      }
+      printf("%15s%15g%15g\n", name, parameters_min[n], parameters_max[n]);
+    } else {
+      parameters_min[n] = -1.0f;
+      parameters_max[n] = 1.0f;
     }
-    printf("%15s%15g%15g\n", name, parameters_min[n], parameters_max[n]);
   }
 
   fclose(fid);
