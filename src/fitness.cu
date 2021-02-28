@@ -253,7 +253,7 @@ void Fitness::read_potential(char* input_dir)
       print_error("reading error for potential.in.");
     }
     printf("num_neurons_per_layer is %d.\n", num_neurons_per_layer);
-    number_of_variables = num_neurons_per_layer * 3 + 1;
+    number_of_variables = num_neurons_per_layer * (num_neurons_per_layer + 4) + 1;
     printf("Use the NN2B potential with %d parameters.\n", number_of_variables);
     potential = std::make_unique<NN2B>(num_neurons_per_layer);
   } else {

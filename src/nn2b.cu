@@ -30,34 +30,50 @@ void NN2B::initialize(int N, int MAX_ATOM_NUMBER)
   // nothing
 }
 
-void NN2B::update_potential(const std::vector<float>& potential_parameters)
+void NN2B::update_potential(const std::vector<float>& parameters)
 {
   for (int n = 0; n < para.num_neurons_per_layer; ++n) {
-    para.w0[n] = potential_parameters[n];
-    para.b0[n] = potential_parameters[n + para.num_neurons_per_layer];
-    para.w1[n] = potential_parameters[n + para.num_neurons_per_layer * 2];
-    para.b1 = potential_parameters[0 + para.num_neurons_per_layer * 3];
+    para.w0[n] = parameters[n];
+    para.b0[n] = parameters[n + para.num_neurons_per_layer];
+    for (int m = 0; m < para.num_neurons_per_layer; ++m) {
+      int nm = n * para.num_neurons_per_layer + m;
+      para.w1[nm] = parameters[nm + para.num_neurons_per_layer * 2];
+    }
+    para.b1[n] = parameters[n + para.num_neurons_per_layer * (para.num_neurons_per_layer + 2)];
+    para.w2[n] = parameters[n + para.num_neurons_per_layer * (para.num_neurons_per_layer + 3)];
   }
+  para.b2 = parameters[para.num_neurons_per_layer * (para.num_neurons_per_layer + 4)];
 }
 
 // get U_ij and (d U_ij / d r_ij) / r_ij
 static __device__ void find_p2_and_f2(NN2B::Para para, float d12, float& p2, float& f2)
 {
-  // from the input layer to the hidden layer
-  float x1[30] = {0.0f}; // hidden layer nuerons
-  // float y1[30] = {0.0f}; // derivatives of the hidden layer nuerons
+  // from the input layer to the first hidden layer
+  float x1[10] = {0.0f}; // hidden layer nuerons
+  float y1[10] = {0.0f}; // derivatives of the hidden layer nuerons
   for (int n = 0; n < para.num_neurons_per_layer; ++n) {
     x1[n] = tanh(para.w0[n] * d12 - para.b0[n]);
-    // y1[n] = (1.0f - x1[n] * x1[n]) * para.w0[n];
+    y1[n] = (1.0f - x1[n] * x1[n]) * para.w0[n];
+  }
+
+  // from the first hidden layer to the second hidden layer
+  float x2[10] = {0.0f}; // hidden layer nuerons
+  float y2[10] = {0.0f}; // derivatives of the hidden layer nuerons
+  for (int n = 0; n < para.num_neurons_per_layer; ++n) {
+    for (int m = 0; m < para.num_neurons_per_layer; ++m) {
+      x2[n] += para.w1[n * para.num_neurons_per_layer + m] * x1[m];
+      y2[n] += para.w1[n * para.num_neurons_per_layer + m] * y1[m];
+    }
+    x2[n] = tanh(x2[n] - para.b1[n]);
+    y2[n] *= 1.0f - x2[n] * x2[n];
   }
 
   // from the hidden layer to the output layer
   for (int n = 0; n < para.num_neurons_per_layer; ++n) {
-    p2 += para.w1[n] * x1[n];
-    // f2 += para.w1[n] * y1[n];
-    f2 += para.w1[n] * (1.0f - x1[n] * x1[n]) * para.w0[n];
+    p2 += para.w2[n] * x2[n];
+    f2 += para.w2[n] * y2[n];
   }
-  p2 = para.scaling * (p2 - para.b1);
+  p2 = para.scaling * (p2 - para.b2);
   f2 *= para.scaling;
 }
 

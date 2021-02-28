@@ -24,11 +24,13 @@ public:
   struct Para {
     int num_neurons_per_layer;
     // from the input layer to the first hidden layer:
-    float w0[30];
-    float b0[30];
+    float w0[10];
+    float b0[10];
     // from the last hidden layer to the output layer:
-    float w1[30];
-    float b1;
+    float w1[100];
+    float b1[10];
+    float w2[10];
+    float b2;
     // global scaling
     float scaling = 1.0f;
     float r1 = 7.0f;
