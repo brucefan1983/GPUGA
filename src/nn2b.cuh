@@ -31,6 +31,9 @@ public:
     float b1;
     // global scaling
     float scaling = 1.0f;
+    float r1 = 7.0f;
+    float r2 = 8.0f;
+    float pi_factor = 3.1415927f;
   };
 
   NN2B(int num_neurons_per_layer);

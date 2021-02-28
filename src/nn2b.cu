@@ -59,9 +59,20 @@ static __device__ void find_p2_and_f2(NN2B::Para para, float d12, float& p2, flo
   }
   p2 = para.scaling * (p2 - para.b1);
   f2 *= para.scaling;
+}
 
-  // from d U_ij / d r_ij to (d U_ij / d r_ij) / r_ij
-  f2 /= d12;
+static __device__ void find_fc_and_fcp(NN2B::Para para, float d12, float& fc, float& fcp)
+{
+  if (d12 < para.r1) {
+    fc = 1.0f;
+    fcp = 0.0f;
+  } else if (d12 < para.r2) {
+    fc = 0.5f * cos(para.pi_factor * (d12 - para.r1)) + 0.5f;
+    fcp = -sin(para.pi_factor * (d12 - para.r1)) * para.pi_factor * 0.5f;
+  } else {
+    fc = 0.0f;
+    fcp = 0.0f;
+  }
 }
 
 static __global__ void find_force_2body(
@@ -115,6 +126,10 @@ static __global__ void find_force_2body(
 
       float p2 = 0.0f, f2 = 0.0f;
       find_p2_and_f2(para, d12, p2, f2);
+      float fc, fcp;
+      find_fc_and_fcp(para, d12, fc, fcp);
+      p2 *= fc;
+      f2 = (f2 * fc + p2 * fcp) / d12;
 
       fx += x12 * f2;
       fy += y12 * f2;
