@@ -1,0 +1,11 @@
+potential_type        3
+num_neurons           10
+cutoff                8.0
+weight_force          0.9
+weight_energy         0.1
+weight_virial         0.0
+
+
+
+
+

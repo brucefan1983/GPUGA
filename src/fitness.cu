@@ -305,8 +305,8 @@ void Fitness::read_potential(char* input_dir)
       }
       printf("%15s%15g%15g\n", name, parameters_min[n], parameters_max[n]);
     } else {
-      parameters_min[n] = -1.0f;
-      parameters_max[n] = 1.0f;
+      parameters_min[n] = -3.0f; // TODO: use L1 and L2 regularizations
+      parameters_max[n] = 3.0f;
     }
   }
 
